@@ -1,0 +1,443 @@
+# TODO core function, after F<primitive.pd>
+#pp_def( 'hash_with',
+#	Pars => 'a(); int [o] b()',
+#	Code => '',
+#);
+
+# auxiliary routine for setting empty bins to bad
+pp_def( '_setnulltobad',
+	Pars => 'count(n); [o] out(n)',
+	HandleBad => 1,
+	Code => '
+		int flag = 0;
+		loop(n) %{
+			if( ! $count() ) { $SETBAD(out()); flag = 1; }
+		%}
+		if( flag ) { $PDLSTATESETBAD(out); }
+	',
+	BadCode => '
+		int flag = 0;
+		loop(n) %{
+			if( ! $count() ) { $SETBAD(out()); flag = 1; }
+		%}
+		if( flag ) { $PDLSTATESETBAD(out); }
+	',
+);
+
+# initialize for icount_loop()
+pp_def( 'icount_pre',
+	Pars => 'int [o] out(m)',
+	OtherPars => 'int msize => m',
+	Code => '
+		loop(m) %{ $out() = 0; %}
+	',
+);
+
+# indirect count
+# assumes that the indices are always valid (no bad values)
+# icount returns a piddle of type int
+pp_def( 'icount_loop',
+	Pars => 'in(n); int ind(n); int [o] out(m)',
+	OtherPars => 'int msize => m',
+	HandleBad => 1,
+	Code => '
+		loop(n) %{
+			register int j = $ind();
+			++( $out(m => j) );
+		%}
+	',
+	BadCode => '
+		loop(n) %{
+			register int j = $ind();
+			if( $ISGOOD( in() ) ) { ++( $out(m => j) ); }
+		%}
+	',
+);
+
+pp_addpm( <<'EOF' );
+
+=head2 icount
+
+Count the number of elements in each bin.
+
+Signature:
+
+	icount( in(n), ind(n), [o]out(m), m )
+
+Synopsis:
+
+	$out = icount( $in, $ind, $out, $m ));
+
+where $in and $ind are of dimension I<n>, and $out is of dimension I<m>.
+$out is optional.
+
+=cut
+
+EOF
+
+pp_addpm( <<'EOF' );
+sub icount
+{
+	my $self = shift;
+	my $ind = shift;
+	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	my $m = shift;
+	icount_pre( $out, $m );
+	icount_loop( $self, $ind, $out, $m );
+	return $out;
+}
+*PDL::icount = \&icount;
+EOF
+
+# initialization for isum_loop()
+# XXX unfortunately, for this one we need the input arrays to determine the
+# type of the operation, although they are not used at all ...
+pp_def( 'isum_pre',
+	Pars => 'in(n); int ind(n); int+ [o] out(m); int [t] count(m)',
+	OtherPars => 'int msize => m',
+	Code => '
+		$PDLSTATESETGOOD(out);
+		loop(m) %{
+			$out() = 0;
+			$count() = 0;
+		%}
+	',
+);
+
+# indirect sum
+# assumes that the indices are always valid (no bad values)
+# isum returns a piddle of type int, or higher, to reduce the risk of overflow
+# when collecting sums
+pp_def( 'isum_loop',
+	Pars => 'in(n); int ind(n); int+ [o] out(m); int [t] count(m)',
+	OtherPars => 'int msize => m',
+	HandleBad => 1,
+	Code => '
+		loop(n) %{
+			register int j = $ind();
+			$out(m => j) += $in();
+			++( $count(m => j) );
+		%}
+	',
+	BadCode => '
+		loop(n) %{
+			register int j = $ind();
+			if( $ISGOOD( in() ) ) {
+				$out(m => j) += $in();
+				++( $count(m => j) );
+			}
+		%}
+	',
+);
+
+# finalization for isum_loop()
+pp_addpm( <<'EOF' );
+*isum_post = \&PDL::_setnulltobad;
+EOF
+
+pp_addpm( <<'EOF' );
+
+=head2 isum
+
+Sum the elements in each bin.
+
+Signature:
+
+	isum( in(n), ind(n), [o]out(m), [t]count(m), m )
+
+Usage:
+
+	$out = isum( $in, $ind, $out, $count, $m ));
+
+where $in and $ind are of dimension I<n>, and $out and $count are of dimension
+I<m>. $out and $count are optional.
+
+=cut
+
+EOF
+
+pp_addpm( <<'EOF' );
+sub isum
+{
+	my ( $self, $ind, $out, $count, $m );
+	my $self = shift;
+	my $ind = shift;
+	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	# DIRTY HACK :-(
+	$out->badflag( 1 );
+	my $m = shift;
+	isum_pre( $self, $ind, $out, $count, $m );
+	isum_loop( $self, $ind, $out, $count, $m );
+	isum_post( $count, $out );
+	return $out;
+}
+*PDL::isum = \&isum;
+EOF
+
+# initialization for iavg_loop()
+pp_def( 'iavg_pre',
+	Pars => 'double [o] out(m); int [t] count(m)',
+	OtherPars => 'int msize => m',
+	Code => '
+		$PDLSTATESETGOOD(out);
+		loop(m) %{
+			$out() = 0;
+			$count() = 0;
+		%}
+	',
+);
+
+# indirect average, solid implementation
+pp_def( 'iavg_loop',
+	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m)',
+	OtherPars => 'int msize => m',
+	HandleBad => 1,
+	Code => '
+		loop(n) %{
+			register int j = $ind();
+			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
+		%}
+	',
+	BadCode => '
+		loop(n) %{
+			register int j = $ind();
+			if( $ISGOOD( in() ) ) {
+				$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
+			}
+		%}
+	',
+);
+
+# finalization for iavg_loop()
+pp_addpm( <<'EOF' );
+*iavg_post = \&PDL::_setnulltobad;
+EOF
+
+pp_addpm( <<'EOF' );
+
+=head2 iavg
+
+Compute the average of the elements in each bin.
+
+Signature:
+
+	iavg( in(n), ind(n), [o]out(m), [t]count(m), m )
+
+Usage:
+
+	$out = iavg( $in, $ind, $out, $count, $m );
+
+where $in and $ind are of dimension I<n>, and $out and $count are of dimension
+I<m>. $out and $count are optional. You can leave out $count, or both $out and
+$count.
+
+Description:
+
+Credit for the algorithm goes to
+L<http://www.commandlinefu.com/commands/view/3437/compute-running-average-for-a-column-of-numbers>:
+
+	awk '{avg += ($1 - avg) / NR;} END { print avg; }'
+
+This is a wonderful solution solving many of the problems with more naive
+implementations:
+
+=over 4
+
+=item 1.
+
+It's numerically well-behaved: out() is always of the order of magnitude of the
+values themselves, unlike the sum of the values, which grows very large as the
+number of elements grows large
+
+=item 2.
+
+The subtraction in() - out() guarantees that the computation will be done in
+the correct type (i.e., I<double> instead of the type of the input)
+
+=item 3.
+
+Requires only one temporary
+
+=item 4.
+
+Requires only one pass over the data
+
+=back
+
+I used to give the output array type I<float+>, but that creates more problems
+than it solves. So now, averages are always computed in type I<double>. Besides
+being the default type in PDL and the `natural' floating-point type in C, it
+also makes the implementation easier.
+
+=cut
+
+EOF
+
+pp_addpm( <<'EOF' );
+sub iavg
+{
+	my ( $self, $ind, $out, $count, $m );
+	my $self = shift;
+	my $ind = shift;
+	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	# DIRTY HACK :-(
+	$out->badflag( 1 );
+	my $m = shift;
+	iavg_pre( $out, $count, $m );
+	iavg_loop( $self, $ind, $out, $count, $m );
+	iavg_post( $count, $out );
+	return $out;
+}
+*PDL::iavg = \&iavg;
+EOF
+
+# initialization for istddev_loop()
+pp_def( 'istddev_pre',
+	Pars => 'double [o] out(m); int [t] count(m); int [t] avg(m)',
+	OtherPars => 'int msize => m',
+	Code => '
+		$PDLSTATESETGOOD(out);
+		loop(m) %{
+			$out() = 0;
+			$count() = 0;
+			$avg() = 0;
+		%}
+	',
+);
+
+# indirect standard deviation
+pp_def ( 'istddev_loop',
+	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
+	OtherPars => 'int msize => m',
+	HandleBad => 1,
+	Code => '
+		loop(n) %{
+			register int j = $ind();
+			double delta = $in() - $avg(m => j);
+			$avg(m => j) += delta / ++( $count(m => j) );
+			$out(m => j) += delta * ( $in() - $avg(m => j) );
+		%}
+	',
+	BadCode => '
+		loop(n) %{
+			register int j = $ind();
+			double delta;
+			if( $ISGOOD( in() ) ) {
+				delta = $in() - $avg(m => j);
+				$avg(m => j) += delta / ++( $count(m => j) );
+				$out(m => j) += delta * ( $in() - $avg(m => j) );
+			}
+		%}
+	',
+);
+
+# finalization for istddev_loop()
+pp_def( 'istddev_post',
+	Pars => 'count(n); [o] out(n)',
+	HandleBad => 1,
+	Code => '
+		int flag = 0;
+		loop(n) %{
+			if( ! $count() ) { $SETBAD(out()); flag = 1; }
+			else { $out() = sqrt( $out() / $count() ); }
+		%}
+		if( flag ) { $PDLSTATESETBAD(out); }
+	',
+	BadCode => '
+		int flag = 0;
+		loop(n) %{
+			if( ! $count() ) { $SETBAD(out()); flag = 1; }
+			else { $out() = sqrt( $out() / $count() ); }
+		%}
+		if( flag ) { $PDLSTATESETBAD(out); }
+	',
+);
+
+pp_addpm( <<'EOF' );
+
+=head2 istddev
+
+Compute the standard deviation of the elements in each bin. Note, we compute
+the sample standard deviation, I<not> an estimate of the population standard
+deviation (which differs by a factor).
+
+Signature:
+
+	istddev( in(n), ind(n), [o]out(m), [t]count(m), [t]avg(m), m )
+
+Usage:
+
+	$out = istddev( $in, $ind, $out, $count, $avg, $m );
+
+where $in and $ind are of dimension I<n>, and $out, $count, and $avg are of
+dimension I<m>. $out, $count, and $avg are optional. You can leave out $avg,
+$count and $avg, or $out, $count and $avg.
+
+Description:
+
+Credit for the algorithm goes to
+L<http://www.commandlinefu.com/commands/view/3442/display-the-standard-deviation-of-a-column-of-numbers-with-awk>;
+
+	awk '{delta = $1 - avg; avg += delta / NR; mean2 += delta * ($1 - avg); } END { print sqrt(mean2 / NR); }'
+
+This is a wonderful solution solving many of the problems with more naive
+implementations:
+
+=over 4
+
+=item 1.
+
+It's numerically well-behaved
+
+=item 2.
+
+The subtractions guarantee that the computations will be done in the correct
+type (i.e., I<double> instead of the type of the input)
+
+=item 3.
+
+Requires only two temporary (!)
+
+=item 4.
+
+Requires only one pass over the data
+
+=back
+
+I used to give the output array type I<float+>, but that creates more problems
+than it solves. So now, standard deviations are always computed in type
+I<double>. Besides being the default type in PDL and the `natural'
+floating-point type in C, it also makes the implementation easier.
+
+=cut
+
+EOF
+
+pp_addpm( <<'EOF' );
+sub istddev
+{
+	my ( $self, $ind, $out, $count, $avg, $m );
+	my $self = shift;
+	my $ind = shift;
+	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	my $avg = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
+	# DIRTY HACK :-(
+	$out->badflag( 1 );
+	my $m = shift;
+	istddev_pre( $out, $count, $avg, $m );
+	istddev_loop( $self, $ind, $out, $count, $avg, $m );
+	istddev_post( $count, $out );
+	return $out;
+}
+*PDL::istddev = \&istddev;
+EOF
+
+# TODO
+# complete with the other functions that xyz2grd provides
+# indirect maximum
+# indirect minimum
+
+# vim:set filetype=perl:
