@@ -4,6 +4,24 @@ package PDL::NDBin;
 
 PDL::NDBin - multidimensional binning & histogramming
 
+=cut
+
+use strict;
+use warnings;
+use Exporter;
+use List::Util qw( reduce );
+use Math::Round qw( nlowmult nhimult );
+use PDL::Lite;		# do not import any functions into this namespace
+use PDL::NDBin::Func;
+
+=head1 VERSION
+
+Version 0.001
+
+=cut
+
+our $VERSION = '0.001';
+
 =head1 SYNOPSIS
 
 	# returns a one-dimensional histogram
@@ -36,14 +54,6 @@ PDL::NDBin is multidimensional binning and histogramming made easy.
 # values are bad? you want cdo behaviour, i.e., skip bad values so you can
 # calculate a meaningful statistic
 #
-
-use strict;
-use warnings;
-use Exporter;
-use List::Util qw( reduce );
-use Math::Round qw( nlowmult nhimult );
-use PDL::Lite;		# do not import any functions into this namespace
-use PDL::NDBin::Func;
 
 our @ISA = qw( Exporter );
 our @EXPORT = qw( );
