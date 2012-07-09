@@ -1,4 +1,4 @@
-# multidimensional binning & histogramming - tests
+# multidimensional binning & histogramming - tests of the functional interface
 
 use strict;
 use warnings;

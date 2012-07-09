@@ -161,8 +161,9 @@ Here are some examples of hashing multidimensional bins into one dimension:
 
 =cut
 
-sub ndbinning
+sub new
 {
+	my $class = shift;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	$log->debug( '@_ = ' . Dumper \@_ ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless @_;
@@ -233,11 +234,31 @@ sub ndbinning
 	# now visit all the bins
 	$loop->( \@n, $N, $hash, \@vars, \@actions, \@output );
 
+	my $self = {
+		n      => \@n,
+		output => \@output,
+	};
+	return bless $self, $class;
+}
+
+sub output
+{
+	my $self = shift;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	# reshape output
 	return unless defined wantarray;
-	for my $pdl ( @output ) { $pdl->reshape( @n ) }
-	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @output }
-	return wantarray ? @output : $output[0];
+	my $n = $self->{n};
+	my $output = $self->{output};
+	for my $pdl ( @$output ) { $pdl->reshape( @$n ) }
+	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @$output }
+	return wantarray ? @$output : $output->[0];
+}
+
+sub ndbinning
+{
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	my $binner = __PACKAGE__->new( @_ );
+	return $binner->output;
 }
 
 =head2 consume()
