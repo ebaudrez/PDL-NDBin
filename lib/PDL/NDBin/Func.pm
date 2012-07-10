@@ -80,6 +80,75 @@ sub result
 	return $self->{out};
 }
 
+########
+# IAVG #
+########
+package PDL::NDBin::Func::IAvg;
+use PDL::Lite;		# do not import any functions into this namespace
+use PDL::NDBin::Func::PP;
+
+sub new
+{
+	my $class = shift;
+	my $m = shift;
+	my $self = {
+		count => PDL->zeroes( PDL::long, $m ),
+		m     => $m,
+		out   => PDL->zeroes( PDL::double, $m ),
+	};
+	return bless $self, $class;
+}
+
+sub process
+{
+	my $self = shift;
+	my $in = shift;
+	my $ind = shift;
+	PDL::NDBin::Func::PP::_iavg_loop( $in, $ind, $self->{out}, $self->{count}, $self->{m} );
+}
+
+sub result
+{
+	my $self = shift;
+	PDL::NDBin::Func::PP::_setnulltobad( $self->{count}, $self->{out} );
+	return $self->{out};
+}
+
+###########
+# ISTDDEV #
+###########
+package PDL::NDBin::Func::IStdDev;
+use PDL::Lite;		# do not import any functions into this namespace
+use PDL::NDBin::Func::PP;
+
+sub new
+{
+	my $class = shift;
+	my $m = shift;
+	my $self = {
+		avg   => PDL->zeroes( PDL::double, $m ),
+		count => PDL->zeroes( PDL::long, $m ),
+		m     => $m,
+		out   => PDL->zeroes( PDL::double, $m ),
+	};
+	return bless $self, $class;
+}
+
+sub process
+{
+	my $self = shift;
+	my $in = shift;
+	my $ind = shift;
+	PDL::NDBin::Func::PP::_istddev_loop( $in, $ind, $self->{out}, $self->{count}, $self->{avg}, $self->{m} );
+}
+
+sub result
+{
+	my $self = shift;
+	PDL::NDBin::Func::PP::_istddev_post( $self->{count}, $self->{out} );
+	return $self->{out};
+}
+
 package PDL::NDBin::Func;
 
 use Exporter;
@@ -151,15 +220,13 @@ Compute the average of the elements in each bin.
 
 Signature:
 
-	iavg( in(n), ind(n), [o]out(m), [t]count(m), m )
+	iavg( in(n), ind(n), m )
 
 Usage:
 
-	$out = iavg( $in, $ind, $out, $count, $m );
+	$out = iavg( $in, $ind, $m );
 
-where $in and $ind are of dimension I<n>, and $out and $count are of dimension
-I<m>. $out and $count are optional. You can leave out $count, or both $out and
-$count.
+where $in and $ind are of dimension I<n>, and $out is of dimension I<m>.
 
 Description:
 
@@ -205,15 +272,11 @@ sub iavg
 {
 	my $in = shift;
 	my $ind = shift;
-	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
-	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
-	# DIRTY HACK :-(
-	$out->badflag( 1 );
 	my $m = shift;
-	PDL::NDBin::Func::PP::iavg_pre( $out, $count, $m );
-	PDL::NDBin::Func::PP::iavg_loop( $in, $ind, $out, $count, $m );
-	PDL::NDBin::Func::PP::iavg_post( $count, $out );
-	return $out;
+	confess 'too many arguments' if @_;
+	my $obj = PDL::NDBin::Func::IAvg->new( $m );
+	$obj->process( $in, $ind );
+	return $obj->result;
 }
 
 =head2 istddev
@@ -224,15 +287,13 @@ deviation (which differs by a factor).
 
 Signature:
 
-	istddev( in(n), ind(n), [o]out(m), [t]count(m), [t]avg(m), m )
+	istddev( in(n), ind(n), m )
 
 Usage:
 
-	$out = istddev( $in, $ind, $out, $count, $avg, $m );
+	$out = istddev( $in, $ind, $m );
 
-where $in and $ind are of dimension I<n>, and $out, $count, and $avg are of
-dimension I<m>. $out, $count, and $avg are optional. You can leave out $avg,
-$count and $avg, or $out, $count and $avg.
+where $in and $ind are of dimension I<n>, and $out is of dimension I<m>.
 
 Description:
 
@@ -276,16 +337,11 @@ sub istddev
 {
 	my $in = shift;
 	my $ind = shift;
-	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
-	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
-	my $avg = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
-	# DIRTY HACK :-(
-	$out->badflag( 1 );
 	my $m = shift;
-	PDL::NDBin::Func::PP::istddev_pre( $out, $count, $avg, $m );
-	PDL::NDBin::Func::PP::istddev_loop( $in, $ind, $out, $count, $avg, $m );
-	PDL::NDBin::Func::PP::istddev_post( $count, $out );
-	return $out;
+	confess 'too many arguments' if @_;
+	my $obj = PDL::NDBin::Func::IStdDev->new( $m );
+	$obj->process( $in, $ind );
+	return $obj->result;
 }
 
 1;

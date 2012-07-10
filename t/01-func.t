@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 39;
+use Test::More tests => 31;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -53,36 +53,12 @@ is_pdl( $got, $expected->double, "output piddle set by return value" );
 #
 note '   function = PDL::NDBin::Func::iavg';
 $expected = long( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = zeroes( long, $N );
-PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected, "output piddle preallocated to type long" );
-$got = zeroes( short, $N );
-PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
-$got = zeroes( float, $N );
-PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
-$got = null;
-PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected->double, "output piddle initialized to null" );
 $got = PDL::NDBin::Func::iavg( $x, $y, $N );
 is_pdl( $got, $expected->double, "output piddle set by return value" );
 
 #
 note '   function = PDL::NDBin::Func::istddev';
 $expected = pdl( sqrt(3.5),0,-1,0 )->inplace->setvaltobad( -1 );
-$got = zeroes( long, $N );
-PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
-is_pdl( $got, $expected->long, "output piddle preallocated to type long" );
-$got = zeroes( short, $N );
-PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
-is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
-$got = zeroes( float, $N );
-PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
-is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
-$got = null;
-PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
-is_pdl( $got, $expected->double, "output piddle initialized to null" );
 $got = PDL::NDBin::Func::istddev( $x, $y, $N );
 is_pdl( $got, $expected->double, "output piddle set by return value" );
 

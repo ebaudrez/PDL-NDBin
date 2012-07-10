@@ -71,21 +71,8 @@ pp_def( '_isum_loop',
 	',
 );
 
-# initialization for iavg_loop()
-pp_def( 'iavg_pre',
-	Pars => 'double [o] out(m); int [t] count(m)',
-	OtherPars => 'int msize => m',
-	Code => '
-		$PDLSTATESETGOOD(out);
-		loop(m) %{
-			$out() = 0;
-			$count() = 0;
-		%}
-	',
-);
-
 # indirect average, solid implementation
-pp_def( 'iavg_loop',
+pp_def( '_iavg_loop',
 	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
@@ -105,27 +92,8 @@ pp_def( 'iavg_loop',
 	',
 );
 
-# finalization for iavg_loop()
-pp_addpm( <<'EOF' );
-*iavg_post = \&PDL::_setnulltobad;
-EOF
-
-# initialization for istddev_loop()
-pp_def( 'istddev_pre',
-	Pars => 'double [o] out(m); int [t] count(m); int [t] avg(m)',
-	OtherPars => 'int msize => m',
-	Code => '
-		$PDLSTATESETGOOD(out);
-		loop(m) %{
-			$out() = 0;
-			$count() = 0;
-			$avg() = 0;
-		%}
-	',
-);
-
 # indirect standard deviation
-pp_def ( 'istddev_loop',
+pp_def ( '_istddev_loop',
 	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
@@ -150,8 +118,8 @@ pp_def ( 'istddev_loop',
 	',
 );
 
-# finalization for istddev_loop()
-pp_def( 'istddev_post',
+# finalization for _istddev_loop()
+pp_def( '_istddev_post',
 	Pars => 'count(n); [o] out(n)',
 	HandleBad => 1,
 	Code => '
