@@ -188,7 +188,7 @@ type (i.e., I<double> instead of the type of the input)
 
 =item 3.
 
-Requires only two temporary (!)
+Requires only two temporaries (!)
 
 =item 4.
 
