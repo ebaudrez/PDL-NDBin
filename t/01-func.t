@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 55;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -40,27 +40,43 @@ $y = long( @v );
 
 # 
 note '   function = PDL::NDBin::Func::icount';
-$expected = long( 4,1,0,1 );
-$got = PDL::NDBin::Func::icount( $x, $y, $N );
-is_pdl( $got, $expected, "output piddle set by return value" );
+cmp_ok( PDL::NDBin::Func::icount( $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
+cmp_ok( PDL::NDBin::Func::icount( $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
+cmp_ok( PDL::NDBin::Func::icount( $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
+cmp_ok( PDL::NDBin::Func::icount( $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
+cmp_ok( PDL::NDBin::Func::icount( $x->longlong, $y, $N )->type, '==', long, 'return type is long for input type longlong' );
+cmp_ok( PDL::NDBin::Func::icount( $x->float, $y, $N )->type, '==', long, 'return type is long for input type float' );
+cmp_ok( PDL::NDBin::Func::icount( $x->double, $y, $N )->type, '==', long, 'return type is long for input type double' );
 
 # 
 note '   function = PDL::NDBin::Func::isum';
-$expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::isum( $x, $y, $N );
-is_pdl( $got, $expected->double, "output piddle set by return value" );
+cmp_ok( PDL::NDBin::Func::isum( $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
+cmp_ok( PDL::NDBin::Func::isum( $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
+cmp_ok( PDL::NDBin::Func::isum( $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
+cmp_ok( PDL::NDBin::Func::isum( $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
+cmp_ok( PDL::NDBin::Func::isum( $x->longlong, $y, $N )->type, '==', longlong, 'return type is longlong for input type longlong' );
+cmp_ok( PDL::NDBin::Func::isum( $x->float, $y, $N )->type, '==', float, 'return type is float for input type float' );
+cmp_ok( PDL::NDBin::Func::isum( $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
 note '   function = PDL::NDBin::Func::iavg';
-$expected = long( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::iavg( $x, $y, $N );
-is_pdl( $got, $expected->double, "output piddle set by return value" );
+cmp_ok( PDL::NDBin::Func::iavg( $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
+cmp_ok( PDL::NDBin::Func::iavg( $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
+cmp_ok( PDL::NDBin::Func::iavg( $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
+cmp_ok( PDL::NDBin::Func::iavg( $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
+cmp_ok( PDL::NDBin::Func::iavg( $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
+cmp_ok( PDL::NDBin::Func::iavg( $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
+cmp_ok( PDL::NDBin::Func::iavg( $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
 note '   function = PDL::NDBin::Func::istddev';
-$expected = pdl( sqrt(3.5),0,-1,0 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::istddev( $x, $y, $N );
-is_pdl( $got, $expected->double, "output piddle set by return value" );
+cmp_ok( PDL::NDBin::Func::istddev( $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
+cmp_ok( PDL::NDBin::Func::istddev( $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
+cmp_ok( PDL::NDBin::Func::istddev( $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
+cmp_ok( PDL::NDBin::Func::istddev( $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
+cmp_ok( PDL::NDBin::Func::istddev( $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
+cmp_ok( PDL::NDBin::Func::istddev( $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
+cmp_ok( PDL::NDBin::Func::istddev( $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
 # FUNCTIONALITY
