@@ -35,12 +35,12 @@ $out is optional.
 
 sub icount
 {
-	my $self = shift;
+	my $in = shift;
 	my $ind = shift;
 	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
 	my $m = shift;
 	PDL::NDBin::Func::PP::icount_pre( $out, $m );
-	PDL::NDBin::Func::PP::icount_loop( $self, $ind, $out, $m );
+	PDL::NDBin::Func::PP::icount_loop( $in, $ind, $out, $m );
 	return $out;
 }
 
@@ -63,15 +63,15 @@ I<m>. $out and $count are optional.
 
 sub isum
 {
-	my $self = shift;
+	my $in = shift;
 	my $ind = shift;
 	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
 	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
 	# DIRTY HACK :-(
 	$out->badflag( 1 );
 	my $m = shift;
-	PDL::NDBin::Func::PP::isum_pre( $self, $ind, $out, $count, $m );
-	PDL::NDBin::Func::PP::isum_loop( $self, $ind, $out, $count, $m );
+	PDL::NDBin::Func::PP::isum_pre( $in, $ind, $out, $count, $m );
+	PDL::NDBin::Func::PP::isum_loop( $in, $ind, $out, $count, $m );
 	PDL::NDBin::Func::PP::isum_post( $count, $out );
 	return $out;
 }
@@ -134,7 +134,7 @@ also makes the implementation easier.
 
 sub iavg
 {
-	my $self = shift;
+	my $in = shift;
 	my $ind = shift;
 	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
 	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
@@ -142,7 +142,7 @@ sub iavg
 	$out->badflag( 1 );
 	my $m = shift;
 	PDL::NDBin::Func::PP::iavg_pre( $out, $count, $m );
-	PDL::NDBin::Func::PP::iavg_loop( $self, $ind, $out, $count, $m );
+	PDL::NDBin::Func::PP::iavg_loop( $in, $ind, $out, $count, $m );
 	PDL::NDBin::Func::PP::iavg_post( $count, $out );
 	return $out;
 }
@@ -205,7 +205,7 @@ floating-point type in C, it also makes the implementation easier.
 
 sub istddev
 {
-	my $self = shift;
+	my $in = shift;
 	my $ind = shift;
 	my $out = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
 	my $count = eval { $_[0]->isa( q(PDL) ) } ? shift : PDL->nullcreate;
@@ -214,7 +214,7 @@ sub istddev
 	$out->badflag( 1 );
 	my $m = shift;
 	PDL::NDBin::Func::PP::istddev_pre( $out, $count, $avg, $m );
-	PDL::NDBin::Func::PP::istddev_loop( $self, $ind, $out, $count, $avg, $m );
+	PDL::NDBin::Func::PP::istddev_loop( $in, $ind, $out, $count, $avg, $m );
 	PDL::NDBin::Func::PP::istddev_post( $count, $out );
 	return $out;
 }
