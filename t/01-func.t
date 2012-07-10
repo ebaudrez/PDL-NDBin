@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 47;
+use Test::More tests => 39;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -24,12 +24,12 @@ sub apply
 }
 
 # variable declarations
-my ( $expected, $got, $N, $x, $y, @u, @v );
+my ( $expected, $got, $N, $x, $y, @u, @v, $obj );
 
 #
-# OUTPUT PIDDLE ALLOCATION & TYPE
+# OUTPUT PIDDLE RETURN TYPE
 #
-note 'OUTPUT PIDDLE ALLOCATION & TYPE';
+note 'OUTPUT PIDDLE RETURN TYPE';
 
 #
 $N = 4;
@@ -41,36 +41,12 @@ $y = long( @v );
 # 
 note '   function = PDL::NDBin::Func::icount';
 $expected = long( 4,1,0,1 );
-$got = zeroes( long, $N );
-PDL::NDBin::Func::icount( $x, $y, $got, $N );
-is_pdl( $got, $expected, "output piddle preallocated to type long" );
-$got = zeroes( short, $N );
-PDL::NDBin::Func::icount( $x, $y, $got, $N );
-is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
-$got = zeroes( float, $N );
-PDL::NDBin::Func::icount( $x, $y, $got, $N );
-is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
-$got = null;
-PDL::NDBin::Func::icount( $x, $y, $got, $N );
-is_pdl( $got, $expected, "output piddle initialized to null" );
 $got = PDL::NDBin::Func::icount( $x, $y, $N );
 is_pdl( $got, $expected, "output piddle set by return value" );
 
 # 
 note '   function = PDL::NDBin::Func::isum';
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = zeroes( long, $N );
-PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected, "output piddle preallocated to type long" );
-$got = zeroes( short, $N );
-PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
-$got = zeroes( float, $N );
-PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
-$got = null;
-PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
-is_pdl( $got, $expected->double, "output piddle initialized to null" );
 $got = PDL::NDBin::Func::isum( $x, $y, $N );
 is_pdl( $got, $expected->double, "output piddle set by return value" );
 
@@ -205,21 +181,22 @@ note 'CONCATENATION';
 
 #
 $N = 4;
-PDL::NDBin::Func::icount_pre( $got=null, $N );
+$obj = PDL::NDBin::Func::ICount->new( $N );
 
 #
 @u = ( 4,5,6,7,8,9 );	# data values
 @v = ( 0,0,0,1,3,0 );	# bin numbers
-PDL::NDBin::Func::icount_loop( pdl(@u), long(@v), $got, $N );
+$obj->process( pdl(@u), long(@v) );
 
 #
 @u = ( 3,2,1,0,-1,-2 );	# data values
 @v = ( 3,3,1,1, 3, 0 );	# bin numbers
-PDL::NDBin::Func::icount_loop( pdl(@u), long(@v), $got, $N );
+$obj->process( pdl(@u), long(@v) );
 
 #
 $expected = long( 5,3,0,4 );
-is_pdl( $got, $expected, "PDL::NDBin::Func::icount by concatenation" );
+$got = $obj->result;
+is_pdl( $got, $expected, "PDL::NDBin::Func::ICount by concatenation" );
 
 # TODO test other functions with concatenation
 
