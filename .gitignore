@@ -3,9 +3,9 @@ MYMETA.yml
 Makefile
 Makefile.old
 blib
-func/Func.bs
-func/Func.c
-func/Func.o
-func/Func.pm
-func/Func.xs
 pm_to_blib
+pp/PP.bs
+pp/PP.c
+pp/PP.o
+pp/PP.pm
+pp/PP.xs

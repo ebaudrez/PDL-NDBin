@@ -39,75 +39,75 @@ $x = pdl( @u );
 $y = long( @v );
 
 # 
-note '   function = PDL::icount';
+note '   function = PDL::NDBin::Func::icount';
 $expected = long( 4,1,0,1 );
 $got = zeroes( long, $N );
-PDL::icount( $x, $y, $got, $N );
+PDL::NDBin::Func::icount( $x, $y, $got, $N );
 is_pdl( $got, $expected, "output piddle preallocated to type long" );
 $got = zeroes( short, $N );
-PDL::icount( $x, $y, $got, $N );
+PDL::NDBin::Func::icount( $x, $y, $got, $N );
 is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
 $got = zeroes( float, $N );
-PDL::icount( $x, $y, $got, $N );
+PDL::NDBin::Func::icount( $x, $y, $got, $N );
 is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
 $got = null;
-PDL::icount( $x, $y, $got, $N );
+PDL::NDBin::Func::icount( $x, $y, $got, $N );
 is_pdl( $got, $expected, "output piddle initialized to null" );
-$got = PDL::icount( $x, $y, $N );
+$got = PDL::NDBin::Func::icount( $x, $y, $N );
 is_pdl( $got, $expected, "output piddle set by return value" );
 
 # 
-note '   function = PDL::isum';
+note '   function = PDL::NDBin::Func::isum';
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = zeroes( long, $N );
-PDL::isum( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected, "output piddle preallocated to type long" );
 $got = zeroes( short, $N );
-PDL::isum( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
 $got = zeroes( float, $N );
-PDL::isum( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
 $got = null;
-PDL::isum( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::isum( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected->double, "output piddle initialized to null" );
-$got = PDL::isum( $x, $y, $N );
+$got = PDL::NDBin::Func::isum( $x, $y, $N );
 is_pdl( $got, $expected->double, "output piddle set by return value" );
 
 #
-note '   function = PDL::iavg';
+note '   function = PDL::NDBin::Func::iavg';
 $expected = long( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = zeroes( long, $N );
-PDL::iavg( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected, "output piddle preallocated to type long" );
 $got = zeroes( short, $N );
-PDL::iavg( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
 $got = zeroes( float, $N );
-PDL::iavg( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
 $got = null;
-PDL::iavg( $x, $y, $got, zeroes(long, $N), $N );
+PDL::NDBin::Func::iavg( $x, $y, $got, zeroes(long, $N), $N );
 is_pdl( $got, $expected->double, "output piddle initialized to null" );
-$got = PDL::iavg( $x, $y, $N );
+$got = PDL::NDBin::Func::iavg( $x, $y, $N );
 is_pdl( $got, $expected->double, "output piddle set by return value" );
 
 #
-note '   function = PDL::istddev';
+note '   function = PDL::NDBin::Func::istddev';
 $expected = pdl( sqrt(3.5),0,-1,0 )->inplace->setvaltobad( -1 );
 $got = zeroes( long, $N );
-PDL::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
+PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
 is_pdl( $got, $expected->long, "output piddle preallocated to type long" );
 $got = zeroes( short, $N );
-PDL::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
+PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
 is_pdl( $got, $expected->short, "output piddle preallocated to type short" );
 $got = zeroes( float, $N );
-PDL::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
+PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
 is_pdl( $got, $expected->float, "output piddle preallocated to type float" );
 $got = null;
-PDL::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
+PDL::NDBin::Func::istddev( $x, $y, $got, zeroes(long, $N), zeroes($N), $N );
 is_pdl( $got, $expected->double, "output piddle initialized to null" );
-$got = PDL::istddev( $x, $y, $N );
+$got = PDL::NDBin::Func::istddev( $x, $y, $N );
 is_pdl( $got, $expected->double, "output piddle set by return value" );
 
 #
@@ -122,37 +122,37 @@ $N = 4;
 $x = short( @u );
 $y = long( @v );
 
-# PDL::icount
+# PDL::NDBin::Func::icount
 $expected = long( 4,1,0,1 );
-$got = PDL::icount( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::icount, input type short" );
-$got = PDL::icount( $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::icount, input type float" );
+$got = PDL::NDBin::Func::icount( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::icount, input type short" );
+$got = PDL::NDBin::Func::icount( $x->float, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::icount, input type float" );
 
-# PDL::isum
+# PDL::NDBin::Func::isum
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::isum( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::isum, input type short" );
-$got = PDL::isum( $x->float, $y, $N );
-is_pdl( $got, $expected->float, "PDL::isum, input type float" );
+$got = PDL::NDBin::Func::isum( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::isum, input type short" );
+$got = PDL::NDBin::Func::isum( $x->float, $y, $N );
+is_pdl( $got, $expected->float, "PDL::NDBin::Func::isum, input type float" );
 
-# PDL::iavg
+# PDL::NDBin::Func::iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::iavg( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::iavg, input type short" );
-$got = PDL::iavg( $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::iavg, input type float" );
-$got = PDL::iavg( $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::iavg, input type double" );
+$got = PDL::NDBin::Func::iavg( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::iavg, input type short" );
+$got = PDL::NDBin::Func::iavg( $x->float, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::iavg, input type float" );
+$got = PDL::NDBin::Func::iavg( $x->double, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::iavg, input type double" );
 
-# PDL::istddev
+# PDL::NDBin::Func::istddev
 $expected = pdl( sqrt(3.5),0,-1,0 )->inplace->setvaltobad( -1 );
-$got = PDL::istddev( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::istddev, input type short" );
-$got = PDL::istddev( $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::istddev, input type float" );
-$got = PDL::istddev( $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::istddev, input type double" );
+$got = PDL::NDBin::Func::istddev( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type short" );
+$got = PDL::NDBin::Func::istddev( $x->float, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type float" );
+$got = PDL::NDBin::Func::istddev( $x->double, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type double" );
 
 #
 #
@@ -166,37 +166,37 @@ $N = 4;
 $x = short( @u )->inplace->setvaltobad( -1 );
 $y = long( @v );
 
-# PDL::icount
+# PDL::NDBin::Func::icount
 $expected = long( 3,1,0,1 );
-$got = PDL::icount( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::icount with bad values, input type short" );
-$got = PDL::icount( $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::icount with bad values, input type float" );
+$got = PDL::NDBin::Func::icount( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::icount with bad values, input type short" );
+$got = PDL::NDBin::Func::icount( $x->float, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::icount with bad values, input type float" );
 
-# PDL::isum
+# PDL::NDBin::Func::isum
 $expected = long( 18,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::isum( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::isum with bad values, input type short" );
-$got = PDL::isum( $x->float, $y, $N );
-is_pdl( $got, $expected->float, "PDL::isum with bad values, input type float" );
+$got = PDL::NDBin::Func::isum( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::isum with bad values, input type short" );
+$got = PDL::NDBin::Func::isum( $x->float, $y, $N );
+is_pdl( $got, $expected->float, "PDL::NDBin::Func::isum with bad values, input type float" );
 
-# PDL::iavg
+# PDL::NDBin::Func::iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::iavg( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::iavg with bad values, input type short" );
-$got = PDL::iavg( $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::iavg with bad values, input type float" );
-$got = PDL::iavg( $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::iavg with bad values, input type double" );
+$got = PDL::NDBin::Func::iavg( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::iavg with bad values, input type short" );
+$got = PDL::NDBin::Func::iavg( $x->float, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::iavg with bad values, input type float" );
+$got = PDL::NDBin::Func::iavg( $x->double, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::iavg with bad values, input type double" );
 
-# PDL::istddev
+# PDL::NDBin::Func::istddev
 $expected = pdl( sqrt(14/3),0,-1,0 )->inplace->setvaltobad( -1 );
-$got = PDL::istddev( $x, $y, $N );
-is_pdl( $got, $expected, "PDL::istddev with bad values, input type short" );
-$got = PDL::istddev( $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::istddev with bad values, input type float" );
-$got = PDL::istddev( $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::istddev with bad values, input type double" );
+$got = PDL::NDBin::Func::istddev( $x, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type short" );
+$got = PDL::NDBin::Func::istddev( $x->float, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type float" );
+$got = PDL::NDBin::Func::istddev( $x->double, $y, $N );
+is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type double" );
 
 #
 #
@@ -205,21 +205,21 @@ note 'CONCATENATION';
 
 #
 $N = 4;
-PDL::icount_pre( $got=null, $N );
+PDL::NDBin::Func::icount_pre( $got=null, $N );
 
 #
 @u = ( 4,5,6,7,8,9 );	# data values
 @v = ( 0,0,0,1,3,0 );	# bin numbers
-PDL::icount_loop( pdl(@u), long(@v), $got, $N );
+PDL::NDBin::Func::icount_loop( pdl(@u), long(@v), $got, $N );
 
 #
 @u = ( 3,2,1,0,-1,-2 );	# data values
 @v = ( 3,3,1,1, 3, 0 );	# bin numbers
-PDL::icount_loop( pdl(@u), long(@v), $got, $N );
+PDL::NDBin::Func::icount_loop( pdl(@u), long(@v), $got, $N );
 
 #
 $expected = long( 5,3,0,4 );
-is_pdl( $got, $expected, "PDL::icount by concatenation" );
+is_pdl( $got, $expected, "PDL::NDBin::Func::icount by concatenation" );
 
 # TODO test other functions with concatenation
 
@@ -275,13 +275,13 @@ $y = long( @v );
 
 #
 $expected = apply( $x, $y, $N, \&sum );
-$got = PDL::isum( $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::isum with sum()" );
+$got = PDL::NDBin::Func::isum( $x, $y, $N );
+is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::isum with sum()" );
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[0] } );
-$got = PDL::iavg( $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::iavg with stats()" );
+$got = PDL::NDBin::Func::iavg( $x, $y, $N );
+is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::iavg with stats()" );
 # the docs of `stats' are actually wrong on this one:
 # the population rms is in [1], and the rms is in [6]
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[6] } );
-$got = PDL::istddev( $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::istddev with stats()" );
+$got = PDL::NDBin::Func::istddev( $x, $y, $N );
+is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::istddev with stats()" );

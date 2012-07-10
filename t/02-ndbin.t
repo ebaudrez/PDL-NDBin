@@ -153,7 +153,7 @@ is_pdl( $got, $expected, 'different syntax' );
 $expected = long( 0,2,1 );
 $got = ndbinning( $x => ( 1, 0, 3 ),
 		  \&PDL::NDBin::fast_loop,
-		  $x => \&PDL::icount );
+		  $x => \&PDL::NDBin::Func::icount );
 is_pdl( $got, $expected, 'different syntax, using fast loop' );
 
 # the example from PDL::histogram2d
@@ -195,7 +195,7 @@ $x = sequence 21;
 $expected = double( 1,4,7,10,13,16,19 );
 $got = ndbinning( $x, 3, 0, 7, \&PDL::NDBin::default_loop, $x, sub { shift->avg } );
 is_pdl( $got, $expected, 'variable with action = average' );
-$got = ndbinning( $x, 3, 0, 7, \&PDL::NDBin::fast_loop, $x, \&PDL::iavg );
+$got = ndbinning( $x, 3, 0, 7, \&PDL::NDBin::fast_loop, $x, \&PDL::NDBin::Func::iavg );
 is_pdl( $got, $expected, 'variable with action = average, using fast loop' );
 $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
@@ -245,7 +245,7 @@ is_pdl( $got, $expected, 'variable with default action' );
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
 $got = ndbin( $x, 0,20,1, VARS => [ $x => sub { my $pdl = shift; $pdl->nelem ? $pdl->avg : undef } ], INDEXER => 1 );
 is_pdl( $got, $expected, 'variable with action = average, default loop' );
-$got = ndbin( $x, 0,20,1, VARS => [ $x => \&PDL::iavg ], INDEXER => 0 );
+$got = ndbin( $x, 0,20,1, VARS => [ $x => \&PDL::NDBin::Func::iavg ], INDEXER => 0 );
 is_pdl( $got, $expected, 'variable with action = average, fast loop' );
 $x = pdl( 1,1,1,2,2,1,1,1,2 );
 $y = pdl( 2,1,3,4,1,4,4,4,1 );
