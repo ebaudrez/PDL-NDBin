@@ -13,6 +13,8 @@ use List::Util qw( reduce );
 use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Func;
+use Log::Any;
+use Data::Dumper;
 
 =head1 VERSION
 
@@ -59,11 +61,6 @@ our @ISA = qw( Exporter );
 our @EXPORT = qw( );
 our @EXPORT_OK = qw( ndbinning ndbin process_axes make_labels );
 our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes make_labels ) ] );
-
-# XXX debug
-my $debug = 1;
-use Data::Dumper;
-# XXX end debug
 
 # the list of valid keys
 my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY PASS_BIN_NUMBERS );
@@ -165,7 +162,8 @@ Here are some examples of hashing multidimensional bins into one dimension:
 
 sub ndbinning
 {
-	#print Dumper \@_ if $debug;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	$log->debug( '@_ = ' . Dumper \@_ ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless @_;
 
 	# consume and process axes
@@ -178,15 +176,15 @@ sub ndbinning
 	while( $p+3 < @_ && eval { $_[$p]->isa('PDL') } && ! grep ref, @_[ $p+1 .. $p+3 ] ) { $p += 4 }
 	while( $p -= 4, $p >= 0 ) {
 		my ( $pdl, $step, $min, $n ) = splice @_, $p, 4;
-		#print '    input (', $pdl->info , ') = ', $pdl, "\n" if $debug;
-		#print "    bin with parameters $step, $min, $n\n" if $debug;
+		$log->debug( 'input (' . $pdl->info . ') = ' . $pdl ) if $log->is_debug;
+		$log->debug( "bin with parameters $step, $min, $n" ) if $log->is_debug;
 		unshift @n, $n;				# remember that we are working backwards!
 		my $binned = PDL::long( ($pdl - $min)/$step );
 		$binned->inplace->clip( 0, $n-1 );
 		$hash = $hash * $n + $binned;
-		#print '    binned coordinates (', $binned->info , ') = ', $binned, "\n" if $debug;
+		$log->debug( 'binned coordinates (' . $binned->info . ') = ' . $binned ) if $log->is_debug;
 	}
-	#print '    hash (', $hash->info, ') = ', $hash, "\n" if $debug;
+	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 
 	#
 	my ( $loop, @vars, @actions );
@@ -237,7 +235,7 @@ sub ndbinning
 	# reshape output
 	return unless defined wantarray;
 	for my $pdl ( @output ) { $pdl->reshape( @n ) }
-	#if( $debug ) { print '    output (', $_->info, ') = ', $_, "\n" for @output }
+	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @output }
 	return wantarray ? @output : $output[0];
 }
 
@@ -868,15 +866,16 @@ by ndbin(), as described above.
 
 sub ndbin
 {
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	# parameters
 	my $args = convert_to_hash( @_ );
-	#print '    parameters: ', Dumper $args if $debug;
+	$log->debug( 'parameters: ' . Dumper $args ) if $log->is_debug;
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
 	my @axes = process_axes $args->{AXES};
-	#print '    axes: ', Dumper \@axes if $debug;
+	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
 	my $indexer = $args->{INDEXER} // 1;			# by default is true
@@ -906,14 +905,14 @@ sub ndbin
 		}
 		else { $var->{action} = $action }
 	}
-	#print '    vars: ', Dumper \@vars if $debug;
+	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
 	# loop
 	my $loop;
 	if( @vars ) {
 		$loop = $indexer ? \&default_loop : \&fast_loop;
 	}
-	#print '    loop: ', Dumper $loop if $debug;
+	$log->debug( 'loop: ' . Dumper $loop ) if $log->is_debug;
 
 	# the real work is done by ndbinning()
 	if( $loop ) {

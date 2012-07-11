@@ -4,5 +4,10 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME      => 'PDL::NDBin',
-	PREREQ_PM => { "Math::Round" => 0, "PDL" => 0 },
+	PREREQ_PM => {
+		'Data::Dumper' => 0,
+		'Log::Any'     => 0,
+		'Math::Round'  => 0,
+		'PDL'          => 0,
+	},
 );
