@@ -18,11 +18,12 @@ use Data::Dumper;
 
 =head1 VERSION
 
-Version 0.001
+Version 0.002
 
 =cut
 
-our $VERSION = '0.001';
+our $VERSION = "0.002";
+$VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
