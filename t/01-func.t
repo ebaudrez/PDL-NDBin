@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 55;
+use Test::More tests => 66;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -169,32 +169,6 @@ is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type 
 #
 #
 #
-note 'CONCATENATION';
-
-#
-$N = 4;
-$obj = PDL::NDBin::Func::ICount->new( $N );
-
-#
-@u = ( 4,5,6,7,8,9 );	# data values
-@v = ( 0,0,0,1,3,0 );	# bin numbers
-$obj->process( pdl(@u), long(@v) );
-
-#
-@u = ( 3,2,1,0,-1,-2 );	# data values
-@v = ( 3,3,1,1, 3, 0 );	# bin numbers
-$obj->process( pdl(@u), long(@v) );
-
-#
-$expected = long( 5,3,0,4 );
-$got = $obj->result;
-is_pdl( $got, $expected, "PDL::NDBin::Func::ICount by concatenation" );
-
-# TODO test other functions with concatenation
-
-#
-#
-#
 note 'CROSS-CHECK';
 
 #
@@ -254,3 +228,98 @@ is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::iavg with stats()" );
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[6] } );
 $got = PDL::NDBin::Func::istddev( $x, $y, $N );
 is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::istddev with stats()" );
+
+#
+#
+#
+note 'CONCATENATION';
+{
+	my $u0 = pdl( -18.3183390661739, 27.3974706788376, 35.7153786154491,
+		47.8258388108234, -35.1588200253218, 26.4152568315506 ); # 6 random values [-50:50]
+	my $v0 = long( 4, 4, 8, 1, 5, 0 ); # 6 random bins [0:9]
+	my $u1 = pdl( -49.573940365601, -5.71788528168433 ); # 2 random values [-50:50]
+	my $v1 = long( 6, 5 ); # 2 random bins [0:9]
+	my $u2 = pdl( 13.9010951470269, -26.6426081230296, -20.4758828884117,
+		-47.0451825792392, 6.76251455434169, 25.0398394482954,
+		-14.1263729818995, -34.3005011256633, 11.4501997177783,
+		14.2397334136742 ); # 10 random values [-50:50]
+	my $v2 = long( 8, 6, 5, 1, 2, 9, 9, 5, 9, 0 ); # 10 random bins [0:9]
+	my $u3 = pdl( 29.4897695519602, -12.8522886035878, 46.9800168006543,
+		47.5442131843106, -48.242720133063, -49.9047087352846 ); # 6 random values [-50:50]
+	my $v3 = long( 4, 1, 4, 2, 0, 4 ); # 6 random bins [0:9]
+	my $u4 = pdl( 33.9285663707713, -19.4440970026509, 25.3297021599046,
+		8.22183510796357, -31.2812362886149, -22.397819555157,
+		-33.5881440926578, -46.7164828941616, -16.4592034011449,
+		-10.2272980921985, -25.3017491996424 ); # 11 random values [-50:50]
+	my $v4 = long( 1, 0, 1, 5, 2, 0, 4, 0, 4, 2, 6 ); # 11 random bins [0:9]
+	my $N = 35;
+	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
+	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
+	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
+	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	for my $class ( 'PDL::NDBin::Func::ICount',
+			'PDL::NDBin::Func::ISum',
+			'PDL::NDBin::Func::IAvg',
+			'PDL::NDBin::Func::IStdDev' )
+	{
+		my $obj = $class->new( $N );
+		$obj->process( $u0, $v0 );
+		$obj->process( $u1, $v1 );
+		$obj->process( $u2, $v2 );
+		$obj->process( $u3, $v3 );
+		$obj->process( $u4, $v4 );
+		my $got = $obj->result;
+		$obj = $class->new( $N );
+		$obj->process( $u, $v );
+		my $expected = $obj->result;
+		is_pdl( $got, $expected, "repeated invocation of $class equal to concatenation" );
+	}
+}
+
+SKIP: {
+	skip 'no bad value support', 6 unless $PDL::Bad::Status;
+	my $u0 = pdl( -44.7319945183754, 2.14679136319411, -101,
+		32.2078360467891, 2.42312479183653, 24.961636154341,
+		16.7449041152423, -101, 15.135123983227, 18.8232267311516,
+		-15.3718944013033, 17.2185903975429 )->inplace->setvaltobad( -101 ); # 12 random values [-50:50]
+	my $v0 = long( 8, 0, 7, 5, 4, 9, 6, 1, 6, 7, 7, 5 ); # 12 random bins [0:9]
+	my $u1 = pdl( -101, 22.876731972822, 22.0445472500778,
+		-26.5999303520772, 27.1019424052675, -26.3532958054284, -101,
+		-29.0518405732623, 23.9856347894982, -29.1397313934237,
+		7.3252320197863, -27.4562734240643 )->inplace->setvaltobad( -101 ); # 12 random values [-50:50]
+	my $v1 = long( 8, 1, 2, 6, 9, 5, 5, 7, 5, 4, 5, 2 ); # 12 random bins [0:9]
+	my $u2 = pdl( 40.4673256586715, -101, -30.3275242788303, -101,
+		39.7762903332339, -38.4575329560239, 1.74879500859113,
+		-4.78760502460922 )->inplace->setvaltobad( -101 ); # 8 random values [-50:50]
+	my $v2 = long( 7, 7, 3, 9, 7, 3, 2, 2 ); # 8 random bins [0:9]
+	my $u3 = pdl( -28.3032696453798, -101, -39.0345665405043,
+		30.4407977872174, -101, 20.1915655828689, -38.1173555823768,
+		-38.3656423025752, -5.98602407355919, -31.3445025843915,
+		2.0134617981693, -26.869783026164 )->inplace->setvaltobad( -101 ); # 12 random values [-50:50]
+	my $v3 = long( 1, 8, 9, 6, 8, 8, 5, 2, 3, 6, 1, 4 ); # 12 random bins [0:9]
+	my $u4 = pdl( 34.9733702362666, -101, -101, -101, 38.7278135049009,
+		0.494848736214237, 25.3478221389223 )->inplace->setvaltobad( -101 ); # 7 random values [-50:50]
+	my $v4 = long( 4, 1, 2, 3, 1, 5, 8 ); # 7 random bins [0:9]
+	my $N = 51;
+	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
+	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
+	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
+	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	for my $class ( 'PDL::NDBin::Func::ICount',
+			'PDL::NDBin::Func::ISum',
+			'PDL::NDBin::Func::IAvg',
+			'PDL::NDBin::Func::IStdDev' )
+	{
+		my $obj = $class->new( $N );
+		$obj->process( $u0, $v0 );
+		$obj->process( $u1, $v1 );
+		$obj->process( $u2, $v2 );
+		$obj->process( $u3, $v3 );
+		$obj->process( $u4, $v4 );
+		my $got = $obj->result;
+		$obj = $class->new( $N );
+		$obj->process( $u, $v );
+		my $expected = $obj->result;
+		is_pdl( $got, $expected, "repeated invocation of $class equal to concatenation (bad values present)" );
+	}
+}

@@ -65,7 +65,7 @@ sub process
 	# allocate $self->{out} first time round; since the type of
 	# $self->{out} depends on the input data, the allocation is deferred
 	# until we receive the input data
-	unless( $self->{out} ) {
+	unless( defined $self->{out} ) {
 		my $type = $in->type;
 		$type = PDL::long unless $type > PDL::long;
 		$self->{out} = PDL->zeroes( $type, $self->{m} );
