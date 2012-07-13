@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 67;
+use Test::More tests => 72;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -25,6 +25,22 @@ sub apply
 
 # variable declarations
 my ( $expected, $got, $N, $x, $y, @u, @v, $obj );
+
+#
+#
+#
+note 'SETUP';
+{
+	my %plugins = map { $_ => 1 } PDL::NDBin::Func->plugins;
+	note 'registered plugins: ', join ', ' => keys %plugins;
+	for my $p ( qw(	PDL::NDBin::Func::ICount  PDL::NDBin::Func::ISum
+			PDL::NDBin::Func::IAvg    PDL::NDBin::Func::IStdDev ) )
+	{
+		ok( $plugins{ $p }, "$p is there" );
+		delete $plugins{ $p };
+	}
+	ok( ! %plugins, 'no more unknown plugins left' ) or diag 'remaining plugins: ', join ', ' => keys %plugins;
+}
 
 #
 # OUTPUT PIDDLE RETURN TYPE
