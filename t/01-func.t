@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 66;
+use Test::More tests => 67;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -217,6 +217,9 @@ $x = $x->setbadif( $x < .5 );
 $y = long( @v );
 
 #
+$expected = apply( $x, $y, $N, \&ngood )->long;
+$got = PDL::NDBin::Func::icount( $x, $y, $N );
+is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::icount with ngood()" );
 $expected = apply( $x, $y, $N, \&sum );
 $got = PDL::NDBin::Func::isum( $x, $y, $N );
 is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::isum with sum()" );
