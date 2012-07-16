@@ -241,6 +241,14 @@ sub new
 	return bless $self, $class;
 }
 
+=head2 output()
+
+Return the output computed by the previous steps. Each output variable is
+reshaped to make the number of dimensions equal to the number of axes, and the
+extent of each dimension equal to the number of bins along the axis.
+
+=cut
+
 sub output
 {
 	my $self = shift;
