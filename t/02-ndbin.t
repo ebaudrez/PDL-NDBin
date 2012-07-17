@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 89;
+use Test::More tests => 91;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -374,10 +374,16 @@ $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 	0.3187, 0.1655, 0.5777, 0.3047 );
 $expected = hist( $x )->long;		# reference values computed by PDL's built-in `hist'
 $got = ndbin( $x );
-is_pdl( $got, $expected, 'cross-check with hist' );
+is_pdl( $got, $expected, 'cross-check $x with hist' );
+$expected = hist( $y )->long;
+$got = ndbin( $y );
+is_pdl( $got, $expected, 'cross-check $y with hist' );
 $expected = hist( $x, 0, 1, 0.1 )->long;
 $got = ndbin( $x, 0, 1, 0.1 );
-is_pdl( $got, $expected, 'cross-check with hist, with (min,max,step) supplied' );
+is_pdl( $got, $expected, 'cross-check $x with hist, with (min,max,step) supplied' );
+$expected = hist( $y, 0, 1, 0.1 )->long;
+$got = ndbin( $y, 0, 1, 0.1 );
+is_pdl( $got, $expected, 'cross-check $y with hist, with (min,max,step) supplied' );
 $expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long;
 $got = ndbin( $x, { step => .1, min => 0, n => 10 },
 	      $y, { step => .1, min => 0, n => 10 } );
