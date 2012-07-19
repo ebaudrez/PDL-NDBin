@@ -165,21 +165,20 @@ sub new
 {
 	my $class = shift;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
-	$log->debug( '@_ = ' . Dumper \@_ ) if $log->is_debug;
-	PDL::Core::barf( 'no arguments' ) unless @_;
+	my %args = @_;
+	$log->debug( 'arguments = ' . Dumper \%args ) if $log->is_debug;
+	PDL::Core::barf( 'no arguments' ) unless %args;
 
-	# consume and process axes
-	# axes require three numerical specifications following it
-	my $p = 0;		# argument pointer
+	# process axes
 	my $hash = 0;		# hashed bin number
 	my @n;			# number of bins in each direction
 	# find the last axis and hash all axes into one dimension, working our
 	# way backwards from the last to the first axis
-	while( $p+3 < @_ && eval { $_[$p]->isa('PDL') } && ! grep ref, @_[ $p+1 .. $p+3 ] ) { $p += 4 }
-	while( $p -= 4, $p >= 0 ) {
-		my ( $pdl, $step, $min, $n ) = splice @_, $p, 4;
+	for my $axis ( reverse @{ $args{axes} } ) {
+		PDL::Core::barf( "too few arguments for axis: @$axis" ) unless @$axis == 4;
+		my( $pdl, $step, $min, $n ) = @$axis;
 		$log->debug( 'input (' . $pdl->info . ') = ' . $pdl ) if $log->is_debug;
-		$log->debug( "bin with parameters $step, $min, $n" ) if $log->is_debug;
+		$log->debug( "bin with parameters step=$step, min=$min, n=$n" ) if $log->is_debug;
 		unshift @n, $n;				# remember that we are working backwards!
 		my $binned = PDL::long( ($pdl - $min)/$step );
 		$binned->inplace->clip( 0, $n-1 );
@@ -188,33 +187,16 @@ sub new
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 
-	#
-	my ( $loop, @vars, @actions );
-	if( @_ ) {
-		# if there are arguments remaining, they must specify the loop
-		# sub and the variables and associated actions
+	# if the loop sub and variables are not specified, assume the default
+	# behaviour of PDL::histogram() and PDL::histogram2d()
+	$args{loop} ||= \&fast_loop;
+	$args{vars} = [ [ $hash, \&PDL::NDBin::Func::icount ] ] unless $args{vars} && @{ $args{vars} };
 
-		# consume loop action
-		if( @_ >= 1 && ref $_[0] eq 'CODE' ) { $loop = shift }
-		else { PDL::Core::barf( 'need the loop sub to be specified explicitly' ) }
-
-		# consume variables
-		# variables require an action following it
-		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ref $_[1] eq 'CODE' ) {
-			push @vars, shift;
-			push @actions, shift;
-		}
-	}
-	else {
-		# if there are no arguments remaining, assume the default
-		# behaviour of PDL::histogram() and PDL::histogram2d()
-		$loop = \&fast_loop;
-		@vars = ( $hash );
-		@actions = ( \&PDL::NDBin::Func::icount );
-	}
-
-	# any arguments left indicate a usage error
-	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
+	# for compatibility with existing code
+	# XXX this should be removed
+	my $loop = $args{loop};
+	my @vars = map { $_->[0] } @{ $args{vars} };
+	my @actions = map { $_->[1] } @{ $args{vars} };
 
 	# size & intialize output array
 	my $N = reduce { $a * $b } @n; # total number of bins
@@ -260,7 +242,30 @@ sub output
 sub ndbinning
 {
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
-	my $binner = __PACKAGE__->new( @_ );
+	# consume and process axes
+	# axes require three numerical specifications following it
+	my @axes;
+	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
+		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
+		push @axes, [ $pdl, $step, $min, $n ];
+	}
+	# consume and process loop sub and variables
+	my( $loop, @vars );
+	if( @_ ) {
+		# consume loop action
+		if( @_ >= 1 && ref $_[0] eq 'CODE' ) { $loop = shift }
+		else { PDL::Core::barf( 'need the loop sub to be specified explicitly' ) }
+
+		# consume variables
+		# variables require an action following it
+		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ref $_[1] eq 'CODE' ) {
+			my( $pdl, $action ) = splice @_, 0, 2;
+			push @vars, [ $pdl, $action ];
+		}
+	}
+	# any arguments left indicate a usage error
+	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
+	my $binner = __PACKAGE__->new( axes => \@axes, loop => $loop, vars => \@vars );
 	return $binner->output;
 }
 
