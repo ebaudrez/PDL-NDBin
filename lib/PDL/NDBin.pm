@@ -219,17 +219,12 @@ sub new
 	# size & intialize output array
 	my $N = reduce { $a * $b } @n; # total number of bins
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
-	my @output;
-	if( defined wantarray ) {
-		# XXX not ok: preallocation with != null thwarts PDL's
-		# automatic type determination; on the other hand, PDL->null
-		# won't let me do setvaltobad (which I need for bin skipping),
-		# and PDL->null has the wrong dimensions (I thought they were
-		# sized automatically??????)
-		#@output = map { PDL->null } wantarray ? @vars : $vars[0];
-		@output = map { PDL->zeroes( $_->type, $N ) } wantarray ? @vars : $vars[0];
-	}
-	for my $pdl ( @output ) { $pdl->inplace->setvaltobad( 0 ) }
+	# XXX not ok: preallocation with != null thwarts PDL's automatic type
+	# determination; on the other hand, PDL->null won't let me do
+	# setvaltobad (which I need for bin skipping), and PDL->null has the
+	# wrong dimensions (I thought they were sized automatically??????)
+	#my @output = map { PDL->null } @vars;
+	my @output = map { PDL->zeroes( $_->type, $N )->setbadif( 1 ) } @vars;
 
 	# now visit all the bins
 	$loop->( \@n, $N, $hash, \@vars, \@actions, \@output );
