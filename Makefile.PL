@@ -10,5 +10,6 @@ WriteMakefile(
 		'Math::Round'       => 0,
 		'Module::Pluggable' => 0,
 		'PDL'               => 0,
+		'UUID::Tiny'        => 0,
 	},
 );

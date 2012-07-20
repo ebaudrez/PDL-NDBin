@@ -15,6 +15,7 @@ use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Func;
 use Log::Any;
 use Data::Dumper;
+use UUID::Tiny qw( :std );
 
 =head1 VERSION
 
@@ -168,15 +169,34 @@ sub new
 	my %args = @_;
 	$log->debug( 'arguments = ' . Dumper \%args ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless %args;
+	PDL::Core::barf( "too few arguments for axis: @$_" ) for grep { @$_ != 4 } @{ $args{axes} };
+	if( ref $args{vars} ) {
+		PDL::Core::barf( "too few arguments for variable: @$_" ) for grep { @$_ != 2 } @{ $args{vars} };
+	}
+	# if the loop sub and variables are not specified, assume the default
+	# behaviour of PDL::histogram() and PDL::histogram2d()
+	my $self = {
+		axes => $args{axes},
+		loop => $args{loop} || \&fast_loop,
+		vars => $args{vars},
+	};
+	return bless $self, $class;
+}
+
+sub process
+{
+	my $self = shift;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	my %pdls = @_;
 
 	# process axes
 	my $hash = 0;		# hashed bin number
 	my @n;			# number of bins in each direction
 	# find the last axis and hash all axes into one dimension, working our
 	# way backwards from the last to the first axis
-	for my $axis ( reverse @{ $args{axes} } ) {
-		PDL::Core::barf( "too few arguments for axis: @$axis" ) unless @$axis == 4;
-		my( $pdl, $step, $min, $n ) = @$axis;
+	for my $axis ( reverse @{ $self->{axes} } ) {
+		my( $name, $step, $min, $n ) = @$axis;
+		my $pdl = $pdls{ $name };
 		$log->debug( 'input (' . $pdl->info . ') = ' . $pdl ) if $log->is_debug;
 		$log->debug( "bin with parameters step=$step, min=$min, n=$n" ) if $log->is_debug;
 		unshift @n, $n;				# remember that we are working backwards!
@@ -186,17 +206,20 @@ sub new
 		$log->debug( 'binned coordinates (' . $binned->info . ') = ' . $binned ) if $log->is_debug;
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
-
-	# if the loop sub and variables are not specified, assume the default
-	# behaviour of PDL::histogram() and PDL::histogram2d()
-	$args{loop} ||= \&fast_loop;
-	$args{vars} = [ [ $hash, \&PDL::NDBin::Func::icount ] ] unless $args{vars} && @{ $args{vars} };
+	$self->{n} = \@n;
 
 	# for compatibility with existing code
 	# XXX this should be removed
-	my $loop = $args{loop};
-	my @vars = map { $_->[0] } @{ $args{vars} };
-	my @actions = map { $_->[1] } @{ $args{vars} };
+	my $loop = $self->{loop};
+	my( @vars, @actions );
+	if( $self->{vars} && @{ $self->{vars} } ) {
+		@vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
+		@actions = map { $_->[1] } @{ $self->{vars} };
+	}
+	else {
+		@vars = ( $hash );
+		@actions = ( \&PDL::NDBin::Func::icount );
+	}
 
 	# size & intialize output array
 	my $N = reduce { $a * $b } @n; # total number of bins
@@ -207,15 +230,10 @@ sub new
 	# wrong dimensions (I thought they were sized automatically??????)
 	#my @output = map { PDL->null } @vars;
 	my @output = map { PDL->zeroes( $_->type, $N )->setbadif( 1 ) } @vars;
+	$self->{output} = \@output;
 
 	# now visit all the bins
 	$loop->( \@n, $N, $hash, \@vars, \@actions, \@output );
-
-	my $self = {
-		n      => \@n,
-		output => \@output,
-	};
-	return bless $self, $class;
 }
 
 =head2 output()
@@ -239,15 +257,22 @@ sub output
 	return wantarray ? @$output : $output->[0];
 }
 
+# generate a random, hopefully unique name for a pdl
+sub _random_name { create_uuid( UUID_RANDOM ) }
+
 sub ndbinning
 {
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	# store the mapping from name to pdl
+	my %pdls;
 	# consume and process axes
 	# axes require three numerical specifications following it
 	my @axes;
 	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
 		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
-		push @axes, [ $pdl, $step, $min, $n ];
+		my $name = _random_name;
+		$pdls{ $name } = $pdl;
+		push @axes, [ $name, $step, $min, $n ];
 	}
 	# consume and process loop sub and variables
 	my( $loop, @vars );
@@ -260,12 +285,15 @@ sub ndbinning
 		# variables require an action following it
 		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ref $_[1] eq 'CODE' ) {
 			my( $pdl, $action ) = splice @_, 0, 2;
-			push @vars, [ $pdl, $action ];
+			my $name = _random_name;
+			$pdls{ $name } = $pdl;
+			push @vars, [ $name, $action ];
 		}
 	}
 	# any arguments left indicate a usage error
 	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
 	my $binner = __PACKAGE__->new( axes => \@axes, loop => $loop, vars => \@vars );
+	$binner->process( %pdls );
 	return $binner->output;
 }
 
