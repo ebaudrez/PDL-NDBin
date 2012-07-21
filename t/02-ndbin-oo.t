@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 31;
+use Test::More tests => 36;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -58,6 +58,13 @@ dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 				     [ 'dummy', 0 ] ] ) } 'wrong arguments: null, 0, 0, 1, null, 0';
 
+# return values
+$binner = PDL::NDBin->new( axes => [ [ u => (1,0,10) ] ] );
+ok( $binner, 'constructor returns a value' );
+isa_ok( $binner, 'PDL::NDBin', 'return value from new()' );
+isa_ok( $binner->process( u => sequence(10) ), 'PDL::NDBin', 'return value from process()' );
+isa_ok( $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PDL::NDBin', 'return value from chained calls to process()' );
+
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );
 # by default I<histogram> returns a piddle of the same type as the axis,
@@ -88,6 +95,12 @@ $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'different syntax, using fast loop' );
+
+# this idiom with only chained calls should work
+$x = pdl( 1,1,2 );
+$expected = long( 0,2,1 );
+$got = PDL::NDBin->new( axes => [ [ v => (1,0,3) ] ] )->process( v => $x )->output;
+is_pdl( $got, $expected, 'all calls chained' );
 
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );

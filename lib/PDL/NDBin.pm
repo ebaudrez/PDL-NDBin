@@ -234,6 +234,8 @@ sub process
 
 	# now visit all the bins
 	$loop->( \@n, $N, $hash, \@vars, \@actions, \@output );
+
+	return $self;
 }
 
 =head2 output()
