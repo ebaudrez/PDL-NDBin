@@ -6,17 +6,20 @@ use List::Util qw( reduce );
 my $badfrac;
 my $maxbin = 10;
 my $maxval = 50;
+my $nobins;
 my $rows = 5;
 my $usage = <<EOF;
 Usage:  $0  [ options ]
 
 Options:
-	--bad  | -b <x>		Fraction <x> of the generated values will be
+	--bad     | -b <x>	Fraction <x> of the generated values will be
 				bad values (default: off)
-	--rows | -r <n>		Use <n> rows (default: $rows)
+	--no-bins | -n		Do not output the bin numbers
+	--rows    | -r <n>	Use <n> rows (default: $rows)
 EOF
 GetOptions(
 	'bad|b=f'  => \$badfrac,
+	'nobins|n' => \$nobins,
 	'rows|r=i' => \$rows,
 ) or die $usage;
 my $badval = -2 * $maxval - 1;
@@ -35,9 +38,11 @@ for( my $i = 0; $i < @howmany; $i++ ) {
 		join( ", ", @$v ),
 		( $badfrac ? "->inplace->setvaltobad( $badval )" : '' ),
 		scalar @$v;
-	my $b = $bins[ $i ];
-	printf "my \$v$i = long( %s ); # %d random bins [0:@{ [ $maxbin - 1 ] }]\n",
-		join( ", ", @$b ), scalar @$b;
+	if( ! $nobins) {
+		my $b = $bins[ $i ];
+		printf "my \$v$i = long( %s ); # %d random bins [0:@{ [ $maxbin - 1 ] }]\n",
+			join( ", ", @$b ), scalar @$b;
+	}
 }
 printf "my \$N = %d;\n", reduce { $a + $b } 0, @howmany;
 
