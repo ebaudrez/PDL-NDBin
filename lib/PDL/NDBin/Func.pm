@@ -11,7 +11,6 @@ use warnings;
 use Exporter;
 our @ISA = qw( Exporter );
 use PDL;
-use PDL::NDBin::Func::PP;
 use Carp;
 use Module::Pluggable require     => 1,
 		      search_path => [ 'PDL::NDBin::Func' ],
