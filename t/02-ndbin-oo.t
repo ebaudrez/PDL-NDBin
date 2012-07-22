@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 36;
+use Test::More tests => 42;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -190,3 +190,43 @@ $binner = PDL::NDBin->new( axes => [ [ 'x', .1, 0, 10 ],
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
 is_pdl( $got, $expected, 'cross-check with histogram2d' );
+
+#
+# CONCATENATION
+#
+note 'CONCATENATION';
+{
+	my $u0 = pdl( -39.5879651748746, -1.61266445735144, -101, -101,
+		14.8418955069236, -101, -8.26646389031183, 25.088753865478,
+		23.8853755713542, -101, -21.6533850376752 )->inplace->setvaltobad( -101); # 11 random values [-50:50]
+	my $u1 = pdl( 45.610085425162, -44.8090783225684, -27.334777692904,
+		34.0608028167306, -101, -101, -2.56326878236344,
+		-20.1093765242415, -36.7126503801988 )->inplace->setvaltobad( -101 ); # 9 random values [-50:50]
+	my $u2 = pdl( -23.9802424215636, -45.4591971834436, -1.27709553320408,
+		36.9333932550145, -101, -23.1580394609267 )->inplace->setvaltobad( -101 ); # 6 random values [-50:50]
+	my $u3 = pdl( 15.3884236956522, -17.9424192631203, -10.0026229609036,
+		-4.13046468116249, 40.3056552926195, -13.8882183825032,
+		26.2092994583604, -28.9333103012069, -101, 47.7954550755687,
+		42.5291780050966, -101, 12.06914489876 )->inplace->setvaltobad( -101 ); # 13 random values [-50:50]
+	my $u4 = pdl( 8.28086562230297, 46.8340738920247, -37.15661354396 ); # 3 random values [-50:50]
+	my $N = 42;
+	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
+	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
+	ok( $u->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	TODO: {
+		local $TODO = 'yet to implement concatenation';
+		for my $class ( PDL::NDBin::Func->plugins ) {
+			# the eval's inside are only required as long as passing a
+			# class name as an action doesn't work - they should disappear
+			my $binner = PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
+						      vars => [ [ u => $class ] ] );
+			for my $var ( $u0, $u1, $u2, $u3, $u4 ) { eval { $binner->process( u => $var ) } };
+			my $got = $binner->output;
+			my $expected = eval { PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
+							       vars => [ [ u => $class ] ] )
+							->process( u => $u )
+							->output };
+			is_pdl( $got, $expected, "repeated invocation of process() equal to concatenation with action $class" );
+		}
+	}
+}
