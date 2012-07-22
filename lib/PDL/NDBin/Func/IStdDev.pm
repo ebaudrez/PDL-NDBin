@@ -9,13 +9,7 @@ sub new
 {
 	my $class = shift;
 	my $m = shift;
-	my $self = {
-		avg   => PDL->zeroes( PDL::double, $m ),
-		count => PDL->zeroes( PDL::long, $m ),
-		m     => $m,
-		out   => PDL->zeroes( PDL::double, $m ),
-	};
-	return bless $self, $class;
+	return bless { m => $m }, $class;
 }
 
 sub process
@@ -23,6 +17,9 @@ sub process
 	my $self = shift;
 	my $in = shift;
 	my $ind = shift;
+	$self->{out} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{out};
+	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
+	$self->{avg} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{avg};
 	PDL::NDBin::Func::PP::_istddev_loop( $in, $ind, $self->{out}, $self->{count}, $self->{avg}, $self->{m} );
 }
 

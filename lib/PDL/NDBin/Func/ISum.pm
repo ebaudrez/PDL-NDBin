@@ -9,11 +9,7 @@ sub new
 {
 	my $class = shift;
 	my $m = shift;
-	my $self = {
-		count => PDL->zeroes( PDL::long, $m ),
-		m     => $m,
-	};
-	return bless $self, $class;
+	return bless { m => $m }, $class;
 }
 
 sub process
@@ -21,14 +17,8 @@ sub process
 	my $self = shift;
 	my $in = shift;
 	my $ind = shift;
-	# allocate $self->{out} first time round; since the type of
-	# $self->{out} depends on the input data, the allocation is deferred
-	# until we receive the input data
-	unless( defined $self->{out} ) {
-		my $type = $in->type;
-		$type = PDL::long unless $type > PDL::long;
-		$self->{out} = PDL->zeroes( $type, $self->{m} );
-	}
+	$self->{out} = PDL->zeroes( $in->type < PDL::long() ? PDL::long : $in->type, $self->{m} ) unless defined $self->{out};
+	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
 	PDL::NDBin::Func::PP::_isum_loop( $in, $ind, $self->{out}, $self->{count}, $self->{m} );
 }
 

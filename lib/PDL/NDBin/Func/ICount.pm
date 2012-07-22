@@ -9,11 +9,7 @@ sub new
 {
 	my $class = shift;
 	my $m = shift;
-	my $self = {
-		m   => $m,
-		out => PDL->zeroes( PDL::long, $m ),
-	};
-	return bless $self, $class;
+	return bless { m => $m }, $class;
 }
 
 sub process
@@ -21,6 +17,7 @@ sub process
 	my $self = shift;
 	my $in = shift;
 	my $ind = shift;
+	$self->{out} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{out};
 	PDL::NDBin::Func::PP::_icount_loop( $in, $ind, $self->{out}, $self->{m} );
 }
 
