@@ -10,12 +10,12 @@ use strict;
 use warnings;
 use Exporter;
 our @ISA = qw( Exporter );
-use PDL;
 use Carp;
 use Module::Pluggable require     => 1,
 		      search_path => [ 'PDL::NDBin::Func' ],
 		      except      => [ 'PDL::NDBin::Func::PP' ];
 
+# create exportable wrapper functions around the classes
 my @plugins = __PACKAGE__->plugins;
 my @functions;
 for my $plugin ( @plugins )
