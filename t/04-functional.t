@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 93;
+use Test::More tests => 91;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -227,7 +227,6 @@ lives_ok { ndbin( AXES => pdl( 1,2 ) ) } 'keyword AXES';
 lives_ok { ndbin( pdl( 1,2 ), VARS => pdl( 3,4 ) ) } 'keyword VALS';
 lives_ok { ndbin( pdl( 1,2 ), DEFAULT_ACTION => sub {} ) } 'keyword DEFAULT_ACTION';
 lives_ok { ndbin( pdl( 1,2 ), SKIP_EMPTY => 0 ) } 'keyword SKIP_EMPTY';
-lives_ok { ndbin( pdl( 1,2 ), PASS_BIN_NUMBERS => 0 ) } 'keyword PASS_BIN_NUMBERS';
 lives_ok { ndbin( pdl( 1,2 ), INDEXER => 0 ) } 'keyword INDEXER';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
@@ -262,8 +261,7 @@ is_pdl( $got, $expected, 'variable with action = debug_action' );
 $got = ndbin( AXES => [ { pdl => $x, step=>1, min=>1, n=>2 },
 			{ pdl => $y, step=>1, min=>1, n=>4 } ],
 	      VARS => [ { pdl => PDL::null->double, action => \&debug_action } ],
-	      SKIP_EMPTY => 0,
-	      PASS_BIN_NUMBERS => 0 );
+	      SKIP_EMPTY => 0 );
 is_pdl( $got, $expected, 'variable with action = debug_action, null PDL, and full spec' );
 
 # binning integer data
@@ -325,7 +323,7 @@ $expected = create_bad long, 3;
 lives_ok { $got = ndbin( $x, DEFAULT_ACTION => sub { die } ) } 'exceptions in actions caught properly ...';
 is_pdl( $got, $expected, '... and all values are unset' );
 
-# test bin numbers
+# test action arguments
 $x = pdl( 1,3,3 );
 $y = pdl( 1,3,3 );
 $z = pdl( 9,0,1 );
@@ -333,18 +331,10 @@ $expected = zeroes(2,3,4)->long + 1;
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 3 },
 	      $z => { n => 4 },
-	      DEFAULT_ACTION => sub { @_ },
-	      PASS_BIN_NUMBERS => 0 );
-is_pdl( $got, $expected, 'PASS_BIN_NUMBERS = 0: number of arguments' );
-$expected = zeroes(2,3,4)->long + 1;
-$got = ndbin( $x => { n => 2 },
-	      $y => { n => 3 },
-	      $z => { n => 4 },
-	      DEFAULT_ACTION => sub { @_ },
-	      PASS_BIN_NUMBERS => 1 );
-is_pdl( $got, $expected, 'PASS_BIN_NUMBERS = 1: number of arguments' );
+	      DEFAULT_ACTION => sub { @_ } );
+is_pdl( $got, $expected, 'number of arguments for actions' );
 
-# test passed bin numbers
+# test unhashed bin numbers
 $x = sequence 10;
 $y = sequence 10;
 $z = sequence 10;
@@ -352,9 +342,8 @@ $expected = sequence( 2*5*3 )->long->reshape( 2, 5, 3 );
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 5 },
 	      $z => { n => 3 },
-	      DEFAULT_ACTION => sub { my @u = shift->unhash; $u[0] + 2*$u[1] + 2*5*$u[2] },
-	      PASS_BIN_NUMBERS => 1 );
-is_pdl( $got, $expected, 'PASS_BIN_NUMBERS = 1: bin numbers' );
+	      DEFAULT_ACTION => sub { my @u = shift->unhash; $u[0] + 2*$u[1] + 2*5*$u[2] } );
+is_pdl( $got, $expected, 'bin numbers returned from iterator' );
 
 # test SKIP_EMPTY
 $x = pdl( 1,3,3 );		# 3 bins, but middle bin will be empty

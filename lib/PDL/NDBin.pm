@@ -66,7 +66,7 @@ our @EXPORT_OK = qw( ndbinning ndbin process_axes make_labels );
 our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes make_labels ) ] );
 
 # the list of valid keys
-my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY PASS_BIN_NUMBERS );
+my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY );
 
 # the default loop
 # TODO eliminate $n (@n)
@@ -618,10 +618,9 @@ The arguments to ndbin() should be specified as one or more key-value pairs:
 	       [ ... ] );
 
 The argument list can optionally be enclosed by braces (i.e., an anonymous
-hash). The recognized keys are C<AXES>, C<VARS>, C<DEFAULT_ACTION>,
-C<SKIP_EMPTY>, and C<PASS_BIN_NUMBERS>. They are described in more detail
-below. Any key requiring more than one value, e.g., C<AXES>, must be paired
-with an array reference.
+hash). The recognized keys are C<AXES>, C<VARS>, C<DEFAULT_ACTION>, and
+C<SKIP_EMPTY>. They are described in more detail below. Any key requiring more
+than one value, e.g., C<AXES>, must be paired with an array reference.
 
 For convenience, and for compatibility with hist(), a lot of abbreviations and
 shortcuts are allowed, though. It is allowed to omit the key C<AXES> and the
@@ -734,13 +733,6 @@ Whether to skip empty bins. By default, empty bins are not skipped. You may
 want to use this if the action associated with a variable cannot handle empty
 piddles well.
 
-=item C<PASS_BIN_NUMBERS>
-
-Whether to pass the bin numbers along each axis to the action. By default, this
-is true. You may want to use this if the action associated with a variable
-cannot handle extra arguments, as for instance most of the PDL functions (e.g.,
-avg() or median()).
-
 =back
 
 =head2 Usage examples
@@ -803,7 +795,6 @@ A rather complete example of the interface:
 			 { pdl => $gl_flux,    action => \&do_gl_flux    },
 			 { pdl => $gerb_flux,  action => \&do_gerb_flux  } ],
 	       SKIP_EMPTY => 0,		# do not skip empty bins (which is the default)
-	       PASS_BIN_NUMBERS => 1,	# do pass bin numbers to the actions (which is the default)
 	     );
 
 Note that there is no assignment of the return value (in fact, there is none).
@@ -816,7 +807,6 @@ using the abbreviated interface, write:
 			 $gl_flux,    \&do_gl_flux,
 			 $gerb_flux,  \&do_gerb_flux ],
 	       SKIP_EMPTY => 0,		# do not skip empty bins
-	       PASS_BIN_NUMBERS => 1,	# do pass bin numbers to the actions
 	     );
 
 More simple examples:
@@ -832,8 +822,7 @@ averages of the binned fluxes:
 			AXES => [ { pdl => $longitude, round => 10, step => 20 },
 				  { pdl => $latitude,  round => 10, step => 20 } ],
 			VARS => [ $flux ],
-			DEFAULT_ACTION => \&avg,
-			PASS_BIN_NUMBERS => 0,		# avg() does not like extra args
+			DEFAULT_ACTION => sub { shift->selection->avg },
 	 	      );
 
 =cut
@@ -841,12 +830,9 @@ averages of the binned fluxes:
 =head2 Actions
 
 Some points to note about the variable actions. Every action will be called
-with the following arguments:
+with the following argument:
 
-	$action->( $selection, $bin_number_along_axis0, $bin_number_along_axis1, ... );
-
-There are as many bin numbers as there are axes. The bin numbers are absent,
-however, if the option C<< PASS_BIN_NUMBERS => 0 >> has been passed to ndbin().
+	$action->( $iterator );
 
 It is also important to note that the actions will be called in the order they
 are given for each bin, before proceeding to the next bin. You can depend on
@@ -942,12 +928,11 @@ sub ndbin
 	# variables
 	my $indexer = $args->{INDEXER} // 1;			# by default is true
 	my $default_action = $args->{DEFAULT_ACTION} || sub { shift->want->nelem };
-	my $pass_bin_numbers = $args->{PASS_BIN_NUMBERS} // 1;	# by default is true
 	my $skip_empty = $args->{SKIP_EMPTY};			# by default is false
 	my @vars = expand_vars( expand_value $args->{VARS} );
 	# the presence of any of these keys requires a variable, and the
 	# indexer to be operational
-	if( ! @vars and grep { /^(PASS_BIN_NUMBERS|SKIP_EMPTY)$/ } keys %$args ) {
+	if( ! @vars and grep { /^(SKIP_EMPTY)$/ } keys %$args ) {
 		$indexer ||= 1;
 		@vars = ( { pdl => PDL->null->long } );
 	}
@@ -957,12 +942,11 @@ sub ndbin
 	}
 	for my $var ( @vars ) {
 		my $action = $var->{action} || $default_action;
-		if( ! $pass_bin_numbers || $skip_empty ) {
-			# wrap $action if either of $pass_bin_numbers and
-			# $skip_empty differs from their default value
+		if( $skip_empty ) {
+			# wrap $action if $skip_empty differs from its default value
 			$var->{action} = sub {
-				return if $skip_empty && ! $_[0]->want->nelem;
-				$action->( $pass_bin_numbers ? @_ : $_[0] );
+				return unless $_[0]->want->nelem;
+				$action->( @_ );
 			};
 		}
 		else { $var->{action} = $action }
