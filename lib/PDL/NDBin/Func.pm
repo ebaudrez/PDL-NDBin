@@ -23,12 +23,13 @@ for my $plugin ( @plugins )
 	my $function = do { $plugin =~ /::(\w+)$/; lc $1 };
 	no strict 'refs';
 	*$function = sub {
-		my $in = shift;
-		my $ind = shift;
-		my $m = shift;
+		my $iter = shift;
 		confess 'too many arguments' if @_;
-		my $obj = $plugin->new( $m );
-		$obj->process( $in, $ind );
+		my $obj = $plugin->new( $iter->nbins );
+		$obj->process( $iter->data, $iter->hash );
+		# as the plugin processes all bins at once, every variable
+		# needs to be visited only once
+		$iter->var_active( 0 );
 		return $obj->result;
 	};
 	push @functions, $function;

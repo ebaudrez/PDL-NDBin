@@ -13,6 +13,7 @@ use List::Util qw( reduce );
 use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Func;
+use PDL::NDBin::Iterator;
 use Log::Any;
 use Data::Dumper;
 use UUID::Tiny qw( :std );
@@ -72,20 +73,17 @@ my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY 
 sub default_loop
 {
 	my ( $n, $N, $hash, $vars, $actions, $output ) = @_;
-	for my $bin ( 0 .. $N-1 ) {
-		my $want = PDL::which( $hash == $bin );
-		# unhash bin number: yields bin number along each axis
-		my $q = $bin; # quotient
-		my @unhash = map { ( $q, my $r ) = do { use integer; ( $q / $_, $q % $_ ) }; $r } @$n;
-		for my $i ( 0 .. $#$vars ) {
-			my $selection = $vars->[$i]->index( $want );
-			# catch exceptions; one particularly difficult sort of
-			# exception is indexing on empty piddles: this may
-			# throw an exception, but only when the selection is
-			# evaluated (which is inside the action).
-			my $value = eval { $actions->[$i]->( $selection, @unhash ) };
-			if( defined $output->[$i] && defined $value ) { $output->[$i]->set( $bin, $value ) }
-		}
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	$log->debug( 'using default loop' );
+	my $iter = PDL::NDBin::Iterator->new( $n, $vars, $hash );
+	$log->debug( 'iterator object created: ' . Dumper $iter );
+	while( my( $bin, $i ) = $iter->next ) {
+		# catch exceptions; one particularly difficult sort of
+		# exception is indexing on empty piddles: this may
+		# throw an exception, but only when the selection is
+		# evaluated (which is inside the action).
+		my $value = eval { $actions->[$i]->( $iter ) };
+		if( defined $output->[$i] && defined $value ) { $output->[$i]->set( $bin, $value ) }
 	}
 };
 
@@ -95,12 +93,16 @@ sub default_loop
 sub fast_loop
 {
 	my ( $n, $N, $hash, $vars, $actions, $output ) = @_;
-	for my $i ( 0 .. $#$vars ) {
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	$log->debug( 'using fast loop' );
+	my $iter = PDL::NDBin::Iterator->new( $n, $vars, $hash );
+	$log->debug( 'iterator object created: ' . Dumper $iter );
+	while( my( $bin, $i ) = $iter->next ) {
 		if( defined $output->[$i] ) {
-			$output->[$i] = $actions->[$i]->( $vars->[$i], $hash, $N );
+			$output->[$i] = $actions->[$i]->( $iter );
 		}
 		else {
-			$actions->[$i]->( $vars->[$i], $hash, $N );
+			$actions->[$i]->( $iter );
 		}
 	}
 }
@@ -939,7 +941,7 @@ sub ndbin
 
 	# variables
 	my $indexer = $args->{INDEXER} // 1;			# by default is true
-	my $default_action = $args->{DEFAULT_ACTION} || sub { shift->nelem };
+	my $default_action = $args->{DEFAULT_ACTION} || sub { shift->want->nelem };
 	my $pass_bin_numbers = $args->{PASS_BIN_NUMBERS} // 1;	# by default is true
 	my $skip_empty = $args->{SKIP_EMPTY};			# by default is false
 	my @vars = expand_vars( expand_value $args->{VARS} );
@@ -959,7 +961,7 @@ sub ndbin
 			# wrap $action if either of $pass_bin_numbers and
 			# $skip_empty differs from their default value
 			$var->{action} = sub {
-				return if $skip_empty && ! $_[0]->nelem;
+				return if $skip_empty && ! $_[0]->want->nelem;
 				$action->( $pass_bin_numbers ? @_ : $_[0] );
 			};
 		}

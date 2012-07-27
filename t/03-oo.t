@@ -76,7 +76,7 @@ $got = $binner->output;
 is_pdl( $got, $expected, 'example from PDL::histogram' );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ],
 			   loop => \&PDL::NDBin::default_loop,
-			   vars => [ [ 'z', sub { shift->nelem } ] ] );
+			   vars => [ [ 'z', sub { shift->want->nelem } ] ] );
 $binner->process( x => $x, z => zeroes( long, $x->nelem ) );
 $got = $binner->output;
 is_pdl( $got, $expected, 'variable and action specified explicitly' );
@@ -84,7 +84,7 @@ $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
 			   loop => \&PDL::NDBin::default_loop,
-			   vars => [ [ x => sub { shift->nelem } ] ] );
+			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'different syntax' );
@@ -105,7 +105,7 @@ is_pdl( $got, $expected, 'all calls chained' );
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );
 $y = pdl( 2,1,1,1,1 );
-$expected = long( [0,0,0], 
+$expected = long( [0,0,0],
 		  [0,2,2],
 		  [0,1,0] );
 $binner = PDL::NDBin->new( axes => [ [ x => (1,0,3) ],
@@ -138,7 +138,7 @@ $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-
 $expected = short( 8,9,1,0,5 );
 $binner = PDL::NDBin->new( axes => [ [ x => (1,2,5) ] ],
 			   loop => \&PDL::NDBin::default_loop,
-			   vars => [ [ x => sub { shift->nelem } ] ] );
+			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'binning integer data: step = 1' );
@@ -153,7 +153,7 @@ $x = sequence 21;
 $expected = double( 1,4,7,10,13,16,19 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
 			   loop => \&PDL::NDBin::default_loop,
-			   vars => [ [ 'x', sub { shift->avg } ] ] );
+			   vars => [ [ 'x', sub { shift->selection->avg } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'variable with action = average' );
@@ -167,7 +167,7 @@ $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1,3,5 ] ],
 			   loop => \&PDL::NDBin::default_loop,
-			   vars => [ [ 'x', sub { shift->nelem || undef } ] ] );
+			   vars => [ [ 'x', sub { shift->want->nelem || undef } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'empty bins unset' ); # cannot be achieved with fast loop

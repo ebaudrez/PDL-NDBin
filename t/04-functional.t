@@ -27,7 +27,7 @@ sub is_deeply_without_pdl
 
 sub debug_action
 {
-	my $pdl = shift;
+	my $iter = shift;
 	# Piddle operations can be dangerous: when applying them to the result
 	# of an index operation on an empty piddle, they may throw an
 	# exception. Empty piddles are used, among others, when an ordinary
@@ -43,17 +43,17 @@ sub debug_action
 	# maximum and stringification may cause problems. It seems I cannot
 	# prevent min() and max() from throwing, even when made conditional
 	# with isempty() :-(
-	my $n = $pdl->nelem;
+	my $n = $iter->want->nelem;
 	my ( $min, $max ) = ( '-' x 10, '-' x 10 );
 	if( $n ) {
-		$min = eval { sprintf '%10.4f', $pdl->min } // $min;
-		$max = eval { sprintf '%10.4f', $pdl->max } // $min;
+		$min = eval { sprintf '%10.4f', $iter->selection->min } // $min;
+		$max = eval { sprintf '%10.4f', $iter->selection->max } // $min;
 	}
 	note "bin (",
 	     join( ',', map { sprintf "%3d", $_ } @_ ),
 	     sprintf( "): #elements = %6s, ", $n // '<UNDEF>' ),
 	     "range = ($min,$max), elements in bin: ",
-	     eval { "$pdl" } // '<N/A>';
+	     eval { sprintf '%s', $iter->selection } // '<N/A>';
 	return $n;
 }
 
@@ -142,13 +142,13 @@ $got = ndbinning( $x, 1, 0, 3 );
 is_pdl( $got, $expected, 'example from PDL::histogram' );
 $got = ndbinning( $x, 1, 0, 3,
 		  \&PDL::NDBin::default_loop,
-		  zeroes( long, $x->nelem ), sub { shift->nelem } );
+		  zeroes( long, $x->nelem ), sub { shift->want->nelem } );
 is_pdl( $got, $expected, 'variable and action specified explicitly' );
 $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
 $got = ndbinning( $x => ( 1, 0, 3 ),
 		  \&PDL::NDBin::default_loop,
-		  $x => sub { shift->nelem } );
+		  $x => sub { shift->want->nelem } );
 is_pdl( $got, $expected, 'different syntax' );
 $expected = long( 0,2,1 );
 $got = ndbinning( $x => ( 1, 0, 3 ),
@@ -159,7 +159,7 @@ is_pdl( $got, $expected, 'different syntax, using fast loop' );
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );
 $y = pdl( 2,1,1,1,1 );
-$expected = long( [0,0,0], 
+$expected = long( [0,0,0],
 		  [0,2,2],
 		  [0,1,0] );
 $got = ndbinning( $x => (1,0,3),
@@ -184,7 +184,7 @@ $got = ndbinning( $x => (1,1,4) );
 is_pdl( $got, $expected, 'binning integer data: base case' );
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
 $expected = short( 8,9,1,0,5 );
-$got = ndbinning( $x => (1,2,5), \&PDL::NDBin::default_loop, $x => sub { shift->nelem } );
+$got = ndbinning( $x => (1,2,5), \&PDL::NDBin::default_loop, $x => sub { shift->want->nelem } );
 is_pdl( $got, $expected, 'binning integer data: step = 1' );
 $expected = long( 18,1,1,1,2 );
 $got = ndbinning( $x => (2,3,5) );
@@ -193,13 +193,13 @@ is_pdl( $got, $expected, 'binning integer data: step = 2' );
 # more actions & missing/undefined/invalid stuff
 $x = sequence 21;
 $expected = double( 1,4,7,10,13,16,19 );
-$got = ndbinning( $x, 3, 0, 7, \&PDL::NDBin::default_loop, $x, sub { shift->avg } );
+$got = ndbinning( $x, 3, 0, 7, \&PDL::NDBin::default_loop, $x, sub { shift->selection->avg } );
 is_pdl( $got, $expected, 'variable with action = average' );
 $got = ndbinning( $x, 3, 0, 7, \&PDL::NDBin::fast_loop, $x, \&PDL::NDBin::Func::iavg );
 is_pdl( $got, $expected, 'variable with action = average, using fast loop' );
 $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
-$got = ndbinning( $x, 1,3,5, \&PDL::NDBin::default_loop, $x, sub { shift->nelem || undef } );
+$got = ndbinning( $x, 1,3,5, \&PDL::NDBin::default_loop, $x, sub { shift->want->nelem || undef } );
 is_pdl( $got, $expected, 'empty bins unset' ); # cannot be achieved with fast loop
 
 #
@@ -243,7 +243,7 @@ $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
 $got = ndbin( $x, 0,20,1, VARS => $x );
 is_pdl( $got, $expected, 'variable with default action' );
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
-$got = ndbin( $x, 0,20,1, VARS => [ $x => sub { my $pdl = shift; $pdl->nelem ? $pdl->avg : undef } ], INDEXER => 1 );
+$got = ndbin( $x, 0,20,1, VARS => [ $x => sub { my $iter = shift; $iter->want->nelem ? $iter->selection->avg : undef } ], INDEXER => 1 );
 is_pdl( $got, $expected, 'variable with action = average, default loop' );
 $got = ndbin( $x, 0,20,1, VARS => [ $x => \&PDL::NDBin::Func::iavg ], INDEXER => 0 );
 is_pdl( $got, $expected, 'variable with action = average, fast loop' );
@@ -336,7 +336,7 @@ $got = ndbin( $x => { n => 2 },
 	      DEFAULT_ACTION => sub { @_ },
 	      PASS_BIN_NUMBERS => 0 );
 is_pdl( $got, $expected, 'PASS_BIN_NUMBERS = 0: number of arguments' );
-$expected = zeroes(2,3,4)->long + 4;
+$expected = zeroes(2,3,4)->long + 1;
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 3 },
 	      $z => { n => 4 },
@@ -352,7 +352,7 @@ $expected = sequence( 2*5*3 )->long->reshape( 2, 5, 3 );
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 5 },
 	      $z => { n => 3 },
-	      DEFAULT_ACTION => sub { $_[1] + 2*$_[2] + 2*5*$_[3] },
+	      DEFAULT_ACTION => sub { my @u = shift->unhash; $u[0] + 2*$u[1] + 2*5*$u[2] },
 	      PASS_BIN_NUMBERS => 1 );
 is_pdl( $got, $expected, 'PASS_BIN_NUMBERS = 1: bin numbers' );
 
