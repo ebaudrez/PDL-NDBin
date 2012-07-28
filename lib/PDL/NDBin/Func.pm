@@ -26,10 +26,7 @@ for my $plugin ( @plugins )
 		my $iter = shift;
 		confess 'too many arguments' if @_;
 		my $obj = $plugin->new( $iter->nbins );
-		$obj->process( $iter->data, $iter->hash );
-		# as the plugin processes all bins at once, every variable
-		# needs to be visited only once
-		$iter->var_active( 0 );
+		$obj->process( $iter );
 		return $obj->result;
 	};
 	push @functions, $function;

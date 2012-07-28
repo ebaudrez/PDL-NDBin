@@ -28,7 +28,7 @@ sub apply
 sub iter
 {
 	my( $var, $hash, $N ) = @_;
-	my $iter = PDL::NDBin::Iterator->new( [ $N ], [ $var ], $hash );
+	PDL::NDBin::Iterator->new( [ $N ], [ $var ], $hash );
 }
 
 # variable declarations
@@ -290,14 +290,14 @@ note 'CONCATENATION';
 			'PDL::NDBin::Func::IStdDev' )
 	{
 		my $obj = $class->new( $N );
-		$obj->process( $u0, $v0 );
-		$obj->process( $u1, $v1 );
-		$obj->process( $u2, $v2 );
-		$obj->process( $u3, $v3 );
-		$obj->process( $u4, $v4 );
+		$obj->process( iter $u0, $v0, $N );
+		$obj->process( iter $u1, $v1, $N );
+		$obj->process( iter $u2, $v2, $N );
+		$obj->process( iter $u3, $v3, $N );
+		$obj->process( iter $u4, $v4, $N );
 		my $got = $obj->result;
 		$obj = $class->new( $N );
-		$obj->process( $u, $v );
+		$obj->process( iter $u, $v, $N );
 		my $expected = $obj->result;
 		is_pdl( $got, $expected, "repeated invocation of $class equal to concatenation" );
 	}
@@ -338,14 +338,14 @@ SKIP: {
 			'PDL::NDBin::Func::IStdDev' )
 	{
 		my $obj = $class->new( $N );
-		$obj->process( $u0, $v0 );
-		$obj->process( $u1, $v1 );
-		$obj->process( $u2, $v2 );
-		$obj->process( $u3, $v3 );
-		$obj->process( $u4, $v4 );
+		$obj->process( iter $u0, $v0, $N );
+		$obj->process( iter $u1, $v1, $N );
+		$obj->process( iter $u2, $v2, $N );
+		$obj->process( iter $u3, $v3, $N );
+		$obj->process( iter $u4, $v4, $N );
 		my $got = $obj->result;
 		$obj = $class->new( $N );
-		$obj->process( $u, $v );
+		$obj->process( iter $u, $v, $N );
 		my $expected = $obj->result;
 		is_pdl( $got, $expected, "repeated invocation of $class equal to concatenation (bad values present)" );
 	}

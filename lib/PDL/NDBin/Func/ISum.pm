@@ -15,11 +15,14 @@ sub new
 sub process
 {
 	my $self = shift;
-	my $in = shift;
-	my $ind = shift;
-	$self->{out} = PDL->zeroes( $in->type < PDL::long() ? PDL::long : $in->type, $self->{m} ) unless defined $self->{out};
+	my $iter = shift;
+	my $type = $iter->data->type < PDL::long() ? PDL::long : $iter->data->type;
+	$self->{out} = PDL->zeroes( $type, $self->{m} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
-	PDL::NDBin::Func::PP::_isum_loop( $in, $ind, $self->{out}, $self->{count}, $self->{m} );
+	PDL::NDBin::Func::PP::_isum_loop( $iter->data, $iter->hash, $self->{out}, $self->{count}, $self->{m} );
+	# as the plugin processes all bins at once, every variable
+	# needs to be visited only once
+	$iter->var_active( 0 );
 }
 
 sub result
