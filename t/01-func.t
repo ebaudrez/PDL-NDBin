@@ -161,17 +161,17 @@ is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type double" );
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x, $y, $N;
-while( my @r = $iter->next ) { $obj->process( $iter ) }
+while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl( $got, $expected->short, "PDL::NDBin::Func::CodeRef, input type short" );
 $obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->float, $y, $N;
-while( my @r = $iter->next ) { $obj->process( $iter ) }
+while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl( $got, $expected->float, "PDL::NDBin::Func::CodeRef, input type float" );
 $obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->double, $y, $N;
-while( my @r = $iter->next ) { $obj->process( $iter ) }
+while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl( $got, $expected, "PDL::NDBin::Func::CodeRef, input type double" );
 
@@ -223,17 +223,17 @@ is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type 
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x, $y, $N;
-while( my @r = $iter->next ) { $obj->process( $iter ) }
+while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl( $got, $expected->short, "PDL::NDBin::Func::CodeRef with bad values, input type short" );
 $obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->float, $y, $N;
-while( my @r = $iter->next ) { $obj->process( $iter ) }
+while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl( $got, $expected->float, "PDL::NDBin::Func::CodeRef with bad values, input type float" );
 $obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->double, $y, $N;
-while( my @r = $iter->next ) { $obj->process( $iter ) }
+while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl( $got, $expected, "PDL::NDBin::Func::CodeRef with bad values, input type double" );
 

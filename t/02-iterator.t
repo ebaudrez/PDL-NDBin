@@ -32,21 +32,18 @@ while( my @return = $iter->next ) { last if $k-- == 0 }
 is $k, 0, 'next in list context';
 ok $iter->done, 'iteration complete';
 is_deeply [ $iter->next ], [], "doesn't reset";
-TODO: {
-	local $TODO = 'next only works in list context';
-	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
-	$k = 4;
-	while( my $return = $iter->next ) { last if $k-- == 0 }
-	is $k, 0, 'next in scalar context';
-	ok $iter->done, 'iteration complete';
-	is_deeply [ $iter->next ], [], "doesn't reset";
-	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
-	$k = 4;
-	while( $iter->next ) { last if $k-- == 0 }
-	is $k, 0, 'next in boolean context';
-	ok $iter->done, 'iteration complete';
-	is_deeply [ $iter->next ], [], "doesn't reset";
-}
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$k = 4;
+while( my $return = $iter->next ) { last if $k-- == 0 }
+is $k, 0, 'next in scalar context';
+ok $iter->done, 'iteration complete';
+is_deeply [ $iter->next ], [], "doesn't reset";
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$k = 4;
+while( $iter->next ) { last if $k-- == 0 }
+is $k, 0, 'next in boolean context';
+ok $iter->done, 'iteration complete';
+is_deeply [ $iter->next ], [], "doesn't reset";
 
 #
 @bins = ( 4 );

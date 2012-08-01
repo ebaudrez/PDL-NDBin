@@ -46,7 +46,7 @@ sub next
 		( $bin, $var ) = $self->next1;
 		return if $self->done;
 	} until $self->var_active;
-	return $bin, $var;
+	return wantarray ? ($bin, $var) : !$self->done;
 }
 
 sub bin   { $_[0]->{bin} }
