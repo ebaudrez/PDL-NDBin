@@ -22,6 +22,7 @@ sub process
 	# the selection is evaluated (which is inside the action)
 	my $value = eval { $self->{coderef}->( $iter ) };
 	if( defined $value ) { $self->{out}->set( $iter->bin, $value ) }
+	return $self;
 }
 
 sub result

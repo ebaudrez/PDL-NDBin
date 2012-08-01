@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 88;
+use Test::More tests => 108;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -49,6 +49,30 @@ note 'SETUP';
 		delete $plugins{ $p };
 	}
 	ok( ! %plugins, 'no more unknown plugins left' ) or diag 'remaining plugins: ', join ', ' => keys %plugins;
+}
+
+#
+# BASIC OO FUNCTIONALITY
+#
+note 'BASIC OO FUNCTIONALITY';
+
+#
+$N = 10;
+my %test_args = (
+	'PDL::NDBin::Func::CodeRef' => [ $N, sub {} ],
+	'PDL::NDBin::Func::IAvg'    => [ $N ],
+	'PDL::NDBin::Func::ICount'  => [ $N ],
+	'PDL::NDBin::Func::IStdDev' => [ $N ],
+	'PDL::NDBin::Func::ISum'    => [ $N ],
+);
+for my $class ( PDL::NDBin::Func->plugins ) {
+	$obj = $class->new( @{ $test_args{ $class } } );
+	isa_ok $obj, $class;
+	can_ok $obj, qw( new process result );
+	my $ret = $obj->process( iter(PDL->null, PDL->null, $N) );
+	isa_ok $ret, $class, 'return value of process()';
+	my $result = $obj->result;
+	ok eval { $result->isa('PDL') }, 'result() returns a pdl';
 }
 
 #

@@ -23,6 +23,7 @@ sub process
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );
+	return $self;
 }
 
 sub result
