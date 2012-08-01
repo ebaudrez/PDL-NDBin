@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 73;
+use Test::More tests => 88;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -32,7 +32,7 @@ sub iter
 }
 
 # variable declarations
-my ( $expected, $got, $N, $x, $y, @u, @v, $obj );
+my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
 
 #
 #
@@ -42,7 +42,8 @@ note 'SETUP';
 	my %plugins = map { $_ => 1 } PDL::NDBin::Func->plugins;
 	note 'registered plugins: ', join ', ' => keys %plugins;
 	for my $p ( qw(	PDL::NDBin::Func::ICount  PDL::NDBin::Func::ISum
-			PDL::NDBin::Func::IAvg    PDL::NDBin::Func::IStdDev ) )
+			PDL::NDBin::Func::IAvg    PDL::NDBin::Func::IStdDev
+			PDL::NDBin::Func::CodeRef ) )
 	{
 		ok( $plugins{ $p }, "$p is there" );
 		delete $plugins{ $p };
@@ -103,6 +104,16 @@ cmp_ok( PDL::NDBin::Func::istddev( iter $x->float, $y, $N )->type, '==', double,
 cmp_ok( PDL::NDBin::Func::istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
+note '   class = PDL::NDBin::Func::CodeRef';
+for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+	$obj = PDL::NDBin::Func::CodeRef->new( $N, sub {} );
+	$obj->process( iter $x->$type, $y, $N );
+	my $ref = "PDL::$type";
+	no strict 'refs';
+	cmp_ok( $obj->result->type, '==', $ref->(), "return type is $type for input type $type" );
+}
+
+#
 # FUNCTIONALITY
 #
 note 'FUNCTIONALITY';
@@ -145,6 +156,24 @@ $got = PDL::NDBin::Func::istddev( iter $x->float, $y, $N );
 is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type float" );
 $got = PDL::NDBin::Func::istddev( iter $x->double, $y, $N );
 is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type double" );
+
+# PDL::NDBin::Func::CodeRef
+$expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
+$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x, $y, $N;
+while( my @r = $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl( $got, $expected->short, "PDL::NDBin::Func::CodeRef, input type short" );
+$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x->float, $y, $N;
+while( my @r = $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl( $got, $expected->float, "PDL::NDBin::Func::CodeRef, input type float" );
+$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x->double, $y, $N;
+while( my @r = $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl( $got, $expected, "PDL::NDBin::Func::CodeRef, input type double" );
 
 #
 #
@@ -189,6 +218,24 @@ $got = PDL::NDBin::Func::istddev( iter $x->float, $y, $N );
 is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type float" );
 $got = PDL::NDBin::Func::istddev( iter $x->double, $y, $N );
 is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type double" );
+
+# PDL::NDBin::Func::CodeRef
+$expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
+$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x, $y, $N;
+while( my @r = $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl( $got, $expected->short, "PDL::NDBin::Func::CodeRef with bad values, input type short" );
+$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x->float, $y, $N;
+while( my @r = $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl( $got, $expected->float, "PDL::NDBin::Func::CodeRef with bad values, input type float" );
+$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x->double, $y, $N;
+while( my @r = $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl( $got, $expected, "PDL::NDBin::Func::CodeRef with bad values, input type double" );
 
 #
 #

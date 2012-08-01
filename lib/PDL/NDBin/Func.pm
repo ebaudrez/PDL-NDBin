@@ -20,6 +20,9 @@ my @plugins = __PACKAGE__->plugins;
 my @functions;
 for my $plugin ( @plugins )
 {
+	# PDL::NDBin::Func::CodeRef should be loaded, but doesn't need a
+	# wrapper function and needn't be exported
+	next if $plugin eq 'PDL::NDBin::Func::CodeRef';
 	my $function = do { $plugin =~ /::(\w+)$/; lc $1 };
 	no strict 'refs';
 	*$function = sub {

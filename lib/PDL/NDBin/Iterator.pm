@@ -49,6 +49,7 @@ sub next
 	return $bin, $var;
 }
 
+sub bin   { $_[0]->{bin} }
 sub done  { $_[0]->{bin} >= $_[0]->nbins }
 sub bins  { @{ $_[0]->{bins} } }
 sub nbins { $_[0]->{nbins} ||= reduce { $a * $b } $_[0]->bins }

@@ -72,19 +72,12 @@ my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY 
 # TODO eliminate $n (@n)
 sub default_loop
 {
-	my ( $n, $N, $hash, $vars, $actions, $output ) = @_;
+	my ( $n, $N, $hash, $vars, $instances ) = @_;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	$log->debug( 'using default loop' );
 	my $iter = PDL::NDBin::Iterator->new( $n, $vars, $hash );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) {
-		# catch exceptions; one particularly difficult sort of
-		# exception is indexing on empty piddles: this may
-		# throw an exception, but only when the selection is
-		# evaluated (which is inside the action).
-		my $value = eval { $actions->[$i]->( $iter ) };
-		if( defined $output->[$i] && defined $value ) { $output->[$i]->set( $bin, $value ) }
-	}
+	while( my( $bin, $i ) = $iter->next ) { $instances->[ $i ]->process( $iter ) }
 };
 
 # the fast loop, which requires actions that operate on indexed variables
@@ -92,19 +85,12 @@ sub default_loop
 # suboptimal ...
 sub fast_loop
 {
-	my ( $n, $N, $hash, $vars, $actions, $output ) = @_;
+	my ( $n, $N, $hash, $vars, $instances ) = @_;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	$log->debug( 'using fast loop' );
 	my $iter = PDL::NDBin::Iterator->new( $n, $vars, $hash );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) {
-		if( defined $output->[$i] ) {
-			$output->[$i] = $actions->[$i]->( $iter );
-		}
-		else {
-			$actions->[$i]->( $iter );
-		}
-	}
+	while( my( $bin, $i ) = $iter->next ) { $instances->[ $i ]->process( $iter ) }
 }
 
 =head2 ndbinning()
@@ -185,6 +171,21 @@ sub new
 	return bless $self, $class;
 }
 
+sub _make_instance
+{
+	my( $N, $arg ) = @_;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	if( ref $arg eq 'CODE' ) {
+		return PDL::NDBin::Func::CodeRef->new( $N, $arg );
+	}
+	else {
+		my $class = substr( $arg, 0, 1 ) eq '+'
+			? substr( $arg, 1 )
+			: "PDL::NDBin::Func::$arg";
+		return $class->new( $N );
+	}
+}
+
 sub process
 {
 	my $self = shift;
@@ -210,32 +211,24 @@ sub process
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 	$self->{n} = \@n;
 
+	my $N = reduce { $a * $b } @n; # total number of bins
+	PDL::Core::barf( 'I need at least one bin' ) unless $N;
 	# for compatibility with existing code
 	# XXX this should be removed
 	my $loop = $self->{loop};
-	my( @vars, @actions );
+	my( @vars, @instances );
 	if( $self->{vars} && @{ $self->{vars} } ) {
 		@vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
-		@actions = map { $_->[1] } @{ $self->{vars} };
+		@instances = map { _make_instance $N, $_->[1] } @{ $self->{vars} };
 	}
 	else {
 		@vars = ( $hash );
-		@actions = ( \&PDL::NDBin::Func::icount );
+		@instances = ( _make_instance $N, 'ICount' );
 	}
-
-	# size & intialize output array
-	my $N = reduce { $a * $b } @n; # total number of bins
-	PDL::Core::barf( 'I need at least one bin' ) unless $N;
-	# XXX not ok: preallocation with != null thwarts PDL's automatic type
-	# determination; on the other hand, PDL->null won't let me do
-	# setvaltobad (which I need for bin skipping), and PDL->null has the
-	# wrong dimensions (I thought they were sized automatically??????)
-	#my @output = map { PDL->null } @vars;
-	my @output = map { PDL->zeroes( $_->type, $N )->setbadif( 1 ) } @vars;
-	$self->{output} = \@output;
+	$self->{instances} = \@instances;
 
 	# now visit all the bins
-	$loop->( \@n, $N, $hash, \@vars, \@actions, \@output );
+	$loop->( \@n, $N, $hash, \@vars, \@instances );
 
 	return $self;
 }
@@ -255,10 +248,10 @@ sub output
 	# reshape output
 	return unless defined wantarray;
 	my $n = $self->{n};
-	my $output = $self->{output};
-	for my $pdl ( @$output ) { $pdl->reshape( @$n ) }
-	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @$output }
-	return wantarray ? @$output : $output->[0];
+	my @output = map { $_->result } @{ $self->{instances} };
+	for my $pdl ( @output ) { $pdl->reshape( @$n ) }
+	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @output }
+	return wantarray ? @output : $output[0];
 }
 
 # generate a random, hopefully unique name for a pdl
@@ -287,7 +280,7 @@ sub ndbinning
 
 		# consume variables
 		# variables require an action following it
-		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ref $_[1] eq 'CODE' ) {
+		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
 			my( $pdl, $action ) = splice @_, 0, 2;
 			my $name = _random_name;
 			$pdls{ $name } = $pdl;
@@ -444,6 +437,12 @@ sub expand_vars
 		elsif( ref $_[0] eq 'CODE' ) {
 			PDL::Core::barf( 'no variable given' ) unless $hash;
 			# an action to perform on this variable
+			$hash->{action} = shift;
+		}
+		elsif( grep { /^(PDL::NDBin::Func::)?$_[0]$/ } PDL::NDBin::Func->plugins ) {
+			PDL::Core::barf( 'no variable given' ) unless $hash;
+			# an action to perform on this variable, in the form of
+			# a recognized plugin class name
 			$hash->{action} = shift;
 		}
 		else {
@@ -829,15 +828,57 @@ averages of the binned fluxes:
 
 =head2 Actions
 
-Some points to note about the variable actions. Every action will be called
+You can, but are not required to, supply an action with every variable. If you
+don't supply an action, the default action will be used, as given by the
+C<DEFAULT_ACTION> key.
+
+An action can be either a code reference (i.e., a reference to a subroutine, or
+an anonymous subroutine), or the name of a class that implements the methods
+new(), process() and result().
+
+It is important to note that the actions will be called in the order they are
+given for each bin, before proceeding to the next bin. You can depend on this
+behaviour, for instance, when you have an action that depends on the result of
+a previous action within the same bin.
+
+=head3 Code reference
+
+In case the action specifies a code reference, this subroutine will be called
 with the following argument:
 
-	$action->( $iterator );
+	$coderef->( $iterator )
 
-It is also important to note that the actions will be called in the order they
-are given for each bin, before proceeding to the next bin. You can depend on
-this behaviour, for instance, when you have an action that depends on the
-result of a previous action within the same bin.
+$iterator is an object of the class PDL::NDBin::Iterator, which will have been
+instantiated for you. Important to note is that the action will be called for
+every bin, with the given variable. The iterator must be used to retrieve
+information about the current bin and variable. With $iterator->selection(),
+for instance, you can access the elements that belong to this variable and this
+bin.
+
+=head3 Class name
+
+In case the action specifies a class name, an object of the class will be
+instantiated with
+
+	$object = $class->new( $N )
+
+where $N signifies the total number of bins. The variables will be processed by
+calling
+
+	$object->process( $iterator )
+
+where $iterator again signifies an iterator object. Results will be collected
+by calling
+
+	$object->result
+
+The object is responsible for correct bin traversal, and for storing the result
+of the operation. The class must implement the three methods.
+
+When supplying a class instead of an action reference, it is possible to
+compute multiple bins at once in one call to process(). This can be much more
+efficient than calling the action for every bin, especially if the loop can be
+coded in PP/XS.
 
 =head2 Automatic parameter calculation
 

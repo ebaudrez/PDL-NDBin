@@ -12,7 +12,7 @@ use Test::NoWarnings;
 BEGIN {
 	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
 	use_ok( 'PDL::NDBin' );
-	use_ok( 'PDL::NDBin::Func', qw( iavg icount ) );
+	use_ok( 'PDL::NDBin::Func' );
 }
 
 # variable declarations
@@ -91,7 +91,7 @@ is_pdl( $got, $expected, 'different syntax' );
 $expected = long( 0,2,1 );
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
 			   loop => \&PDL::NDBin::fast_loop,
-			   vars => [ [ x => \&icount ] ] );
+			   vars => [ [ x => 'ICount' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'different syntax, using fast loop' );
@@ -159,7 +159,7 @@ $got = $binner->output;
 is_pdl( $got, $expected, 'variable with action = average' );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
 			   loop => \&PDL::NDBin::fast_loop,
-			   vars => [ [ 'x', \&iavg ] ] );
+			   vars => [ [ 'x', 'IAvg' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'variable with action = average, using fast loop' );
@@ -219,16 +219,16 @@ note 'CONCATENATION';
 	TODO: {
 		local $TODO = 'yet to implement concatenation';
 		for my $class ( PDL::NDBin::Func->plugins ) {
-			# the eval's inside are only required as long as passing a
-			# class name as an action doesn't work - they should disappear
+			# CodeRef is not supposed to be able to concatenate results
+			next if $class eq 'PDL::NDBin::Func::CodeRef';
 			my $binner = PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
-						      vars => [ [ u => $class ] ] );
-			for my $var ( $u0, $u1, $u2, $u3, $u4 ) { eval { $binner->process( u => $var ) } };
+						      vars => [ [ u => "+$class" ] ] );
+			for my $var ( $u0, $u1, $u2, $u3, $u4 ) { $binner->process( u => $var ) };
 			my $got = $binner->output;
-			my $expected = eval { PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
-							       vars => [ [ u => $class ] ] )
-							->process( u => $u )
-							->output };
+			my $expected = PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
+							vars => [ [ u => "+$class" ] ] )
+						 ->process( u => $u )
+						 ->output;
 			is_pdl( $got, $expected, "repeated invocation of process() equal to concatenation with action $class" );
 		}
 	}
