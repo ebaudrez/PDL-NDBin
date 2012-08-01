@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 42;
+use Test::More tests => 50;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -17,10 +17,42 @@ my( $iter, @bins, @variables, $hash, $bin, $var, @expected, @got, $k );
 
 #
 @bins = ( 4 );
+@variables = ( PDL->null );
+$hash = PDL->null;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+isa_ok $iter, 'PDL::NDBin::Iterator', 'return value from constructor';
+
+# test iteration
+@bins = ( 4 );
+@variables = ( PDL->null );
+$hash = PDL->null;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$k = 4;
+while( my @return = $iter->next ) { last if $k-- == 0 }
+is $k, 0, 'next in list context';
+ok $iter->done, 'iteration complete';
+is_deeply [ $iter->next ], [], "doesn't reset";
+TODO: {
+	local $TODO = 'next only works in list context';
+	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	$k = 4;
+	while( my $return = $iter->next ) { last if $k-- == 0 }
+	is $k, 0, 'next in scalar context';
+	ok $iter->done, 'iteration complete';
+	is_deeply [ $iter->next ], [], "doesn't reset";
+	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	$k = 4;
+	while( $iter->next ) { last if $k-- == 0 }
+	is $k, 0, 'next in boolean context';
+	ok $iter->done, 'iteration complete';
+	is_deeply [ $iter->next ], [], "doesn't reset";
+}
+
+#
+@bins = ( 4 );
 @variables = ( 'one', 'two', 'three' );
 $hash = 'this is my secret hash';
 $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
-isa_ok $iter, 'PDL::NDBin::Iterator', 'return value from constructor';
 is $iter->nbins, 4, 'number of bins';
 is $iter->nvars, 3, 'number of variables';
 @got = ();
@@ -41,11 +73,10 @@ is $iter->nvars, 3, 'number of variables';
 $k = 12;
 while( ( $bin, $var ) = $iter->next ) {
 	push @got, [ $bin, $var, $iter->data, $iter->hash ];
-	last if --$k == 0; # prevent endless loops
+	last if $k-- == 0; # prevent endless loops
 };
-is $k, 0, 'number of iterations';
+ok $k == 0 && $iter->done, 'number of iterations';
 is_deeply \@got, \@expected, 'data(), hash()';
-is_deeply [ $iter->next ], [], "doesn't reset";
 
 #
 @bins = ( 3, 2 );
@@ -72,9 +103,9 @@ is $iter->nvars, 2, 'number of vars';
 $k = 12;
 while( ( $bin, $var ) = $iter->next ) {
 	push @got, [ $bin, $var, [ $iter->unhash ] ];
-	last if --$k == 0; # prevent endless loops
+	last if $k-- == 0; # prevent endless loops
 };
-is $k, 0, 'number of iterations';
+ok $k == 0 && $iter->done, 'number of iterations';
 is_deeply \@got, \@expected, 'unhash()';
 
 #
@@ -95,9 +126,9 @@ is $iter->nbins*$iter->nvars, 6, 'nbins() * nvars()';
 $k = 6;
 while( ( $bin, $var ) = $iter->next ) {
 	push @got, $iter->want;
-	last if --$k == 0; # prevent endless loops
+	last if $k-- == 0; # prevent endless loops
 };
-is $k, 0, 'number of iterations';
+ok $k == 0 && $iter->done, 'number of iterations';
 for( 0 .. $#got ) {
 	is_pdl $got[ $_ ], $expected[ $_ ], "want() iteration $_";
 }
@@ -134,9 +165,9 @@ is $iter->nbins*$iter->nvars, 16, 'nbins() * nvars()';
 $k = 16;
 while( ( $bin, $var ) = $iter->next ) {
 	push @got, $iter->selection;
-	last if --$k == 0; # prevent endless loops
+	last if $k-- == 0; # prevent endless loops
 };
-is $k, 0, 'number of iterations';
+ok $k == 0 && $iter->done, 'number of iterations';
 for( 0 .. $#got ) {
 	is_pdl $got[ $_ ], $expected[ $_ ], "selection() iteration $_";
 }
@@ -152,7 +183,7 @@ $k = 4;
 while( ( $bin, $var ) = $iter->next ) {
 	$visited[ $var ]++;
 	$iter->var_active( 0 );
-	last if --$k == 0; # prevent endless loops
+	last if $k-- == 0; # prevent endless loops
 };
-is $k, 0, 'number of iterations';
+ok $k == 0 && $iter->done, 'number of iterations';
 is_deeply \@visited, [ (1) x @variables ], 'all variables visited once';
