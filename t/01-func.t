@@ -44,7 +44,7 @@ note 'SETUP';
 	for my $p ( qw(	PDL::NDBin::Action::Count  PDL::NDBin::Action::Sum
 			PDL::NDBin::Action::Avg    PDL::NDBin::Action::StdDev ) )
 	{
-		ok( $plugins{ $p }, "$p is there" );
+		ok $plugins{ $p }, "$p is there";
 		delete $plugins{ $p };
 		# create wrapper function around the class
 		my $function = do { $p =~ /::(\w+)$/; 'i' . lc $1 };
@@ -59,7 +59,7 @@ note 'SETUP';
 	}
 	for my $p ( qw(	PDL::NDBin::Action::CodeRef ) )
 	{
-		ok( $plugins{ $p }, "$p is there" );
+		ok $plugins{ $p }, "$p is there";
 		delete $plugins{ $p };
 		# create wrapper function around the class
 		my $function = do { $p =~ /::(\w+)$/; 'i' . lc $1 };
@@ -159,7 +159,7 @@ for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
 	$obj->process( iter $x->$type, $y, $N );
 	my $ref = "PDL::$type";
 	no strict 'refs';
-	cmp_ok( $obj->result->type, '==', $ref->(), "return type is $type for input type $type" );
+	cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for input type $type";
 }
 
 #
@@ -177,34 +177,34 @@ $y = long( @v );
 # icount
 $expected = long( 4,1,0,1 );
 $got = icount( iter $x, $y, $N );
-is_pdl( $got, $expected, "icount, input type short" );
+is_pdl $got, $expected, "icount, input type short";
 $got = icount( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "icount, input type float" );
+is_pdl $got, $expected, "icount, input type float";
 
 # isum
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = isum( iter $x, $y, $N );
-is_pdl( $got, $expected, "isum, input type short" );
+is_pdl $got, $expected, "isum, input type short";
 $got = isum( iter $x->float, $y, $N );
-is_pdl( $got, $expected->float, "isum, input type float" );
+is_pdl $got, $expected->float, "isum, input type float";
 
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = iavg( iter $x, $y, $N );
-is_pdl( $got, $expected, "iavg, input type short" );
+is_pdl $got, $expected, "iavg, input type short";
 $got = iavg( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "iavg, input type float" );
+is_pdl $got, $expected, "iavg, input type float";
 $got = iavg( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "iavg, input type double" );
+is_pdl $got, $expected, "iavg, input type double";
 
 # istddev
 $expected = pdl( sqrt(3.5),0,-1,0 )->inplace->setvaltobad( -1 );
 $got = istddev( iter $x, $y, $N );
-is_pdl( $got, $expected, "istddev, input type short" );
+is_pdl $got, $expected, "istddev, input type short";
 $got = istddev( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "istddev, input type float" );
+is_pdl $got, $expected, "istddev, input type float";
 $got = istddev( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "istddev, input type double" );
+is_pdl $got, $expected, "istddev, input type double";
 
 # PDL::NDBin::Action::CodeRef
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -212,17 +212,17 @@ $obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->
 $iter = iter $x, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->short, "PDL::NDBin::Action::CodeRef, input type short" );
+is_pdl $got, $expected->short, "PDL::NDBin::Action::CodeRef, input type short";
 $obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->float, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->float, "PDL::NDBin::Action::CodeRef, input type float" );
+is_pdl $got, $expected->float, "PDL::NDBin::Action::CodeRef, input type float";
 $obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->double, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected, "PDL::NDBin::Action::CodeRef, input type double" );
+is_pdl $got, $expected, "PDL::NDBin::Action::CodeRef, input type double";
 
 #
 #
@@ -239,34 +239,34 @@ $y = long( @v );
 # icount
 $expected = long( 3,1,0,1 );
 $got = icount( iter $x, $y, $N );
-is_pdl( $got, $expected, "icount with bad values, input type short" );
+is_pdl $got, $expected, "icount with bad values, input type short";
 $got = icount( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "icount with bad values, input type float" );
+is_pdl $got, $expected, "icount with bad values, input type float";
 
 # isum
 $expected = long( 18,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = isum( iter $x, $y, $N );
-is_pdl( $got, $expected, "isum with bad values, input type short" );
+is_pdl $got, $expected, "isum with bad values, input type short";
 $got = isum( iter $x->float, $y, $N );
-is_pdl( $got, $expected->float, "isum with bad values, input type float" );
+is_pdl $got, $expected->float, "isum with bad values, input type float";
 
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = iavg( iter $x, $y, $N );
-is_pdl( $got, $expected, "iavg with bad values, input type short" );
+is_pdl $got, $expected, "iavg with bad values, input type short";
 $got = iavg( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "iavg with bad values, input type float" );
+is_pdl $got, $expected, "iavg with bad values, input type float";
 $got = iavg( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "iavg with bad values, input type double" );
+is_pdl $got, $expected, "iavg with bad values, input type double";
 
 # istddev
 $expected = pdl( sqrt(14/3),0,-1,0 )->inplace->setvaltobad( -1 );
 $got = istddev( iter $x, $y, $N );
-is_pdl( $got, $expected, "istddev with bad values, input type short" );
+is_pdl $got, $expected, "istddev with bad values, input type short";
 $got = istddev( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "istddev with bad values, input type float" );
+is_pdl $got, $expected, "istddev with bad values, input type float";
 $got = istddev( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "istddev with bad values, input type double" );
+is_pdl $got, $expected, "istddev with bad values, input type double";
 
 # PDL::NDBin::Action::CodeRef
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -274,17 +274,17 @@ $obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->
 $iter = iter $x, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->short, "PDL::NDBin::Action::CodeRef with bad values, input type short" );
+is_pdl $got, $expected->short, "PDL::NDBin::Action::CodeRef with bad values, input type short";
 $obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->float, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->float, "PDL::NDBin::Action::CodeRef with bad values, input type float" );
+is_pdl $got, $expected->float, "PDL::NDBin::Action::CodeRef with bad values, input type float";
 $obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->double, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected, "PDL::NDBin::Action::CodeRef with bad values, input type double" );
+is_pdl $got, $expected, "PDL::NDBin::Action::CodeRef with bad values, input type double";
 
 #
 #
@@ -339,18 +339,18 @@ $y = long( @v );
 #
 $expected = apply( $x, $y, $N, \&ngood )->long;
 $got = icount( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check icount() with ngood()" );
+is_pdl $got, $expected, "cross-check icount() with ngood()";
 $expected = apply( $x, $y, $N, \&sum );
 $got = isum( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check isum() with sum()" );
+is_pdl $got, $expected, "cross-check isum() with sum()";
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[0] } );
 $got = iavg( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check iavg() with stats()" );
+is_pdl $got, $expected, "cross-check iavg() with stats()";
 # the docs of `stats' are actually wrong on this one:
 # the population rms is in [1], and the rms is in [6]
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[6] } );
 $got = istddev( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check istddev() with stats()" );
+is_pdl $got, $expected, "cross-check istddev() with stats()";
 
 #
 #
@@ -393,7 +393,7 @@ note 'CONCATENATION';
 		$obj = $class->new( $N );
 		$obj->process( iter $u, $v, $N );
 		my $expected = $obj->result;
-		is_pdl( $got, $expected, "repeated invocation of $class equal to concatenation" );
+		is_pdl $got, $expected, "repeated invocation of $class equal to concatenation";
 	}
 }
 
@@ -439,6 +439,6 @@ SKIP: {
 		$obj = $class->new( $N );
 		$obj->process( iter $u, $v, $N );
 		my $expected = $obj->result;
-		is_pdl( $got, $expected, "repeated invocation of $class equal to concatenation (bad values present)" );
+		is_pdl $got, $expected, "repeated invocation of $class equal to concatenation (bad values present)";
 	}
 }

@@ -56,10 +56,10 @@ dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 
 # return values
 $binner = PDL::NDBin->new( axes => [ [ u => (1,0,10) ] ] );
-ok( $binner, 'constructor returns a value' );
-isa_ok( $binner, 'PDL::NDBin', 'return value from new()' );
-isa_ok( $binner->process( u => sequence(10) ), 'PDL::NDBin', 'return value from process()' );
-isa_ok( $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PDL::NDBin', 'return value from chained calls to process()' );
+ok $binner, 'constructor returns a value';
+isa_ok $binner, 'PDL::NDBin', 'return value from new()';
+isa_ok $binner->process( u => sequence(10) ), 'PDL::NDBin', 'return value from process()';
+isa_ok $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PDL::NDBin', 'return value from chained calls to process()';
 
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );
@@ -69,31 +69,31 @@ $expected = long( 0,2,1 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'example from PDL::histogram' );
+is_pdl $got, $expected, 'example from PDL::histogram';
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ],
 			   vars => [ [ 'z', sub { shift->want->nelem } ] ] );
 $binner->process( x => $x, z => zeroes( long, $x->nelem ) );
 $got = $binner->output;
-is_pdl( $got, $expected, 'variable and action specified explicitly' );
+is_pdl $got, $expected, 'variable and action specified explicitly';
 $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'different syntax' );
+is_pdl $got, $expected, 'different syntax';
 $expected = long( 0,2,1 );
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
 			   vars => [ [ x => 'Count' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'different syntax, using action class name' );
+is_pdl $got, $expected, 'different syntax, using action class name';
 
 # this idiom with only chained calls should work
 $x = pdl( 1,1,2 );
 $expected = long( 0,2,1 );
 $got = PDL::NDBin->new( axes => [ [ v => (1,0,3) ] ] )->process( v => $x )->output;
-is_pdl( $got, $expected, 'all calls chained' );
+is_pdl $got, $expected, 'all calls chained';
 
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );
@@ -105,7 +105,7 @@ $binner = PDL::NDBin->new( axes => [ [ x => (1,0,3) ],
 				     [ y => (1,0,3) ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
-is_pdl( $got, $expected, 'example from PDL::histogram2d' );
+is_pdl $got, $expected, 'example from PDL::histogram2d';
 
 #
 $x = pdl( 1,1,1,2,2,1,1 );
@@ -118,7 +118,7 @@ $binner = PDL::NDBin->new( axes => [ [ 'x', 1, 1, 2 ],
 				     [ 'y', 1, 1, 4 ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
-is_pdl( $got, $expected, 'nonsquare two-dimensional histogram' );
+is_pdl $got, $expected, 'nonsquare two-dimensional histogram';
 
 # binning integer data
 $x = byte(1,2,3,4);
@@ -126,19 +126,19 @@ $expected = long(1,1,1,1);
 $binner = PDL::NDBin->new( axes => [ [ x => (1,1,4) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'binning integer data: base case' );
+is_pdl $got, $expected, 'binning integer data: base case';
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
 $expected = short( 8,9,1,0,5 );
 $binner = PDL::NDBin->new( axes => [ [ x => (1,2,5) ] ],
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'binning integer data: step = 1' );
+is_pdl $got, $expected, 'binning integer data: step = 1';
 $expected = long( 18,1,1,1,2 );
 $binner = PDL::NDBin->new( axes => [ [ x => (2,3,5) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'binning integer data: step = 2' );
+is_pdl $got, $expected, 'binning integer data: step = 2';
 
 # more actions & missing/undefined/invalid stuff
 $x = sequence 21;
@@ -147,19 +147,19 @@ $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
 			   vars => [ [ 'x', sub { shift->selection->avg } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'variable with action = average' );
+is_pdl $got, $expected, 'variable with action = average';
 $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
 			   vars => [ [ 'x', 'Avg' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'variable with action = average, using action class name' );
+is_pdl $got, $expected, 'variable with action = average, using action class name';
 $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1,3,5 ] ],
 			   vars => [ [ 'x', sub { shift->want->nelem || undef } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'empty bins unset' ); # cannot be achieved with action classes
+is_pdl $got, $expected, 'empty bins unset'; # cannot be achieved with action classes
 
 # cross-check with hist and some random data
 $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
@@ -172,7 +172,7 @@ $expected = histogram( $x, .1, 0, 10 )->long;
 $binner = PDL::NDBin->new( axes => [ [ 'x', .1, 0, 10 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'cross-check with histogram' );
+is_pdl $got, $expected, 'cross-check with histogram';
 $expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long;
 $binner = PDL::NDBin->new( axes => [ [ 'x', .1, 0, 10 ],
 				     [ 'y', .1, 0, 10 ] ] );
@@ -180,7 +180,7 @@ $binner->process( x => $x, y => $y );
 $got = $binner->output;
 TODO: {
 	local $TODO = 'fails on 32-bit';
-	is_pdl( $got, $expected, 'cross-check with histogram2d' );
+	is_pdl $got, $expected, 'cross-check with histogram2d';
 }
 
 #
@@ -218,7 +218,7 @@ note 'CONCATENATION';
 							vars => [ [ u => "+$class" ] ] )
 						 ->process( u => $u )
 						 ->output;
-			is_pdl( $got, $expected, "repeated invocation of process() equal to concatenation with action $class" );
+			is_pdl $got, $expected, "repeated invocation of process() equal to concatenation with action $class";
 		}
 	}
 }
