@@ -2,15 +2,12 @@
 
 use strict;
 use warnings;
-use Test::More tests => 50;
+use Test::More tests => 48;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
-
-BEGIN {
-	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
-	use_ok( 'PDL::NDBin::Iterator' );
-}
+use PDL;
+use PDL::NDBin::Iterator;
 
 # variable declarations
 my( $iter, @bins, @variables, $hash, $bin, $var, @expected, @got, $k );

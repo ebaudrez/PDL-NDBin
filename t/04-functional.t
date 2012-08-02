@@ -2,15 +2,12 @@
 
 use strict;
 use warnings;
-use Test::More tests => 90;
+use Test::More tests => 88;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
-
-BEGIN {
-	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
-	use_ok( 'PDL::NDBin', qw( ndbinning ndbin process_axes make_labels ) );
-}
+use PDL;
+use PDL::NDBin qw( ndbinning ndbin process_axes make_labels );
 
 # because PDL overloads the comparison operators, it is no fun to run
 # is_deeply() on piddles; as a workaround, we remove them

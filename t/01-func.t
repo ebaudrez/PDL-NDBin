@@ -2,19 +2,16 @@
 
 use strict;
 use warnings;
-use Test::More tests => 107;
+use Test::More tests => 105;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use Carp;
+use PDL;
+use PDL::NDBin::Iterator;
 use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
 		      search_path => [ 'PDL::NDBin::Action' ];
-
-BEGIN {
-	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
-	use_ok( 'PDL::NDBin::Iterator' );
-}
 
 sub apply
 {
