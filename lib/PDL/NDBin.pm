@@ -67,31 +67,6 @@ our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes make_labels ) ] )
 # the list of valid keys
 my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY );
 
-# the default loop
-# TODO eliminate $n (@n)
-sub default_loop
-{
-	my ( $n, $N, $hash, $vars, $instances ) = @_;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
-	$log->debug( 'using default loop' );
-	my $iter = PDL::NDBin::Iterator->new( $n, $vars, $hash );
-	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) { $instances->[ $i ]->process( $iter ) }
-};
-
-# the fast loop, which requires actions that operate on indexed variables
-# XXX unfortunately any previous allocation of $output is thrown away, which is
-# suboptimal ...
-sub fast_loop
-{
-	my ( $n, $N, $hash, $vars, $instances ) = @_;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
-	$log->debug( 'using fast loop' );
-	my $iter = PDL::NDBin::Iterator->new( $n, $vars, $hash );
-	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) { $instances->[ $i ]->process( $iter ) }
-}
-
 =head2 ndbinning()
 
 The low-level function implementing the core loop. This function does minimal
@@ -160,11 +135,8 @@ sub new
 	if( ref $args{vars} ) {
 		PDL::Core::barf( "too few arguments for variable: @$_" ) for grep { @$_ != 2 } @{ $args{vars} };
 	}
-	# if the loop sub and variables are not specified, assume the default
-	# behaviour of PDL::histogram() and PDL::histogram2d()
 	my $self = {
 		axes => $args{axes},
-		loop => $args{loop} || \&fast_loop,
 		vars => $args{vars},
 	};
 	return bless $self, $class;
@@ -231,7 +203,6 @@ sub process
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
 	# for compatibility with existing code
 	# XXX this should be removed
-	my $loop = $self->{loop};
 	my( @vars, @instances );
 	if( $self->{vars} && @{ $self->{vars} } ) {
 		@vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
@@ -244,7 +215,9 @@ sub process
 	$self->{instances} = \@instances;
 
 	# now visit all the bins
-	$loop->( \@n, $N, $hash, \@vars, \@instances );
+	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $hash );
+	$log->debug( 'iterator object created: ' . Dumper $iter );
+	while( my( $bin, $i ) = $iter->next ) { $instances[ $i ]->process( $iter ) }
 
 	return $self;
 }
@@ -287,13 +260,9 @@ sub ndbinning
 		$pdls{ $name } = $pdl;
 		push @axes, [ $name, $step, $min, $n ];
 	}
-	# consume and process loop sub and variables
-	my( $loop, @vars );
+	# consume and process variables
+	my @vars;
 	if( @_ ) {
-		# consume loop action
-		if( @_ >= 1 && ref $_[0] eq 'CODE' ) { $loop = shift }
-		else { PDL::Core::barf( 'need the loop sub to be specified explicitly' ) }
-
 		# consume variables
 		# variables require an action following it
 		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
@@ -305,7 +274,7 @@ sub ndbinning
 	}
 	# any arguments left indicate a usage error
 	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
-	my $binner = __PACKAGE__->new( axes => \@axes, loop => $loop, vars => \@vars );
+	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process( %pdls );
 	return $binner->output;
 }
@@ -1010,17 +979,9 @@ sub ndbin
 	}
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
-	# loop
-	my $loop;
-	if( @vars ) {
-		$loop = $indexer ? \&default_loop : \&fast_loop;
-	}
-	$log->debug( 'loop: ' . Dumper $loop ) if $log->is_debug;
-
 	# the real work is done by ndbinning()
-	if( $loop ) {
+	if( @vars ) {
 		ndbinning( ( map { $_->{pdl}, $_->{step}, $_->{min}, $_->{n} } @axes ),
-			   $loop,
 			   ( map { $_->{pdl}, $_->{action} } @vars ) );
 	}
 	else {

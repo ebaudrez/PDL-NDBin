@@ -32,18 +32,15 @@ lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 				      [ 'dummy', 0, 0, 1 ],
 				      [ 'dummy', 0, 0, 1 ] ],
-			    loop => sub {},
 			    vars => [ [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, one variable';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 				      [ 'dummy', 0, 0, 1 ],
 				      [ 'dummy', 0, 0, 1 ] ],
-			    loop => sub {},
 			    vars => [ [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, two variables';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
 				      [ 'dummy', 0, 0, 1 ],
 				      [ 'dummy', 0, 0, 1 ] ],
-			    loop => sub {},
 			    vars => [ [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, three variables';
@@ -74,7 +71,6 @@ $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'example from PDL::histogram' );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ],
-			   loop => \&PDL::NDBin::default_loop,
 			   vars => [ [ 'z', sub { shift->want->nelem } ] ] );
 $binner->process( x => $x, z => zeroes( long, $x->nelem ) );
 $got = $binner->output;
@@ -82,18 +78,16 @@ is_pdl( $got, $expected, 'variable and action specified explicitly' );
 $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
-			   loop => \&PDL::NDBin::default_loop,
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'different syntax' );
 $expected = long( 0,2,1 );
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
-			   loop => \&PDL::NDBin::fast_loop,
 			   vars => [ [ x => 'Count' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'different syntax, using fast loop' );
+is_pdl( $got, $expected, 'different syntax, using action class name' );
 
 # this idiom with only chained calls should work
 $x = pdl( 1,1,2 );
@@ -136,7 +130,6 @@ is_pdl( $got, $expected, 'binning integer data: base case' );
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
 $expected = short( 8,9,1,0,5 );
 $binner = PDL::NDBin->new( axes => [ [ x => (1,2,5) ] ],
-			   loop => \&PDL::NDBin::default_loop,
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -151,25 +144,22 @@ is_pdl( $got, $expected, 'binning integer data: step = 2' );
 $x = sequence 21;
 $expected = double( 1,4,7,10,13,16,19 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
-			   loop => \&PDL::NDBin::default_loop,
 			   vars => [ [ 'x', sub { shift->selection->avg } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'variable with action = average' );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
-			   loop => \&PDL::NDBin::fast_loop,
 			   vars => [ [ 'x', 'Avg' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'variable with action = average, using fast loop' );
+is_pdl( $got, $expected, 'variable with action = average, using action class name' );
 $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1,3,5 ] ],
-			   loop => \&PDL::NDBin::default_loop,
 			   vars => [ [ 'x', sub { shift->want->nelem || undef } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl( $got, $expected, 'empty bins unset' ); # cannot be achieved with fast loop
+is_pdl( $got, $expected, 'empty bins unset' ); # cannot be achieved with action classes
 
 # cross-check with hist and some random data
 $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
