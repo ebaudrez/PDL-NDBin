@@ -31,19 +31,3 @@ sub result
 }
 
 1;
-__END__
-=head2 icount
-
-Count the number of elements in each bin.
-
-Signature:
-
-	icount( in(n), ind(n), m )
-
-Synopsis:
-
-	$out = icount( $in, $ind, $m ));
-
-where $in and $ind are of dimension I<n>, and $out is of dimension I<m>.
-
-=cut

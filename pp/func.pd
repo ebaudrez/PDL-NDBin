@@ -4,10 +4,12 @@
 #	Code => '',
 #);
 
-# auxiliary routine for setting empty bins to bad
+# _setnulltobad
+#
 pp_def( '_setnulltobad',
 	Pars => 'count(n); [o] out(n)',
 	HandleBad => 1,
+	Doc => 'Set empty bins to the bad value',
 	Code => '
 		int flag = 0;
 		loop(n) %{
@@ -24,13 +26,16 @@ pp_def( '_setnulltobad',
 	',
 );
 
-# indirect count
-# assumes that the indices are always valid (no bad values)
-# icount always returns a piddle of type int
+# _icount_loop
+#
 pp_def( '_icount_loop',
 	Pars => 'in(n); int ind(n); int [o] out(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
+	Doc => 'Count the number of elements in each bin
+
+This function assumes that the indices are always valid (i.e., there are no bad
+values among the indices). It always returns a piddle of type I<int>.',
 	Code => '
 		loop(n) %{
 			register int j = $ind();
@@ -45,14 +50,17 @@ pp_def( '_icount_loop',
 	',
 );
 
-# indirect sum
-# assumes that the indices are always valid (no bad values)
-# isum returns a piddle of type int, or higher, to reduce the risk of overflow
-# when collecting sums
+# _isum_loop
+#
 pp_def( '_isum_loop',
 	Pars => 'in(n); int ind(n); int+ [o] out(m); int [t] count(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
+	Doc => 'Sum the elements in each bin
+
+This function assumes that the indices are always valid (i.e., there are no bad
+values among the indices). It returns a piddle of type I<int> or higher, to
+reduce the risk of overflow when collecting sums.',
 	Code => '
 		loop(n) %{
 			register int j = $ind();
@@ -71,11 +79,49 @@ pp_def( '_isum_loop',
 	',
 );
 
-# indirect average, solid implementation
+# _iavg_loop
+#
 pp_def( '_iavg_loop',
 	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
+	Doc => q[Compute the average of the elements in each bin
+
+Credit for the algorithm goes to
+L<I<ashawley> on commandlinefu.com|http://www.commandlinefu.com/commands/view/3437/compute-running-average-for-a-column-of-numbers>:
+
+	awk '{ avg += ($1 - avg) / NR } END { print avg }'
+
+This is a wonderful solution solving many of the problems with more naive
+implementations:
+
+=over 4
+
+=item 1.
+
+It's numerically well-behaved: out() is always of the order of magnitude of the
+values themselves, unlike the sum of the values, which grows very large as the
+number of elements grows large
+
+=item 2.
+
+The subtraction in() - out() guarantees that the computation will be done in
+the correct type (i.e., I<double> instead of the type of the input)
+
+=item 3.
+
+Requires only one temporary
+
+=item 4.
+
+Requires only one pass over the data
+
+=back
+
+I used to give the output array type I<float+>, but that creates more problems
+than it solves. So now, averages are always computed in type I<double>. Besides
+being the default type in PDL and the `natural' floating-point type in C, it
+also makes the implementation easier.],
 	Code => '
 		loop(n) %{
 			register int j = $ind();
@@ -92,11 +138,50 @@ pp_def( '_iavg_loop',
 	',
 );
 
-# indirect standard deviation
+# _istddev_loop
+#
 pp_def ( '_istddev_loop',
 	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
+	Doc => q[Compute the standard deviation of the elements in each bin
+
+Note that we compute the sample standard deviation, I<not> an estimate of the
+population standard deviation (which differs by a factor).
+
+Credit for the algorithm goes to
+L<I<ashawley> on commandlinefu.com|http://www.commandlinefu.com/commands/view/3442/display-the-standard-deviation-of-a-column-of-numbers-with-awk>;
+
+	awk '{ delta = $1 - avg; avg += delta / NR; mean2 += delta * ($1 - avg) } END { print sqrt(mean2 / NR) }'
+
+This is a wonderful solution solving many of the problems with more naive
+implementations:
+
+=over 4
+
+=item 1.
+
+It's numerically well-behaved
+
+=item 2.
+
+The subtractions guarantee that the computations will be done in the correct
+type (i.e., I<double> instead of the type of the input)
+
+=item 3.
+
+Requires only two temporaries (!)
+
+=item 4.
+
+Requires only one pass over the data
+
+=back
+
+I used to give the output array type I<float+>, but that creates more problems
+than it solves. So now, standard deviations are always computed in type
+I<double>. Besides being the default type in PDL and the `natural'
+floating-point type in C, it also makes the implementation easier.],
 	Code => '
 		loop(n) %{
 			register int j = $ind();
@@ -118,10 +203,12 @@ pp_def ( '_istddev_loop',
 	',
 );
 
-# finalization for _istddev_loop()
+# _istddev_post
+#
 pp_def( '_istddev_post',
 	Pars => 'count(n); [o] out(n)',
 	HandleBad => 1,
+	Doc => 'Finalization for _istddev_loop()',
 	Code => '
 		int flag = 0;
 		loop(n) %{

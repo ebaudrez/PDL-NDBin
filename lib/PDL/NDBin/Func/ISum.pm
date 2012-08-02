@@ -34,19 +34,3 @@ sub result
 }
 
 1;
-__END__
-=head2 isum
-
-Sum the elements in each bin.
-
-Signature:
-
-	isum( in(n), ind(n), m )
-
-Usage:
-
-	$out = isum( $in, $ind, $m ));
-
-where $in and $ind are of dimension I<n>, and $out is of dimension I<m>.
-
-=cut
