@@ -861,7 +861,7 @@ handle empty piddles, you can wrap the action as follows to skip empty bins:
 
 	sub { my $iter = shift; return unless $iter->want->nelem; ... }
 
-Remember that return C<undef> from the action will not fill the current bin.
+Remember that return I<undef> from the action will not fill the current bin.
 Note that the evaluation of C<<$iter->want>> entails a performance penalty,
 even if the bin is empty and not processed further.
 
@@ -1008,7 +1008,7 @@ Edward Baudrez, ebaudrez@cpan.org, 2011.
 
 =head1 SEE ALSO
 
-L<PDL>, L<PDL::Basic, L<PDL::Primitive>, L<PDL::NDBin::Action>
+L<PDL>, L<PDL::Basic>, L<PDL::Primitive>, the L<PDL::NDBin::Action::> namespace
 
 =head1 COPYRIGHT and LICENSE
 

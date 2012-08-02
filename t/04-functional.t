@@ -131,8 +131,8 @@ dies_ok { ndbinning( null, 0, 0, 1, null, 0 ) } 'wrong arguments: null, 0, 0, 1,
 
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );
-# by default I<histogram> returns a piddle of the same type as the axis,
-# but I<ndbinning> returns a piddle of type I<long> when histogramming
+# by default histogram() returns a piddle of the same type as the axis,
+# but ndbinning() returns a piddle of type I<long> when histogramming
 $expected = long( 0,2,1 );
 $got = ndbinning( $x, 1, 0, 3 );
 is_pdl( $got, $expected, 'example from PDL::histogram' );

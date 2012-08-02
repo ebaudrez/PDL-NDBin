@@ -63,8 +63,8 @@ isa_ok( $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PD
 
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );
-# by default I<histogram> returns a piddle of the same type as the axis,
-# but I<output> returns a piddle of type I<long> when histogramming
+# by default histogram() returns a piddle of the same type as the axis,
+# but output() returns a piddle of type I<long> when histogramming
 $expected = long( 0,2,1 );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ] );
 $binner->process( x => $x );
