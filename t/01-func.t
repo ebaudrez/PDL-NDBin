@@ -7,10 +7,9 @@ use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use Carp;
-use Module::Pluggable sub_name    => 'functions',
+use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
-		      search_path => [ 'PDL::NDBin::Func' ],
-		      except      => [ 'PDL::NDBin::Func::PP' ];
+		      search_path => [ 'PDL::NDBin::Action' ];
 
 BEGIN {
 	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
@@ -43,10 +42,10 @@ my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
 #
 note 'SETUP';
 {
-	my %plugins = map { $_ => 1 } __PACKAGE__->functions;
+	my %plugins = map { $_ => 1 } __PACKAGE__->actions;
 	note 'registered plugins: ', join ', ' => keys %plugins;
-	for my $p ( qw(	PDL::NDBin::Func::ICount  PDL::NDBin::Func::ISum
-			PDL::NDBin::Func::IAvg    PDL::NDBin::Func::IStdDev ) )
+	for my $p ( qw(	PDL::NDBin::Action::ICount  PDL::NDBin::Action::ISum
+			PDL::NDBin::Action::IAvg    PDL::NDBin::Action::IStdDev ) )
 	{
 		ok( $plugins{ $p }, "$p is there" );
 		delete $plugins{ $p };
@@ -61,7 +60,7 @@ note 'SETUP';
 			return $obj->result;
 		};
 	}
-	for my $p ( qw(	PDL::NDBin::Func::CodeRef ) )
+	for my $p ( qw(	PDL::NDBin::Action::CodeRef ) )
 	{
 		ok( $plugins{ $p }, "$p is there" );
 		delete $plugins{ $p };
@@ -88,13 +87,13 @@ note 'BASIC OO FUNCTIONALITY';
 #
 $N = 10;
 my %test_args = (
-	'PDL::NDBin::Func::CodeRef' => [ $N, sub {} ],
-	'PDL::NDBin::Func::IAvg'    => [ $N ],
-	'PDL::NDBin::Func::ICount'  => [ $N ],
-	'PDL::NDBin::Func::IStdDev' => [ $N ],
-	'PDL::NDBin::Func::ISum'    => [ $N ],
+	'PDL::NDBin::Action::CodeRef' => [ $N, sub {} ],
+	'PDL::NDBin::Action::IAvg'    => [ $N ],
+	'PDL::NDBin::Action::ICount'  => [ $N ],
+	'PDL::NDBin::Action::IStdDev' => [ $N ],
+	'PDL::NDBin::Action::ISum'    => [ $N ],
 );
-for my $class ( __PACKAGE__->functions ) {
+for my $class ( __PACKAGE__->actions ) {
 	$obj = $class->new( @{ $test_args{ $class } } );
 	isa_ok $obj, $class;
 	can_ok $obj, qw( new process result );
@@ -157,9 +156,9 @@ cmp_ok( istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is d
 cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
-note '   class = PDL::NDBin::Func::CodeRef';
+note '   class = PDL::NDBin::Action::CodeRef';
 for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
-	$obj = PDL::NDBin::Func::CodeRef->new( $N, sub {} );
+	$obj = PDL::NDBin::Action::CodeRef->new( $N, sub {} );
 	$obj->process( iter $x->$type, $y, $N );
 	my $ref = "PDL::$type";
 	no strict 'refs';
@@ -210,23 +209,23 @@ is_pdl( $got, $expected, "istddev, input type float" );
 $got = istddev( iter $x->double, $y, $N );
 is_pdl( $got, $expected, "istddev, input type double" );
 
-# PDL::NDBin::Func::CodeRef
+# PDL::NDBin::Action::CodeRef
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->short, "PDL::NDBin::Func::CodeRef, input type short" );
-$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+is_pdl( $got, $expected->short, "PDL::NDBin::Action::CodeRef, input type short" );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->float, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->float, "PDL::NDBin::Func::CodeRef, input type float" );
-$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+is_pdl( $got, $expected->float, "PDL::NDBin::Action::CodeRef, input type float" );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->double, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected, "PDL::NDBin::Func::CodeRef, input type double" );
+is_pdl( $got, $expected, "PDL::NDBin::Action::CodeRef, input type double" );
 
 #
 #
@@ -272,23 +271,23 @@ is_pdl( $got, $expected, "istddev with bad values, input type float" );
 $got = istddev( iter $x->double, $y, $N );
 is_pdl( $got, $expected, "istddev with bad values, input type double" );
 
-# PDL::NDBin::Func::CodeRef
+# PDL::NDBin::Action::CodeRef
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->short, "PDL::NDBin::Func::CodeRef with bad values, input type short" );
-$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+is_pdl( $got, $expected->short, "PDL::NDBin::Action::CodeRef with bad values, input type short" );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->float, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected->float, "PDL::NDBin::Func::CodeRef with bad values, input type float" );
-$obj = PDL::NDBin::Func::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+is_pdl( $got, $expected->float, "PDL::NDBin::Action::CodeRef with bad values, input type float" );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
 $iter = iter $x->double, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
-is_pdl( $got, $expected, "PDL::NDBin::Func::CodeRef with bad values, input type double" );
+is_pdl( $got, $expected, "PDL::NDBin::Action::CodeRef with bad values, input type double" );
 
 #
 #
@@ -384,9 +383,9 @@ note 'CONCATENATION';
 	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
 	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
 	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
-	for my $class ( __PACKAGE__->functions ) {
+	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate
-		next if $class eq 'PDL::NDBin::Func::CodeRef';
+		next if $class eq 'PDL::NDBin::Action::CodeRef';
 		my $obj = $class->new( $N );
 		$obj->process( iter $u0, $v0, $N );
 		$obj->process( iter $u1, $v1, $N );
@@ -430,9 +429,9 @@ SKIP: {
 	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
 	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
 	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
-	for my $class ( __PACKAGE__->functions ) {
+	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate
-		next if $class eq 'PDL::NDBin::Func::CodeRef';
+		next if $class eq 'PDL::NDBin::Action::CodeRef';
 		my $obj = $class->new( $N );
 		$obj->process( iter $u0, $v0, $N );
 		$obj->process( iter $u1, $v1, $N );

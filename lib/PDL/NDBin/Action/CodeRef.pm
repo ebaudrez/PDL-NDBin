@@ -1,4 +1,4 @@
-package PDL::NDBin::Func::CodeRef;
+package PDL::NDBin::Action::CodeRef;
 
 use strict;
 use warnings;

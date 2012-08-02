@@ -8,10 +8,9 @@ use Test::More tests => 41;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
-use Module::Pluggable sub_name    => 'functions',
+use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
-		      search_path => [ 'PDL::NDBin::Func' ],
-		      except      => [ 'PDL::NDBin::Func::PP' ];
+		      search_path => [ 'PDL::NDBin::Action' ];
 
 BEGIN {
 	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
@@ -221,9 +220,9 @@ note 'CONCATENATION';
 	ok( $u->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
 	TODO: {
 		local $TODO = 'yet to implement concatenation';
-		for my $class ( __PACKAGE__->functions ) {
+		for my $class ( __PACKAGE__->actions ) {
 			# CodeRef is not supposed to be able to concatenate results
-			next if $class eq 'PDL::NDBin::Func::CodeRef';
+			next if $class eq 'PDL::NDBin::Action::CodeRef';
 			my $binner = PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
 						      vars => [ [ u => "+$class" ] ] );
 			for my $var ( $u0, $u1, $u2, $u3, $u4 ) { $binner->process( u => $var ) };

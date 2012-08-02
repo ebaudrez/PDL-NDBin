@@ -189,14 +189,14 @@ sub _make_instance
 	my( $N, $arg ) = @_;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	if( ref $arg eq 'CODE' ) {
-		my $class = "PDL::NDBin::Func::CodeRef";
+		my $class = "PDL::NDBin::Action::CodeRef";
 		_require_dynamic( $class );
 		return $class->new( $N, $arg );
 	}
 	else {
 		my $class = substr( $arg, 0, 1 ) eq '+'
 			? substr( $arg, 1 )
-			: "PDL::NDBin::Func::$arg";
+			: "PDL::NDBin::Action::$arg";
 		_require_dynamic( $class );
 		return $class->new( $N );
 	}
@@ -738,7 +738,7 @@ time. You need to this when, e.g., you are taking the average of the values in
 a bin with the standard PDL function avg(). However, the selection and
 extraction of the data is time-consuming. If you have an action that knows how
 to deal with indirection, you can do away with the indexer. Examples of such
-actions are: PDL::NDBin::Func::ICount, PDL::NDBin::Func::ISum, etc. They
+actions are: PDL::NDBin::Action::ICount, PDL::NDBin::Action::ISum, etc. They
 take the original data and the hashed bin numbers and produce an output piddle
 in one step.
 
@@ -1066,7 +1066,7 @@ Edward Baudrez, ebaudrez@cpan.org, 2011.
 
 =head1 SEE ALSO
 
-L<PDL>, L<PDL::Basic, L<PDL::Primitive>, L<PDL::NDBin::Func>
+L<PDL>, L<PDL::Basic, L<PDL::Primitive>, L<PDL::NDBin::Action>
 
 =head1 COPYRIGHT and LICENSE
 
