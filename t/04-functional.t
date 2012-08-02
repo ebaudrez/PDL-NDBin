@@ -219,7 +219,6 @@ TODO: {
 lives_ok { ndbin( AXES => pdl( 1,2 ) ) } 'keyword AXES';
 lives_ok { ndbin( pdl( 1,2 ), VARS => pdl( 3,4 ) ) } 'keyword VALS';
 lives_ok { ndbin( pdl( 1,2 ), DEFAULT_ACTION => sub {} ) } 'keyword DEFAULT_ACTION';
-lives_ok { ndbin( pdl( 1,2 ), SKIP_EMPTY => 0 ) } 'keyword SKIP_EMPTY';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
 # the example from PDL::hist
@@ -247,13 +246,11 @@ $expected = pdl( [1,2],
 		 [3,1] );
 $got = ndbin( $x, { step=>1, min=>1, n=>2 },
 	      $y, { step=>1, min=>1, n=>4 },
-	      VARS => [ $z => \&debug_action ],
-	      SKIP_EMPTY => 0 );
+	      VARS => [ $z => \&debug_action ] );
 is_pdl( $got, $expected, 'variable with action = debug_action' );
 $got = ndbin( AXES => [ { pdl => $x, step=>1, min=>1, n=>2 },
 			{ pdl => $y, step=>1, min=>1, n=>4 } ],
-	      VARS => [ { pdl => PDL::null->double, action => \&debug_action } ],
-	      SKIP_EMPTY => 0 );
+	      VARS => [ { pdl => PDL::null->double, action => \&debug_action } ] );
 is_pdl( $got, $expected, 'variable with action = debug_action, null PDL, and full spec' );
 
 # binning integer data
@@ -337,14 +334,18 @@ $got = ndbin( $x => { n => 2 },
 	      DEFAULT_ACTION => sub { my @u = shift->unhash; $u[0] + 2*$u[1] + 2*5*$u[2] } );
 is_pdl( $got, $expected, 'bin numbers returned from iterator' );
 
-# test SKIP_EMPTY
+# simulate the functionality formerly known as SKIP_EMPTY
+# note that we have to supply a fake variable of type `long' to simulate the
+# behaviour of PDL::NDBin::Action::Count
 $x = pdl( 1,3,3 );		# 3 bins, but middle bin will be empty
 $expected = long( 1,0,2 );
-$got = ndbin( $x, SKIP_EMPTY => 0 );
-is_pdl( $got, $expected, 'SKIP_EMPTY = 0' );
+$got = ndbin( $x, VARS => [ $x => 'Count' ] );
+is_pdl( $got, $expected, 'do not skip empty bins, action class' );
+$got = ndbin( $x, VARS => [ PDL->null->long => sub { shift->want->nelem } ] );
+is_pdl( $got, $expected, 'do not skip empty bins, action coderef' );
 $expected->inplace->setvaltobad( 0 );
-$got = ndbin( $x, SKIP_EMPTY => 1 );
-is_pdl( $got, $expected, 'SKIP_EMPTY = 1' );
+$got = ndbin( $x, VARS => [ PDL->null->long => sub { my $n = shift->want->nelem; return unless $n; $n } ] );
+is_pdl( $got, $expected, 'skip empty bins (cannot be achieved with action class)' );
 
 # cross-check with hist and some random data
 $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,

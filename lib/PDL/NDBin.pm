@@ -65,7 +65,7 @@ our @EXPORT_OK = qw( ndbinning ndbin process_axes make_labels );
 our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes make_labels ) ] );
 
 # the list of valid keys
-my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION SKIP_EMPTY );
+my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION );
 
 =head2 ndbinning()
 
@@ -602,9 +602,9 @@ The arguments to ndbin() should be specified as one or more key-value pairs:
 	       [ ... ] );
 
 The argument list can optionally be enclosed by braces (i.e., an anonymous
-hash). The recognized keys are C<AXES>, C<VARS>, C<DEFAULT_ACTION>, and
-C<SKIP_EMPTY>. They are described in more detail below. Any key requiring more
-than one value, e.g., C<AXES>, must be paired with an array reference.
+hash). The recognized keys are C<AXES>, C<VARS>, and C<DEFAULT_ACTION>. They
+are described in more detail below. Any key requiring more than one value,
+e.g., C<AXES>, must be paired with an array reference.
 
 For convenience, and for compatibility with hist(), a lot of abbreviations and
 shortcuts are allowed, though. It is allowed to omit the key C<AXES> and the
@@ -697,12 +697,6 @@ supplied, the returned histogram is of type I<long>, in contrast with hist().
 The action to execute for a variable lacking an action. By default the number
 of values in each bin is counted to produce a histogram.
 
-=item C<SKIP_EMPTY>
-
-Whether to skip empty bins. By default, empty bins are not skipped. You may
-want to use this if the action associated with a variable cannot handle empty
-piddles well.
-
 =back
 
 =head2 Usage examples
@@ -764,7 +758,6 @@ A rather complete example of the interface:
 	       VARS => [ { pdl => $ceres_flux, action => \&do_ceres_flux },
 			 { pdl => $gl_flux,    action => \&do_gl_flux    },
 			 { pdl => $gerb_flux,  action => \&do_gerb_flux  } ],
-	       SKIP_EMPTY => 0,		# do not skip empty bins (which is the default)
 	     );
 
 Note that there is no assignment of the return value (in fact, there is none).
@@ -776,7 +769,6 @@ using the abbreviated interface, write:
 	       VARS => [ $ceres_flux, \&do_ceres_flux,
 			 $gl_flux,    \&do_gl_flux,
 			 $gerb_flux,  \&do_gerb_flux ],
-	       SKIP_EMPTY => 0,		# do not skip empty bins
 	     );
 
 More simple examples:
@@ -811,17 +803,6 @@ It is important to note that the actions will be called in the order they are
 given for each bin, before proceeding to the next bin. You can depend on this
 behaviour, for instance, when you have an action that depends on the result of
 a previous action within the same bin.
-
-By default, ndbin() will loop over all bins, and create a piddle per bin
-holding only the values in that bin. This piddle will be passed to your
-actions. This ensures that every action will only see the data in one bin at a
-time. You need to do this when, e.g., you are taking the average of the values
-in a bin with the standard PDL function avg(). However, the selection and
-extraction of the data is time-consuming. If you have an action that knows how
-to deal with indirection, you can do away with the selection and extraction.
-Examples of such actions are: PDL::NDBin::Action::Count,
-PDL::NDBin::Action::Sum, etc. They take the original data and the hashed bin
-numbers and produce an output piddle in one step.
 
 =head3 Code reference
 
@@ -861,6 +842,28 @@ When supplying a class instead of an action reference, it is possible to
 compute multiple bins at once in one call to process(). This can be much more
 efficient than calling the action for every bin, especially if the loop can be
 coded in PP/XS.
+
+=head2 Iteration strategy
+
+By default, ndbin() will loop over all bins, and create a piddle per bin
+holding only the values in that bin. This piddle is accessible to your actions
+via the iterator object. This ensures that every action will only see the data
+in one bin at a time. You need to do this when, e.g., you are taking the
+average of the values in a bin with the standard PDL function avg(). However,
+the selection and extraction of the data is time-consuming. If you have an
+action that knows how to deal with indirection, you can do away with the
+selection and extraction. Examples of such actions are:
+PDL::NDBin::Action::Count, PDL::NDBin::Action::Sum, etc. They take the original
+data and the hashed bin numbers and produce an output piddle in one step.
+
+Note that empty bins are not skipped. If you want to use an action that cannot
+handle empty piddles, you can wrap the action as follows to skip empty bins:
+
+	sub { my $iter = shift; return unless $iter->want->nelem; ... }
+
+Remember that return C<undef> from the action will not fill the current bin.
+Note that the evaluation of C<<$iter->want>> entails a performance penalty,
+even if the bin is empty and not processed further.
 
 =head2 Automatic parameter calculation
 
@@ -950,23 +953,12 @@ sub ndbin
 
 	# variables
 	my $default_action = $args->{DEFAULT_ACTION} || sub { shift->want->nelem };
-	my $skip_empty = $args->{SKIP_EMPTY};			# by default is false
 	my @vars = expand_vars( expand_value $args->{VARS} );
 	# the presence of any of these keys requires a variable
-	if( ! @vars and grep { /^(SKIP_EMPTY|DEFAULT_ACTION)$/ } keys %$args ) {
+	if( ! @vars and grep { /^(DEFAULT_ACTION)$/ } keys %$args ) {
 		@vars = ( { pdl => PDL->null->long } );
 	}
-	for my $var ( @vars ) {
-		my $action = $var->{action} || $default_action;
-		if( $skip_empty ) {
-			# wrap $action if $skip_empty differs from its default value
-			$var->{action} = sub {
-				return unless $_[0]->want->nelem;
-				$action->( @_ );
-			};
-		}
-		else { $var->{action} = $action }
-	}
+	for my $var ( @vars ) { $var->{action} ||= $default_action }
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
 	# the real work is done by ndbinning()
@@ -995,8 +987,7 @@ To hook a progress bar to ndbin():
 			  PDL::null => sub { $progress++; return } ]
 	);
 
-In this case, you want C<SKIP_EMPTY> to be zero (the default) for the progress
-bar to work correctly. Note that the progress bar updater returns I<undef>. You
+Note that the progress bar updater returns I<undef>. You
 probably do not want to return the result of C<$progress++>! If you were to
 capture the return value of ndbin(), a piddle would be returned that holds the
 return values of the progress bar updater. You probably do not want this
