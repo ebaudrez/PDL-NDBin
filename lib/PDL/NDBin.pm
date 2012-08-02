@@ -12,7 +12,6 @@ use Exporter;
 use List::Util qw( reduce );
 use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
-use PDL::NDBin::Func;
 use PDL::NDBin::Iterator;
 use Log::Any;
 use Data::Dumper;
@@ -171,17 +170,34 @@ sub new
 	return bless $self, $class;
 }
 
+# stolen from Log::Dispatch
+sub _require_dynamic
+{
+	my $class = shift;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	if( $class->VERSION ) {
+		$log->info( "$class already loaded" );
+		return;
+	}
+	local $@;
+	eval "require $class";
+	die $@ if $@;
+}
+
 sub _make_instance
 {
 	my( $N, $arg ) = @_;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	if( ref $arg eq 'CODE' ) {
-		return PDL::NDBin::Func::CodeRef->new( $N, $arg );
+		my $class = "PDL::NDBin::Func::CodeRef";
+		_require_dynamic( $class );
+		return $class->new( $N, $arg );
 	}
 	else {
 		my $class = substr( $arg, 0, 1 ) eq '+'
 			? substr( $arg, 1 )
 			: "PDL::NDBin::Func::$arg";
+		_require_dynamic( $class );
 		return $class->new( $N );
 	}
 }
@@ -439,10 +455,10 @@ sub expand_vars
 			# an action to perform on this variable
 			$hash->{action} = shift;
 		}
-		elsif( grep { /^(PDL::NDBin::Func::)?$_[0]$/ } PDL::NDBin::Func->plugins ) {
+		elsif( $_[0] =~ /^(\w+::)*\w+$/ ) {
+			# if it looks like a package name, consider the argument
+			# to be the name of a class implementing the action
 			PDL::Core::barf( 'no variable given' ) unless $hash;
-			# an action to perform on this variable, in the form of
-			# a recognized plugin class name
 			$hash->{action} = shift;
 		}
 		else {
@@ -722,7 +738,7 @@ time. You need to this when, e.g., you are taking the average of the values in
 a bin with the standard PDL function avg(). However, the selection and
 extraction of the data is time-consuming. If you have an action that knows how
 to deal with indirection, you can do away with the indexer. Examples of such
-actions are: PDL::NDBin::Func::icount(), PDL::NDBin::Func::isum(), etc. They
+actions are: PDL::NDBin::Func::ICount, PDL::NDBin::Func::ISum, etc. They
 take the original data and the hashed bin numbers and produce an output piddle
 in one step.
 

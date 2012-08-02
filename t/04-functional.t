@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 91;
+use Test::More tests => 90;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -10,7 +10,6 @@ use Test::NoWarnings;
 BEGIN {
 	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
 	use_ok( 'PDL::NDBin', qw( ndbinning ndbin process_axes make_labels ) );
-	use_ok( 'PDL::NDBin::Func' );
 }
 
 # because PDL overloads the comparison operators, it is no fun to run

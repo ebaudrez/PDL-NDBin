@@ -2,14 +2,18 @@
 
 use strict;
 use warnings;
-use Test::More tests => 108;
+use Test::More tests => 107;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
+use Carp;
+use Module::Pluggable sub_name    => 'functions',
+		      require     => 1,
+		      search_path => [ 'PDL::NDBin::Func' ],
+		      except      => [ 'PDL::NDBin::Func::PP' ];
 
 BEGIN {
 	use_ok( 'PDL' ) or BAIL_OUT( 'Could not load PDL' );
-	use_ok( 'PDL::NDBin::Func' );
 	use_ok( 'PDL::NDBin::Iterator' );
 }
 
@@ -39,14 +43,39 @@ my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
 #
 note 'SETUP';
 {
-	my %plugins = map { $_ => 1 } PDL::NDBin::Func->plugins;
+	my %plugins = map { $_ => 1 } __PACKAGE__->functions;
 	note 'registered plugins: ', join ', ' => keys %plugins;
 	for my $p ( qw(	PDL::NDBin::Func::ICount  PDL::NDBin::Func::ISum
-			PDL::NDBin::Func::IAvg    PDL::NDBin::Func::IStdDev
-			PDL::NDBin::Func::CodeRef ) )
+			PDL::NDBin::Func::IAvg    PDL::NDBin::Func::IStdDev ) )
 	{
 		ok( $plugins{ $p }, "$p is there" );
 		delete $plugins{ $p };
+		# create wrapper function around the class
+		my $function = do { $p =~ /::(\w+)$/; lc $1 };
+		no strict 'refs';
+		*$function = sub {
+			my $iter = shift;
+			confess 'too many arguments' if @_;
+			my $obj = $p->new( $iter->nbins );
+			$obj->process( $iter );
+			return $obj->result;
+		};
+	}
+	for my $p ( qw(	PDL::NDBin::Func::CodeRef ) )
+	{
+		ok( $plugins{ $p }, "$p is there" );
+		delete $plugins{ $p };
+		# create wrapper function around the class
+		my $function = do { $p =~ /::(\w+)$/; lc $1 };
+		no strict 'refs';
+		*$function = sub {
+			my $iter = shift;
+			my $coderef = shift;
+			confess 'too many arguments' if @_;
+			my $obj = $p->new( $iter->nbins, $coderef );
+			$obj->process( $iter );
+			return $obj->result;
+		};
 	}
 	ok( ! %plugins, 'no more unknown plugins left' ) or diag 'remaining plugins: ', join ', ' => keys %plugins;
 }
@@ -65,7 +94,7 @@ my %test_args = (
 	'PDL::NDBin::Func::IStdDev' => [ $N ],
 	'PDL::NDBin::Func::ISum'    => [ $N ],
 );
-for my $class ( PDL::NDBin::Func->plugins ) {
+for my $class ( __PACKAGE__->functions ) {
 	$obj = $class->new( @{ $test_args{ $class } } );
 	isa_ok $obj, $class;
 	can_ok $obj, qw( new process result );
@@ -88,44 +117,44 @@ $x = pdl( @u );
 $y = long( @v );
 
 #
-note '   function = PDL::NDBin::Func::icount';
-cmp_ok( PDL::NDBin::Func::icount( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
-cmp_ok( PDL::NDBin::Func::icount( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
-cmp_ok( PDL::NDBin::Func::icount( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
-cmp_ok( PDL::NDBin::Func::icount( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
-cmp_ok( PDL::NDBin::Func::icount( iter $x->longlong, $y, $N )->type, '==', long, 'return type is long for input type longlong' );
-cmp_ok( PDL::NDBin::Func::icount( iter $x->float, $y, $N )->type, '==', long, 'return type is long for input type float' );
-cmp_ok( PDL::NDBin::Func::icount( iter $x->double, $y, $N )->type, '==', long, 'return type is long for input type double' );
+note '   function = icount';
+cmp_ok( icount( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
+cmp_ok( icount( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
+cmp_ok( icount( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
+cmp_ok( icount( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
+cmp_ok( icount( iter $x->longlong, $y, $N )->type, '==', long, 'return type is long for input type longlong' );
+cmp_ok( icount( iter $x->float, $y, $N )->type, '==', long, 'return type is long for input type float' );
+cmp_ok( icount( iter $x->double, $y, $N )->type, '==', long, 'return type is long for input type double' );
 
 #
-note '   function = PDL::NDBin::Func::isum';
-cmp_ok( PDL::NDBin::Func::isum( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
-cmp_ok( PDL::NDBin::Func::isum( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
-cmp_ok( PDL::NDBin::Func::isum( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
-cmp_ok( PDL::NDBin::Func::isum( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
-cmp_ok( PDL::NDBin::Func::isum( iter $x->longlong, $y, $N )->type, '==', longlong, 'return type is longlong for input type longlong' );
-cmp_ok( PDL::NDBin::Func::isum( iter $x->float, $y, $N )->type, '==', float, 'return type is float for input type float' );
-cmp_ok( PDL::NDBin::Func::isum( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+note '   function = isum';
+cmp_ok( isum( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
+cmp_ok( isum( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
+cmp_ok( isum( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
+cmp_ok( isum( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
+cmp_ok( isum( iter $x->longlong, $y, $N )->type, '==', longlong, 'return type is longlong for input type longlong' );
+cmp_ok( isum( iter $x->float, $y, $N )->type, '==', float, 'return type is float for input type float' );
+cmp_ok( isum( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
-note '   function = PDL::NDBin::Func::iavg';
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
-cmp_ok( PDL::NDBin::Func::iavg( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+note '   function = iavg';
+cmp_ok( iavg( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
+cmp_ok( iavg( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
+cmp_ok( iavg( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
+cmp_ok( iavg( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
+cmp_ok( iavg( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
+cmp_ok( iavg( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
+cmp_ok( iavg( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
-note '   function = PDL::NDBin::Func::istddev';
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
-cmp_ok( PDL::NDBin::Func::istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+note '   function = istddev';
+cmp_ok( istddev( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
+cmp_ok( istddev( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
+cmp_ok( istddev( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
+cmp_ok( istddev( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
+cmp_ok( istddev( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
+cmp_ok( istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
+cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
 note '   class = PDL::NDBin::Func::CodeRef';
@@ -149,37 +178,37 @@ $N = 4;
 $x = short( @u );
 $y = long( @v );
 
-# PDL::NDBin::Func::icount
+# icount
 $expected = long( 4,1,0,1 );
-$got = PDL::NDBin::Func::icount( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::icount, input type short" );
-$got = PDL::NDBin::Func::icount( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::icount, input type float" );
+$got = icount( iter $x, $y, $N );
+is_pdl( $got, $expected, "icount, input type short" );
+$got = icount( iter $x->float, $y, $N );
+is_pdl( $got, $expected, "icount, input type float" );
 
-# PDL::NDBin::Func::isum
+# isum
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::isum( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::isum, input type short" );
-$got = PDL::NDBin::Func::isum( iter $x->float, $y, $N );
-is_pdl( $got, $expected->float, "PDL::NDBin::Func::isum, input type float" );
+$got = isum( iter $x, $y, $N );
+is_pdl( $got, $expected, "isum, input type short" );
+$got = isum( iter $x->float, $y, $N );
+is_pdl( $got, $expected->float, "isum, input type float" );
 
-# PDL::NDBin::Func::iavg
+# iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::iavg( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::iavg, input type short" );
-$got = PDL::NDBin::Func::iavg( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::iavg, input type float" );
-$got = PDL::NDBin::Func::iavg( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::iavg, input type double" );
+$got = iavg( iter $x, $y, $N );
+is_pdl( $got, $expected, "iavg, input type short" );
+$got = iavg( iter $x->float, $y, $N );
+is_pdl( $got, $expected, "iavg, input type float" );
+$got = iavg( iter $x->double, $y, $N );
+is_pdl( $got, $expected, "iavg, input type double" );
 
-# PDL::NDBin::Func::istddev
+# istddev
 $expected = pdl( sqrt(3.5),0,-1,0 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::istddev( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type short" );
-$got = PDL::NDBin::Func::istddev( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type float" );
-$got = PDL::NDBin::Func::istddev( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::istddev, input type double" );
+$got = istddev( iter $x, $y, $N );
+is_pdl( $got, $expected, "istddev, input type short" );
+$got = istddev( iter $x->float, $y, $N );
+is_pdl( $got, $expected, "istddev, input type float" );
+$got = istddev( iter $x->double, $y, $N );
+is_pdl( $got, $expected, "istddev, input type double" );
 
 # PDL::NDBin::Func::CodeRef
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -211,37 +240,37 @@ $N = 4;
 $x = short( @u )->inplace->setvaltobad( -1 );
 $y = long( @v );
 
-# PDL::NDBin::Func::icount
+# icount
 $expected = long( 3,1,0,1 );
-$got = PDL::NDBin::Func::icount( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::icount with bad values, input type short" );
-$got = PDL::NDBin::Func::icount( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::icount with bad values, input type float" );
+$got = icount( iter $x, $y, $N );
+is_pdl( $got, $expected, "icount with bad values, input type short" );
+$got = icount( iter $x->float, $y, $N );
+is_pdl( $got, $expected, "icount with bad values, input type float" );
 
-# PDL::NDBin::Func::isum
+# isum
 $expected = long( 18,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::isum( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::isum with bad values, input type short" );
-$got = PDL::NDBin::Func::isum( iter $x->float, $y, $N );
-is_pdl( $got, $expected->float, "PDL::NDBin::Func::isum with bad values, input type float" );
+$got = isum( iter $x, $y, $N );
+is_pdl( $got, $expected, "isum with bad values, input type short" );
+$got = isum( iter $x->float, $y, $N );
+is_pdl( $got, $expected->float, "isum with bad values, input type float" );
 
-# PDL::NDBin::Func::iavg
+# iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::iavg( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::iavg with bad values, input type short" );
-$got = PDL::NDBin::Func::iavg( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::iavg with bad values, input type float" );
-$got = PDL::NDBin::Func::iavg( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::iavg with bad values, input type double" );
+$got = iavg( iter $x, $y, $N );
+is_pdl( $got, $expected, "iavg with bad values, input type short" );
+$got = iavg( iter $x->float, $y, $N );
+is_pdl( $got, $expected, "iavg with bad values, input type float" );
+$got = iavg( iter $x->double, $y, $N );
+is_pdl( $got, $expected, "iavg with bad values, input type double" );
 
-# PDL::NDBin::Func::istddev
+# istddev
 $expected = pdl( sqrt(14/3),0,-1,0 )->inplace->setvaltobad( -1 );
-$got = PDL::NDBin::Func::istddev( iter $x, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type short" );
-$got = PDL::NDBin::Func::istddev( iter $x->float, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type float" );
-$got = PDL::NDBin::Func::istddev( iter $x->double, $y, $N );
-is_pdl( $got, $expected, "PDL::NDBin::Func::istddev with bad values, input type double" );
+$got = istddev( iter $x, $y, $N );
+is_pdl( $got, $expected, "istddev with bad values, input type short" );
+$got = istddev( iter $x->float, $y, $N );
+is_pdl( $got, $expected, "istddev with bad values, input type float" );
+$got = istddev( iter $x->double, $y, $N );
+is_pdl( $got, $expected, "istddev with bad values, input type double" );
 
 # PDL::NDBin::Func::CodeRef
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -313,19 +342,19 @@ $y = long( @v );
 
 #
 $expected = apply( $x, $y, $N, \&ngood )->long;
-$got = PDL::NDBin::Func::icount( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::icount with ngood()" );
+$got = icount( iter $x, $y, $N );
+is_pdl( $got, $expected, "cross-check icount() with ngood()" );
 $expected = apply( $x, $y, $N, \&sum );
-$got = PDL::NDBin::Func::isum( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::isum with sum()" );
+$got = isum( iter $x, $y, $N );
+is_pdl( $got, $expected, "cross-check isum() with sum()" );
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[0] } );
-$got = PDL::NDBin::Func::iavg( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::iavg with stats()" );
+$got = iavg( iter $x, $y, $N );
+is_pdl( $got, $expected, "cross-check iavg() with stats()" );
 # the docs of `stats' are actually wrong on this one:
 # the population rms is in [1], and the rms is in [6]
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[6] } );
-$got = PDL::NDBin::Func::istddev( iter $x, $y, $N );
-is_pdl( $got, $expected, "cross-check PDL::NDBin::Func::istddev with stats()" );
+$got = istddev( iter $x, $y, $N );
+is_pdl( $got, $expected, "cross-check istddev() with stats()" );
 
 #
 #
@@ -355,11 +384,9 @@ note 'CONCATENATION';
 	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
 	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
 	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
-	for my $class ( 'PDL::NDBin::Func::ICount',
-			'PDL::NDBin::Func::ISum',
-			'PDL::NDBin::Func::IAvg',
-			'PDL::NDBin::Func::IStdDev' )
-	{
+	for my $class ( __PACKAGE__->functions ) {
+		# CodeRef is not supposed to be able to concatenate
+		next if $class eq 'PDL::NDBin::Func::CodeRef';
 		my $obj = $class->new( $N );
 		$obj->process( iter $u0, $v0, $N );
 		$obj->process( iter $u1, $v1, $N );
@@ -403,11 +430,9 @@ SKIP: {
 	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
 	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
 	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
-	for my $class ( 'PDL::NDBin::Func::ICount',
-			'PDL::NDBin::Func::ISum',
-			'PDL::NDBin::Func::IAvg',
-			'PDL::NDBin::Func::IStdDev' )
-	{
+	for my $class ( __PACKAGE__->functions ) {
+		# CodeRef is not supposed to be able to concatenate
+		next if $class eq 'PDL::NDBin::Func::CodeRef';
 		my $obj = $class->new( $N );
 		$obj->process( iter $u0, $v0, $N );
 		$obj->process( iter $u1, $v1, $N );
