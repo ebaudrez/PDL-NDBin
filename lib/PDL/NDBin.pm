@@ -65,7 +65,7 @@ our @EXPORT_OK = qw( ndbinning ndbin process_axes make_labels );
 our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes make_labels ) ] );
 
 # the list of valid keys
-my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION INDEXER SKIP_EMPTY );
+my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION SKIP_EMPTY );
 
 =head2 ndbinning()
 
@@ -697,20 +697,6 @@ supplied, the returned histogram is of type I<long>, in contrast with hist().
 The action to execute for a variable lacking an action. By default the number
 of values in each bin is counted to produce a histogram.
 
-=item C<INDEXER>
-
-Whether to run the indexer on the variables before passing data to your
-actions. By default, ndbin() will loop over all bins, and create a piddle per
-bin holding only the values in that bin. This piddle will be passed to your
-actions. This ensures that every action will only see the data in one bin at a
-time. You need to this when, e.g., you are taking the average of the values in
-a bin with the standard PDL function avg(). However, the selection and
-extraction of the data is time-consuming. If you have an action that knows how
-to deal with indirection, you can do away with the indexer. Examples of such
-actions are: PDL::NDBin::Action::Count, PDL::NDBin::Action::Sum, etc. They
-take the original data and the hashed bin numbers and produce an output piddle
-in one step.
-
 =item C<SKIP_EMPTY>
 
 Whether to skip empty bins. By default, empty bins are not skipped. You may
@@ -825,6 +811,17 @@ It is important to note that the actions will be called in the order they are
 given for each bin, before proceeding to the next bin. You can depend on this
 behaviour, for instance, when you have an action that depends on the result of
 a previous action within the same bin.
+
+By default, ndbin() will loop over all bins, and create a piddle per bin
+holding only the values in that bin. This piddle will be passed to your
+actions. This ensures that every action will only see the data in one bin at a
+time. You need to do this when, e.g., you are taking the average of the values
+in a bin with the standard PDL function avg(). However, the selection and
+extraction of the data is time-consuming. If you have an action that knows how
+to deal with indirection, you can do away with the selection and extraction.
+Examples of such actions are: PDL::NDBin::Action::Count,
+PDL::NDBin::Action::Sum, etc. They take the original data and the hashed bin
+numbers and produce an output piddle in one step.
 
 =head3 Code reference
 
@@ -952,18 +949,11 @@ sub ndbin
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
-	my $indexer = $args->{INDEXER} // 1;			# by default is true
 	my $default_action = $args->{DEFAULT_ACTION} || sub { shift->want->nelem };
 	my $skip_empty = $args->{SKIP_EMPTY};			# by default is false
 	my @vars = expand_vars( expand_value $args->{VARS} );
-	# the presence of any of these keys requires a variable, and the
-	# indexer to be operational
-	if( ! @vars and grep { /^(SKIP_EMPTY)$/ } keys %$args ) {
-		$indexer ||= 1;
-		@vars = ( { pdl => PDL->null->long } );
-	}
 	# the presence of any of these keys requires a variable
-	if( ! @vars and grep { /^(DEFAULT_ACTION)$/ } keys %$args ) {
+	if( ! @vars and grep { /^(SKIP_EMPTY|DEFAULT_ACTION)$/ } keys %$args ) {
 		@vars = ( { pdl => PDL->null->long } );
 	}
 	for my $var ( @vars ) {

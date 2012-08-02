@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 88;
+use Test::More tests => 87;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -220,7 +220,6 @@ lives_ok { ndbin( AXES => pdl( 1,2 ) ) } 'keyword AXES';
 lives_ok { ndbin( pdl( 1,2 ), VARS => pdl( 3,4 ) ) } 'keyword VALS';
 lives_ok { ndbin( pdl( 1,2 ), DEFAULT_ACTION => sub {} ) } 'keyword DEFAULT_ACTION';
 lives_ok { ndbin( pdl( 1,2 ), SKIP_EMPTY => 0 ) } 'keyword SKIP_EMPTY';
-lives_ok { ndbin( pdl( 1,2 ), INDEXER => 0 ) } 'keyword INDEXER';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
 # the example from PDL::hist
@@ -235,10 +234,10 @@ $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
 $got = ndbin( $x, 0,20,1, VARS => $x );
 is_pdl( $got, $expected, 'variable with default action' );
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
-$got = ndbin( $x, 0,20,1, VARS => [ $x => sub { my $iter = shift; $iter->want->nelem ? $iter->selection->avg : undef } ], INDEXER => 1 );
-is_pdl( $got, $expected, 'variable with action = average, INDEXER = 1' );
-$got = ndbin( $x, 0,20,1, VARS => [ $x => 'Avg' ], INDEXER => 0 );
-is_pdl( $got, $expected, 'variable with action = average, INDEXER = 0' );
+$got = ndbin( $x, 0,20,1, VARS => [ $x => sub { my $iter = shift; $iter->want->nelem ? $iter->selection->avg : undef } ] );
+is_pdl( $got, $expected, 'variable with action = average, specified as a coderef' );
+$got = ndbin( $x, 0,20,1, VARS => [ $x => 'Avg' ] );
+is_pdl( $got, $expected, 'variable with action = average, specified as a class name' );
 $x = pdl( 1,1,1,2,2,1,1,1,2 );
 $y = pdl( 2,1,3,4,1,4,4,4,1 );
 $z = pdl( 0,1,2,3,4,5,6,7,8 );
