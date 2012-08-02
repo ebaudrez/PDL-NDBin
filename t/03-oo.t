@@ -93,7 +93,7 @@ is_pdl( $got, $expected, 'different syntax' );
 $expected = long( 0,2,1 );
 $binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
 			   loop => \&PDL::NDBin::fast_loop,
-			   vars => [ [ x => 'ICount' ] ] );
+			   vars => [ [ x => 'Count' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'different syntax, using fast loop' );
@@ -161,7 +161,7 @@ $got = $binner->output;
 is_pdl( $got, $expected, 'variable with action = average' );
 $binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
 			   loop => \&PDL::NDBin::fast_loop,
-			   vars => [ [ 'x', 'IAvg' ] ] );
+			   vars => [ [ 'x', 'Avg' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl( $got, $expected, 'variable with action = average, using fast loop' );

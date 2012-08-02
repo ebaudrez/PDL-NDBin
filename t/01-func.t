@@ -44,13 +44,13 @@ note 'SETUP';
 {
 	my %plugins = map { $_ => 1 } __PACKAGE__->actions;
 	note 'registered plugins: ', join ', ' => keys %plugins;
-	for my $p ( qw(	PDL::NDBin::Action::ICount  PDL::NDBin::Action::ISum
-			PDL::NDBin::Action::IAvg    PDL::NDBin::Action::IStdDev ) )
+	for my $p ( qw(	PDL::NDBin::Action::Count  PDL::NDBin::Action::Sum
+			PDL::NDBin::Action::Avg    PDL::NDBin::Action::StdDev ) )
 	{
 		ok( $plugins{ $p }, "$p is there" );
 		delete $plugins{ $p };
 		# create wrapper function around the class
-		my $function = do { $p =~ /::(\w+)$/; lc $1 };
+		my $function = do { $p =~ /::(\w+)$/; 'i' . lc $1 };
 		no strict 'refs';
 		*$function = sub {
 			my $iter = shift;
@@ -65,7 +65,7 @@ note 'SETUP';
 		ok( $plugins{ $p }, "$p is there" );
 		delete $plugins{ $p };
 		# create wrapper function around the class
-		my $function = do { $p =~ /::(\w+)$/; lc $1 };
+		my $function = do { $p =~ /::(\w+)$/; 'i' . lc $1 };
 		no strict 'refs';
 		*$function = sub {
 			my $iter = shift;
@@ -88,10 +88,10 @@ note 'BASIC OO FUNCTIONALITY';
 $N = 10;
 my %test_args = (
 	'PDL::NDBin::Action::CodeRef' => [ $N, sub {} ],
-	'PDL::NDBin::Action::IAvg'    => [ $N ],
-	'PDL::NDBin::Action::ICount'  => [ $N ],
-	'PDL::NDBin::Action::IStdDev' => [ $N ],
-	'PDL::NDBin::Action::ISum'    => [ $N ],
+	'PDL::NDBin::Action::Avg'     => [ $N ],
+	'PDL::NDBin::Action::Count'   => [ $N ],
+	'PDL::NDBin::Action::StdDev'  => [ $N ],
+	'PDL::NDBin::Action::Sum'     => [ $N ],
 );
 for my $class ( __PACKAGE__->actions ) {
 	$obj = $class->new( @{ $test_args{ $class } } );

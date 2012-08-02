@@ -1,4 +1,4 @@
-package PDL::NDBin::Action::IAvg;
+package PDL::NDBin::Action::StdDev;
 
 use strict;
 use warnings;
@@ -18,7 +18,8 @@ sub process
 	my $iter = shift;
 	$self->{out} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
-	PDL::NDBin::Actions_PP::_iavg_loop( $iter->data, $iter->hash, $self->{out}, $self->{count}, $self->{m} );
+	$self->{avg} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{avg};
+	PDL::NDBin::Actions_PP::_istddev_loop( $iter->data, $iter->hash, $self->{out}, $self->{count}, $self->{avg}, $self->{m} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );
@@ -28,7 +29,7 @@ sub process
 sub result
 {
 	my $self = shift;
-	PDL::NDBin::Actions_PP::_setnulltobad( $self->{count}, $self->{out} );
+	PDL::NDBin::Actions_PP::_istddev_post( $self->{count}, $self->{out} );
 	return $self->{out};
 }
 

@@ -239,7 +239,7 @@ sub process
 	}
 	else {
 		@vars = ( $hash );
-		@instances = ( _make_instance $N, 'ICount' );
+		@instances = ( _make_instance $N, 'Count' );
 	}
 	$self->{instances} = \@instances;
 
@@ -738,7 +738,7 @@ time. You need to this when, e.g., you are taking the average of the values in
 a bin with the standard PDL function avg(). However, the selection and
 extraction of the data is time-consuming. If you have an action that knows how
 to deal with indirection, you can do away with the indexer. Examples of such
-actions are: PDL::NDBin::Action::ICount, PDL::NDBin::Action::ISum, etc. They
+actions are: PDL::NDBin::Action::Count, PDL::NDBin::Action::Sum, etc. They
 take the original data and the hashed bin numbers and produce an output piddle
 in one step.
 

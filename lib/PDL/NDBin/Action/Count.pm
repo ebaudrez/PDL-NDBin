@@ -1,4 +1,4 @@
-package PDL::NDBin::Action::ICount;
+package PDL::NDBin::Action::Count;
 
 use strict;
 use warnings;
