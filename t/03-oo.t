@@ -268,20 +268,17 @@ note 'CONCATENATION';
 	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
 	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
 	ok( $u->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
-	TODO: {
-		local $TODO = 'yet to implement concatenation';
-		for my $class ( __PACKAGE__->actions ) {
-			# CodeRef is not supposed to be able to concatenate results
-			next if $class eq 'PDL::NDBin::Action::CodeRef';
-			my $binner = PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
-						      vars => [ [ u => "+$class" ] ] );
-			for my $var ( $u0, $u1, $u2, $u3, $u4 ) { $binner->process( u => $var ) };
-			my $got = $binner->output;
-			my $expected = PDL::NDBin->new( axes => [ [ u => (2,-50,50) ] ],
-							vars => [ [ u => "+$class" ] ] )
-						 ->process( u => $u )
-						 ->output;
-			is_pdl $got, $expected, "repeated invocation of process() equal to concatenation with action $class";
-		}
+	for my $class ( __PACKAGE__->actions ) {
+		# CodeRef is not supposed to be able to concatenate results
+		next if $class eq 'PDL::NDBin::Action::CodeRef';
+		my $binner = PDL::NDBin->new( axes => [ [ u => (4,-50,25) ] ],
+					      vars => [ [ u => "+$class" ] ] );
+		for my $var ( $u0, $u1, $u2, $u3, $u4 ) { $binner->process( u => $var ) };
+		my $got = $binner->output;
+		my $expected = PDL::NDBin->new( axes => [ [ u => (4,-50,25) ] ],
+						vars => [ [ u => "+$class" ] ] )
+					 ->process( u => $u )
+					 ->output;
+		is_pdl $got, $expected, "repeated invocation of process() equal to concatenation with action $class";
 	}
 }

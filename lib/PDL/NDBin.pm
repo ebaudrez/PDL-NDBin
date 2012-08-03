@@ -201,23 +201,21 @@ sub process
 
 	my $N = reduce { $a * $b } @n; # total number of bins
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
-	# for compatibility with existing code
-	# XXX this should be removed
-	my( @vars, @instances );
+	my( @vars, @actions );
 	if( $self->{vars} && @{ $self->{vars} } ) {
 		@vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
-		@instances = map { _make_instance $N, $_->[1] } @{ $self->{vars} };
+		@actions = map { $_->[1] } @{ $self->{vars} };
 	}
 	else {
 		@vars = ( $hash );
-		@instances = ( _make_instance $N, 'Count' );
+		@actions = ( 'Count' );
 	}
-	$self->{instances} = \@instances;
+	$self->{instances} ||= [ map { _make_instance $N, $_ } @actions ];
 
 	# now visit all the bins
 	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $hash );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) { $instances[ $i ]->process( $iter ) }
+	while( my( $bin, $i ) = $iter->next ) { $self->{instances}->[ $i ]->process( $iter ) }
 
 	return $self;
 }
