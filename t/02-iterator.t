@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 48;
+use Test::More tests => 54;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -170,14 +170,55 @@ for( 0 .. $#got ) {
 @bins = ( 2, 4, 3 );
 @variables = ( random(20), random(20), random(20), random(20) );
 $hash = 24*random( 20 )->long;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
-is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
-my @visited = (0) x @variables;
-$k = 4;
-while( ( $bin, $var ) = $iter->next ) {
-	$visited[ $var ]++;
-	$iter->var_active( 0 );
-	last if $k-- == 0; # prevent endless loops
-};
-ok $k == 0 && $iter->done, 'number of iterations';
-is_deeply \@visited, [ (1) x @variables ], 'all variables visited once';
+{
+	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
+	my @visited = (0) x @variables;
+	$k = 96;
+	while( ( $bin, $var ) = $iter->next ) {
+		$visited[ $var ]++;
+		$iter->var_active( 1 );
+		last if $k-- == 0; # prevent endless loops
+	};
+	ok $k == 0 && $iter->done, 'number of iterations';
+	is_deeply \@visited, [ ($iter->nbins) x @variables ], 'all variables visited n times, where n = number of bins';
+}
+{
+	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
+	my @visited = (0) x @variables;
+	$k = 4;
+	while( ( $bin, $var ) = $iter->next ) {
+		$visited[ $var ]++;
+		$iter->var_active( 0 );
+		last if $k-- == 0; # prevent endless loops
+	};
+	ok $k == 0 && $iter->done, 'number of iterations';
+	is_deeply \@visited, [ (1) x @variables ], 'all variables visited once';
+}
+
+# test mixed variable deactivation
+{
+	my @bins = ( 3, 1, 6 );
+	# the second variable will deactivate after having been called once
+	my @variables = ( random(30), random(30), random(30) );
+	my @deactivates = ( 0, 1, 0 );
+	my $hash = 18*random( 20 )->long;
+	my $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	is $iter->nbins*$iter->nvars, 54, 'nbins() * nvars()';
+	my $expected = [
+		    [ 1,1,1 ],
+		map [ 1,0,1 ], 1 .. $iter->nbins-1
+	];
+	my $got = [
+		map [ 0,0,0 ], 1 .. $iter->nbins
+	];
+	my $k = 37;
+	while( ( $bin, $var ) = $iter->next ) {
+		$got->[ $bin ][ $var ]++;
+		if( $deactivates[ $var ] ) { $iter->var_active( 0 ) }
+		last if $k-- == 0; # prevent endless loops
+	};
+	ok $k == 0 && $iter->done, 'number of iterations';
+	is_deeply $got, $expected, 'mixed active/non-active variables: bins/variables visited as expected';
+}
