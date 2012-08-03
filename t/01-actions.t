@@ -1,4 +1,4 @@
-# multidimensional binning & histogramming - tests
+# multidimensional binning & histogramming - test actions
 
 use strict;
 use warnings;
