@@ -124,6 +124,9 @@ Here are some examples of hashing multidimensional bins into one dimension:
 
 =cut
 
+# generate a random, hopefully unique name for a pdl
+sub _random_name { create_uuid( UUID_RANDOM ) }
+
 sub new
 {
 	my $class = shift;
@@ -139,6 +142,9 @@ sub new
 		axes => $args{axes},
 		vars => $args{vars},
 	};
+	unless( $self->{vars} && @{ $self->{vars} } ) {
+		$self->{vars} = [ [ _random_name, 'Count' ] ];
+	}
 	return bless $self, $class;
 }
 
@@ -201,16 +207,8 @@ sub process
 
 	my $N = reduce { $a * $b } @n; # total number of bins
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
-	my( @vars, @actions );
-	if( $self->{vars} && @{ $self->{vars} } ) {
-		@vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
-		@actions = map { $_->[1] } @{ $self->{vars} };
-	}
-	else {
-		@vars = ( $hash );
-		@actions = ( 'Count' );
-	}
-	$self->{instances} ||= [ map { _make_instance $N, $_ } @actions ];
+	my @vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
+	$self->{instances} ||= [ map { _make_instance $N, $_->[1] } @{ $self->{vars} } ];
 
 	# now visit all the bins
 	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $hash );
@@ -240,9 +238,6 @@ sub output
 	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @output }
 	return wantarray ? @output : $output[0];
 }
-
-# generate a random, hopefully unique name for a pdl
-sub _random_name { create_uuid( UUID_RANDOM ) }
 
 sub ndbinning
 {
