@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 105;
+use Test::More tests => 106;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -180,6 +180,14 @@ $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "icount, input type short";
 $got = icount( iter $x->float, $y, $N );
 is_pdl $got, $expected, "icount, input type float";
+# the following test should succeed because a piddle without any bad values
+# will be created automatically by _icount_loop() in place of the 'undef'
+$got = icount( iter undef, $y, $N );
+is_pdl $got, $expected, "icount, input undef";
+# the following test would fail with "Error in _icount_loop:Wrong dims" because
+# the PDL->null isn't resized automatically, it seems
+#$got = icount( iter null, $y, $N );
+#is_pdl $got, $expected, "icount, input PDL->null";
 
 # isum
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -237,6 +245,8 @@ $x = short( @u )->inplace->setvaltobad( -1 );
 $y = long( @v );
 
 # icount
+# note that in the next test, the count in the very first bin is one lower than
+# before due to the bad value (-1) in the third position
 $expected = long( 3,1,0,1 );
 $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "icount with bad values, input type short";
