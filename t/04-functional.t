@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 87;
+use Test::More tests => 91;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -30,21 +30,14 @@ sub debug_action
 	# histogram is required. So, just to be safe, we wrap all potentially
 	# dangerous calls in an `eval'.
 	#
-	# Remember that the actual operations are delayed until required, so
-	# the exception will be raised here, rather than in the code that does
-	# the indexing.
-	#
-	# As a side note, so far the use of `nelem' seems to have escaped the
-	# above problem for a reason I do not know. However, taking minimum and
-	# maximum and stringification may cause problems. It seems I cannot
-	# prevent min() and max() from throwing, even when made conditional
-	# with isempty() :-(
+	# Remember that the actual operations are delayed until required. This
+	# explains why, for instance, we have to wrap
+	# C<<$iter->selection->min>> in an eval block. Even if we evaluate and
+	# assign C<<$iter->selection>> to a temporary variable before, the data
+	# is really evaluated, and the exception is raised, when we call min().
 	my $n = $iter->want->nelem;
-	my ( $min, $max ) = ( '-' x 10, '-' x 10 );
-	if( $n ) {
-		$min = eval { sprintf '%10.4f', $iter->selection->min } // $min;
-		$max = eval { sprintf '%10.4f', $iter->selection->max } // $min;
-	}
+	my $min = eval { sprintf '%10.4f', $iter->selection->min } // '-' x 10;
+	my $max = eval { sprintf '%10.4f', $iter->selection->max } // '-' x 10;
 	note "bin (",
 	     join( ',', map { sprintf "%3d", $_ } @_ ),
 	     sprintf( "): #elements = %6s, ", $n // '<UNDEF>' ),
@@ -309,7 +302,16 @@ dies_ok { ndbin( short( 1,2 ), { n => 4 } ) } 'invalid data: step size < 1 for i
 # test exceptions in actions
 $x = pdl( 1,2,3 );
 $expected = create_bad long, 3;
-lives_ok { $got = ndbin( $x, DEFAULT_ACTION => sub { die } ) } 'exceptions in actions caught properly ...';
+throws_ok { ndbin( $x, DEFAULT_ACTION => sub { die } ) }
+	qr/^Died at /, 'exceptions in actions passed through';
+lives_ok { ndbin( $x, VARS => [ null() => sub { shift->want->min } ] ) }
+	'want->min on empty piddle does not die';
+throws_ok { ndbin( $x, VARS => [ null() => sub { shift->selection->min } ] ) }
+	qr/^PDL::index: invalid index 0 /, 'selection->min on empty piddle';
+throws_ok { ndbin( $x, VARS => [ null() => sub { shift->wrong_method } ] ) }
+	qr/^Can't locate object method "wrong_method"/, 'call nonexistent method';
+lives_ok { $got = ndbin( $x, DEFAULT_ACTION => sub { eval { die } } ) }
+	'does not raise an exception when wrapping action in an eval block ...';
 is_pdl $got, $expected, '... and all values are unset';
 
 # test action arguments
