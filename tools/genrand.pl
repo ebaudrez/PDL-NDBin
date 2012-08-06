@@ -45,5 +45,3 @@ for( my $i = 0; $i < @howmany; $i++ ) {
 	}
 }
 printf "my \$N = %d;\n", reduce { $a + $b } 0, @howmany;
-
-# vim:set filetype=perl:
