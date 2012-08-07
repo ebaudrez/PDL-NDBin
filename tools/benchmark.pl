@@ -11,6 +11,7 @@ use PDL::NDBin;
 use Path::Class;
 use Getopt::Long qw( :config bundling );
 use Text::TabularDisplay;
+use Math::SimpleHisto::XS;
 
 my $iter = 1;
 my @functions;
@@ -55,12 +56,13 @@ else {
 my( $min, $max, $step ) = ( -70, 70, 140/$n );
 
 #
-my( $lat, $lon, $flux );
+my( $lat, $lon, $flux, @lat_list );
 unless( $multi ) {
 	print "Reading $file ... ";
 	my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
 	( $lat, $lon, $flux ) = map $nc->get( $_ ), qw( latitude longitude gerb_flux );
 	undef $nc;
+	@lat_list = $lat->list;
 	print "done\n";
 }
 
@@ -92,6 +94,14 @@ my %functions = (
 					axes => [[ lat => @axis ]],
 					vars => [[ lat => 'Count' ]] );
 				$binner->process( %data )->output
+			},
+	MSHXS        => sub {
+				my $hist = Math::SimpleHisto::XS->new(
+					min => $min,
+					max => $max,
+					nbins => $n );
+				$hist->fill( \@lat_list );
+				$hist->all_bin_contents
 			},
 
 	# two-dimensional histograms
@@ -189,6 +199,13 @@ if( $output ) {
 	print "\n";
 }
 print "Norm of difference between output piddles:\n";
+# Math::SimpleHisto::XS returns an arrayref: for a fair comparison, we need to
+# convert the arrayref to a PDL after the benchmark
+for my $key ( keys %output ) {
+	my $val = $output{ $key };
+	next if eval { $val->isa('PDL') };
+	if( ref $val eq 'ARRAY' ) { $output{ $key } = pdl( $val ) }
+}
 my $table = Text::TabularDisplay->new( '', keys %output );
 for my $row ( keys %output ) {
 	$table->add( $row, map { my $diff = $output{ $row } - $_; $diff->abs->max } values %output );
