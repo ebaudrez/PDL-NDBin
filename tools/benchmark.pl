@@ -14,38 +14,55 @@ use Text::TabularDisplay;
 
 my $iter = 1;
 my @functions;
+my $multi;
 my $n = 25;
 my $output;
 my $usage = <<EOF;
 Usage:  $0  [ options ]  input_file
+        $0  --multi  [ options ]  input_file  [ input_file... ]
 
 Options:
   --bins <n>         | -n <n>   use <n> bins along every dimension (default: $n)
   --function <func>             select <func> to benchmark; may be specified more than once
                                 and may use comma-separated values (default: @functions)
   --iters <n>        | -i <n>   perform <n> iterations for better accuracy (default: $iter)
+  --multi            | -m       engage multi-mode to process multiple files
   --output           | -o       do output actual return value from functions
 
 EOF
 GetOptions( 'bins|n=i'    => \$n,
 	    'function=s'  => \@functions,
 	    'iter|i=i'    => \$iter,
+	    'multi|m'     => \$multi,
 	    'output|o'    => \$output ) or die $usage;
-my $file = shift;
-$file or die $usage;
-@ARGV and die $usage;
+
 unless( @functions ) { @functions = qw( histogram want count ) }
 @functions = split /,/ => join ',' => @functions;
 my %selected = map { $_ => 1 } @functions;
 
+#
+my $file;
+if( $multi ) {
+	@ARGV or die $usage;
+}
+else {
+	$file = shift;
+	-f $file or die $usage;
+	@ARGV and die $usage;
+}
+
 # we're going to bin latitude and longitude from -70 .. 70
 my( $min, $max, $step ) = ( -70, 70, 140/$n );
 
-print "Reading $file ... ";
-my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
-my( $lat, $lon, $flux ) = map $nc->get( $_ ), qw( latitude longitude gerb_flux );
-undef $nc;
-print "done\n";
+#
+my( $lat, $lon, $flux );
+unless( $multi ) {
+	print "Reading $file ... ";
+	my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
+	( $lat, $lon, $flux ) = map $nc->get( $_ ), qw( latitude longitude gerb_flux );
+	undef $nc;
+	print "done\n";
+}
 
 # shortcuts
 my @axis = ( $step, $min, $n );
@@ -104,6 +121,56 @@ my %functions = (
 					axes => [[ lat => @axis ], [ lon => @axis ]],
 					vars => [[ flux => 'Avg' ]] );
 				$binner->process( %data )->output
+			},
+
+	# one-dimensional histograms by concatenating multiple data files
+	'histogram_multi' =>
+			sub {
+				my $hist = zeroes( $n );
+				for my $file ( @ARGV ) {
+					my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
+					my $lat = $nc->get( 'latitude' );
+					$hist += histogram $lat, $step, $min, $n;
+				}
+				$hist
+			},
+	'count_multi' =>
+			sub {
+				my $binner = PDL::NDBin->new(
+					axes => [[ lat => @axis ]],
+					vars => [[ lat => 'Count' ]] );
+				for my $file ( @ARGV ) {
+					my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
+					my $lat = $nc->get( 'latitude' );
+					$binner->process( lat => $lat );
+				}
+				$binner->output
+			},
+
+	# two-dimensional histograms by concatenating multiple data files
+	'histogram_multi2d' =>
+			sub {
+				my $hist = zeroes( $n, $n );
+				for my $file ( @ARGV ) {
+					my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
+					my $lat = $nc->get( 'latitude' );
+					my $lon = $nc->get( 'longitude' );
+					$hist += histogram2d $lat, $lon, $step, $min, $n, $step, $min, $n;
+				}
+				$hist
+			},
+	'count_multi2d' =>
+			sub {
+				my $binner = PDL::NDBin->new(
+					axes => [[ lat => @axis ], [ lon => @axis ]],
+					vars => [[ lat => 'Count' ]] );
+				for my $file ( @ARGV ) {
+					my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
+					my $lat = $nc->get( 'latitude' );
+					my $lon = $nc->get( 'longitude' );
+					$binner->process( lat => $lat, lon => $lon );
+				}
+				$binner->output
 			},
 );
 
