@@ -13,6 +13,7 @@ use List::Util qw( reduce );
 use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Iterator;
+use PDL::NDBin::Actions_PP;
 use Log::Any;
 use Data::Dumper;
 use UUID::Tiny qw( :std );
@@ -197,10 +198,7 @@ sub process
 		$log->debug( 'input (' . $pdl->info . ') = ' . $pdl ) if $log->is_debug;
 		$log->debug( "bin with parameters step=$step, min=$min, n=$n" ) if $log->is_debug;
 		unshift @n, $n;				# remember that we are working backwards!
-		my $binned = PDL::long( ($pdl - $min)/$step );
-		$binned->inplace->clip( 0, $n-1 );
-		$hash = $hash * $n + $binned;
-		$log->debug( 'binned coordinates (' . $binned->info . ') = ' . $binned ) if $log->is_debug;
+		$hash = $pdl->_hash_into( $hash, $step, $min, $n );
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 	$self->{n} = \@n;

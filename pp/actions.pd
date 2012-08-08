@@ -1,8 +1,40 @@
-# TODO core function, after F<primitive.pd>
-#pp_def( 'hash_with',
-#	Pars => 'a(); int [o] b()',
-#	Code => '',
-#);
+# _hash_into
+#
+pp_def( '_hash_into',
+	Pars => 'in(m); int b(m); int [o] hash(m)',
+	OtherPars => 'double step; double min; int n',
+	HandleBad => 1,
+	Doc => 'Bin a series of values and hash into an existing hash',
+	Code => '
+		register double min = $COMP( min );
+		register double step = $COMP( step );
+		register int j;
+		register int maxj = $COMP( n ) - 1;
+		loop(m) %{
+			j = (( $in() - min )/step);
+			if( j < 0 ) j = 0;
+			if( j > maxj ) j = maxj;
+			$hash() = j + $COMP( n ) * $b();
+		%}
+	',
+	BadCode => '
+		register double min = $COMP( min );
+		register double step = $COMP( step );
+		register int j;
+		register int maxj = $COMP( n ) - 1;
+		loop(m) %{
+			if( $ISGOOD( in() ) && $ISGOOD( b() ) ) {
+				j = (( $in() - min )/step);
+				if( j < 0 ) j = 0;
+				if( j > maxj ) j = maxj;
+				$hash() = j + $COMP( n ) * $b();
+			}
+			else {
+				$SETBAD( hash() );
+			}
+		%}
+	',
+);
 
 # _setnulltobad
 #
