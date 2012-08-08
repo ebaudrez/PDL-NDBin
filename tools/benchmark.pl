@@ -199,12 +199,7 @@ my $results = timethese( $iter,
 print "\nRelative performance:\n";
 cmpthese( $results );
 print "\n";
-if( $output ) {
-	print "Actual output:\n";
-	while( my( $func, $out ) = each %output ) { printf "%20s: %s\n", $func, $out }
-	print "\n";
-}
-print "Norm of difference between output piddles:\n";
+
 # Math::SimpleHisto::XS returns an arrayref: for a fair comparison, we need to
 # convert the arrayref to a PDL after the benchmark
 for my $key ( keys %output ) {
@@ -212,6 +207,14 @@ for my $key ( keys %output ) {
 	next if eval { $val->isa('PDL') };
 	if( ref $val eq 'ARRAY' ) { $output{ $key } = pdl( $val ) }
 }
+
+if( $output ) {
+	print "Actual output:\n";
+	while( my( $func, $out ) = each %output ) { printf "%20s: %s\n", $func, $out }
+	print "\n";
+}
+
+print "Norm of difference between output piddles:\n";
 my $table = Text::TabularDisplay->new( '', keys %output );
 for my $row ( keys %output ) {
 	$table->add( $row, map { my $diff = $output{ $row } - $_; $diff->abs->max } values %output );
