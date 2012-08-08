@@ -13,8 +13,8 @@ use Getopt::Long qw( :config bundling );
 use Text::TabularDisplay;
 use Math::SimpleHisto::XS;
 
-my $iter = 1;
 my @functions;
+my $iter = 1;
 my $multi;
 my $n = 25;
 my $output;
@@ -23,19 +23,19 @@ Usage:  $0  [ options ]  input_file
         $0  --multi  [ options ]  input_file  [ input_file... ]
 
 Options:
-  --bins <n>         | -n <n>   use <n> bins along every dimension (default: $n)
-  --function <func>             select <func> to benchmark; may be specified more than once
-                                and may use comma-separated values (default: @functions)
-  --iters <n>        | -i <n>   perform <n> iterations for better accuracy (default: $iter)
-  --multi            | -m       engage multi-mode to process multiple files
-  --output           | -o       do output actual return value from functions
+  --bins     | -b <n>     use <n> bins along every dimension (default: $n)
+  --function | -f <list>  select functions to benchmark from comma-separated <list>;
+                          option may be used more than once
+  --iters    | -i <n>     perform <n> iterations for better accuracy (default: $iter)
+  --multi    | -m         engage multi-mode to process multiple files
+  --output   | -o         do output actual return value from functions
 
 EOF
-GetOptions( 'bins|n=i'    => \$n,
-	    'function=s'  => \@functions,
-	    'iter|i=i'    => \$iter,
-	    'multi|m'     => \$multi,
-	    'output|o'    => \$output ) or die $usage;
+GetOptions( 'bins|b=i'     => \$n,
+	    'function|f=s' => \@functions,
+	    'iter|i=i'     => \$iter,
+	    'multi|m'      => \$multi,
+	    'output|o'     => \$output ) or die $usage;
 
 unless( @functions ) { @functions = qw( histogram want count ) }
 @functions = split /,/ => join ',' => @functions;
