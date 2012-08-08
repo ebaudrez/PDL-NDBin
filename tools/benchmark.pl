@@ -11,7 +11,9 @@ use PDL::NDBin;
 use Path::Class;
 use Getopt::Long qw( :config bundling );
 use Text::TabularDisplay;
+use Math::Histogram;
 use Math::SimpleHisto::XS;
+use List::MoreUtils qw( pairwise );
 
 my @functions;
 my $iter = 1;
@@ -56,7 +58,7 @@ else {
 my( $min, $max, $step ) = ( -70, 70, 140/$n );
 
 #
-my( $lat, $lon, $flux, @lat_list );
+my( $lat, $lon, $flux, @lat_list, @lon_list, @lat_list_ref, @lat_lon_list_ref );
 unless( $multi ) {
 	print "Reading $file ... ";
 	my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
@@ -68,7 +70,12 @@ unless( $multi ) {
 		$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
 		scalar reverse $text
 	};
+	# these are some conversions to put the data in the structures required
+	# by external packages; we do this before the benchmark to keep the
 	@lat_list = $lat->list;
+	@lon_list = $lon->list;
+	@lat_list_ref = map [ $_ ], @lat_list;
+	@lat_lon_list_ref = pairwise { [ $a, $b ] } @lat_list, @lon_list;
 	print "done ($n data points)\n";
 }
 
@@ -101,6 +108,13 @@ my %functions = (
 					vars => [[ lat => 'Count' ]] );
 				$binner->process( %data )->output
 			},
+	MH           => sub {
+				my @dimensions = ( Math::Histogram::Axis->new( $n, $min, $max ) );
+				my $hist = Math::Histogram->new( \@dimensions );
+				#$hist->fill( [ $_ ] ) for @lat_list;		# inefficient
+				$hist->fill_n( \@lat_list_ref );
+				[ map $hist->get_bin_content( [ $_ ] ), 1 .. $n ]
+			},
 	MSHXS        => sub {
 				my $hist = Math::SimpleHisto::XS->new(
 					min => $min,
@@ -123,6 +137,15 @@ my %functions = (
 					axes => [[ lat => @axis ], [ lon => @axis ]],
 					vars => [[ lat => 'Count' ]] );
 				$binner->process( %data )->output
+			},
+	MH2d         => sub {
+				my @dimensions = (
+					Math::Histogram::Axis->new( $n, $min, $max ),
+					Math::Histogram::Axis->new( $n, $min, $max ),
+				);
+				my $hist = Math::Histogram->new( \@dimensions );
+				$hist->fill_n( \@lat_lon_list_ref );
+				[ map { my $j = $_; [ map $hist->get_bin_content( [ $_, $j ] ), 1 .. $n ] } 1 .. $n ]
 			},
 
 	# average flux using either a coderef or a class (XS-optimized)
