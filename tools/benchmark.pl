@@ -217,6 +217,6 @@ if( $output ) {
 print "Norm of difference between output piddles:\n";
 my $table = Text::TabularDisplay->new( '', keys %output );
 for my $row ( keys %output ) {
-	$table->add( $row, map { my $diff = $output{ $row } - $_; $diff->abs->max } values %output );
+	$table->add( $row, map { my $diff = $output{ $row } - $output{ $_ }; $row eq $_ ? '-' : $diff->abs->max } keys %output );
 }
 print $table->render, "\n\n";
