@@ -62,8 +62,14 @@ unless( $multi ) {
 	my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
 	( $lat, $lon, $flux ) = map $nc->get( $_ ), qw( latitude longitude gerb_flux );
 	undef $nc;
+	my $n = do {
+		# Perl Cookbook, 2nd Ed., p. 84 ;-)
+		my $text = reverse $lat->nelem;
+		$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+		scalar reverse $text
+	};
 	@lat_list = $lat->list;
-	print "done\n";
+	print "done ($n data points)\n";
 }
 
 # shortcuts
