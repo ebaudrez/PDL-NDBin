@@ -50,7 +50,7 @@ if( $multi ) {
 }
 else {
 	$file = shift;
-	-f $file or die $usage;
+	defined( $file ) && -f $file or die $usage;
 	@ARGV and die $usage;
 }
 
