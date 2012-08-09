@@ -59,34 +59,29 @@ my( $min, $max, $step ) = ( -70, 70, 140/$n );
 # this is our on-demand data loader:
 my $nc = OnDemand->new( $file );
 
-# shortcuts
-my @axis = ( $step, $min, $n );
-my %data = ( lat => $nc->lat, lon => $nc->lon, flux => $nc->flux );
-my $want = sub { shift->want->nelem };
-my $selection = sub { shift->selection->nelem };
-my $avg = sub { $_[0]->want->nelem ? shift->selection->avg : undef };
+#
 my %functions = (
 	# one-dimensional histograms
 	hist         => sub { hist $nc->lat, $min, $max, $step },
 	histogram    => sub { histogram $nc->lat, $step, $min, $n },
 	want         => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ]],
-					vars => [[ lat => $want ]] );
-				$binner->process( %data )->output
+					axes => [[ lat => ($step,$min,$n) ]],
+					vars => [[ lat => sub { shift->want->nelem } ]] );
+				$binner->process( lat => $nc->lat )->output
 			},
 	# $iter->selection->nelem is bound to be slower than $iter->want->nelem, but the purpose here is to compare
 	selection    => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ]],
-					vars => [[ lat => $selection ]] );
-				$binner->process( %data )->output
+					axes => [[ lat => ($step,$min,$n) ]],
+					vars => [[ lat => sub { shift->selection->nelem } ]] );
+				$binner->process( lat => $nc->lat )->output
 			},
 	count        => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ]],
+					axes => [[ lat => ($step,$min,$n) ]],
 					vars => [[ lat => 'Count' ]] );
-				$binner->process( %data )->output
+				$binner->process( lat => $nc->lat )->output
 			},
 	MH           => sub {
 				my @dimensions = ( Math::Histogram::Axis->new( $n, $min, $max ) );
@@ -108,15 +103,15 @@ my %functions = (
 	histogram2d  => sub { histogram2d $nc->lat, $nc->lon, $step, $min, $n, $step, $min, $n },
 	want2d       => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ], [ lon => @axis ]],
-					vars => [[ lat => $want ]] );
-				$binner->process( %data )->output
+					axes => [[ lat => ($step,$min,$n) ], [ lon => ($step,$min,$n) ]],
+					vars => [[ lat => sub { shift->want->nelem } ]] );
+				$binner->process( lat => $nc->lat, lon => $nc->lon )->output
 			},
 	count2d      => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ], [ lon => @axis ]],
+					axes => [[ lat => ($step,$min,$n) ], [ lon => ($step,$min,$n) ]],
 					vars => [[ lat => 'Count' ]] );
-				$binner->process( %data )->output
+				$binner->process( lat => $nc->lat, lon => $nc->lon )->output
 			},
 	MH2d         => sub {
 				my @dimensions = (
@@ -131,15 +126,15 @@ my %functions = (
 	# average flux using either a coderef or a class (XS-optimized)
 	coderef      => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ], [ lon => @axis ]],
-					vars => [[ flux => $avg ]] );
-				$binner->process( %data )->output
+					axes => [[ lat => ($step,$min,$n) ], [ lon => ($step,$min,$n) ]],
+					vars => [[ flux => sub { $_[0]->want->nelem ? shift->selection->avg : undef } ]] );
+				$binner->process( lat => $nc->lat, lon => $nc->lon, flux => $nc->flux )->output
 			},
 	class        => sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ], [ lon => @axis ]],
+					axes => [[ lat => ($step,$min,$n) ], [ lon => ($step,$min,$n) ]],
 					vars => [[ flux => 'Avg' ]] );
-				$binner->process( %data )->output
+				$binner->process( lat => $nc->lat, lon => $nc->lon, flux => $nc->flux )->output
 			},
 
 	# one-dimensional histograms by concatenating multiple data files
@@ -156,7 +151,7 @@ my %functions = (
 	'count_multi' =>
 			sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ]],
+					axes => [[ lat => ($step,$min,$n) ]],
 					vars => [[ lat => 'Count' ]] );
 				for my $file ( @ARGV ) {
 					my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
@@ -181,7 +176,7 @@ my %functions = (
 	'count_multi2d' =>
 			sub {
 				my $binner = PDL::NDBin->new(
-					axes => [[ lat => @axis ], [ lon => @axis ]],
+					axes => [[ lat => ($step,$min,$n) ], [ lon => ($step,$min,$n) ]],
 					vars => [[ lat => 'Count' ]] );
 				for my $file ( @ARGV ) {
 					my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
