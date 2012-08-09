@@ -13,7 +13,6 @@ use Getopt::Long qw( :config bundling );
 use Text::TabularDisplay;
 use Math::Histogram;
 use Math::SimpleHisto::XS;
-use List::MoreUtils qw( pairwise );
 
 my @functions;
 my $iter = 1;
@@ -57,38 +56,19 @@ else {
 # we're going to bin latitude and longitude from -70 .. 70
 my( $min, $max, $step ) = ( -70, 70, 140/$n );
 
-#
-my( $lat, $lon, $flux, @lat_list, @lon_list, @lat_list_ref, @lat_lon_list_ref );
-unless( $multi ) {
-	print "Reading $file ... ";
-	my $nc = PDL::NetCDF->new( $file, { MODE => O_RDONLY } );
-	( $lat, $lon, $flux ) = map $nc->get( $_ ), qw( latitude longitude gerb_flux );
-	undef $nc;
-	my $n = do {
-		# Perl Cookbook, 2nd Ed., p. 84 ;-)
-		my $text = reverse $lat->nelem;
-		$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-		scalar reverse $text
-	};
-	# these are some conversions to put the data in the structures required
-	# by external packages; we do this before the benchmark to keep the
-	@lat_list = $lat->list;
-	@lon_list = $lon->list;
-	@lat_list_ref = map [ $_ ], @lat_list;
-	@lat_lon_list_ref = pairwise { [ our $a, our $b ] } @lat_list, @lon_list;
-	print "done ($n data points)\n";
-}
+# this is our on-demand data loader:
+my $nc = OnDemand->new( $file );
 
 # shortcuts
 my @axis = ( $step, $min, $n );
-my %data = ( lat => $lat, lon => $lon, flux => $flux );
+my %data = ( lat => $nc->lat, lon => $nc->lon, flux => $nc->flux );
 my $want = sub { shift->want->nelem };
 my $selection = sub { shift->selection->nelem };
 my $avg = sub { $_[0]->want->nelem ? shift->selection->avg : undef };
 my %functions = (
 	# one-dimensional histograms
-	hist         => sub { hist $lat, $min, $max, $step },
-	histogram    => sub { histogram $lat, $step, $min, $n },
+	hist         => sub { hist $nc->lat, $min, $max, $step },
+	histogram    => sub { histogram $nc->lat, $step, $min, $n },
 	want         => sub {
 				my $binner = PDL::NDBin->new(
 					axes => [[ lat => @axis ]],
@@ -111,8 +91,8 @@ my %functions = (
 	MH           => sub {
 				my @dimensions = ( Math::Histogram::Axis->new( $n, $min, $max ) );
 				my $hist = Math::Histogram->new( \@dimensions );
-				#$hist->fill( [ $_ ] ) for @lat_list;		# inefficient
-				$hist->fill_n( \@lat_list_ref );
+				#$hist->fill( [ $_ ] ) for @{ $nc->lat_array };		# inefficient
+				$hist->fill_n( $nc->lat_ref_list );
 				[ map $hist->get_bin_content( [ $_ ] ), 1 .. $n ]
 			},
 	MSHXS        => sub {
@@ -120,12 +100,12 @@ my %functions = (
 					min => $min,
 					max => $max,
 					nbins => $n );
-				$hist->fill( \@lat_list );
+				$hist->fill( $nc->lat_array );
 				$hist->all_bin_contents
 			},
 
 	# two-dimensional histograms
-	histogram2d  => sub { histogram2d $lat, $lon, $step, $min, $n, $step, $min, $n },
+	histogram2d  => sub { histogram2d $nc->lat, $nc->lon, $step, $min, $n, $step, $min, $n },
 	want2d       => sub {
 				my $binner = PDL::NDBin->new(
 					axes => [[ lat => @axis ], [ lon => @axis ]],
@@ -144,7 +124,7 @@ my %functions = (
 					Math::Histogram::Axis->new( $n, $min, $max ),
 				);
 				my $hist = Math::Histogram->new( \@dimensions );
-				$hist->fill_n( \@lat_lon_list_ref );
+				$hist->fill_n( $nc->lat_lon_ref_array );
 				[ map { my $j = $_; [ map $hist->get_bin_content( [ $_, $j ] ), 1 .. $n ] } 1 .. $n ]
 			},
 
@@ -242,4 +222,39 @@ my $table = Text::TabularDisplay->new( '', keys %output );
 for my $row ( keys %output ) {
 	$table->add( $row, map { my $diff = $output{ $row } - $output{ $_ }; $row eq $_ ? '-' : $diff->abs->max } keys %output );
 }
-print $table->render, "\n\n";
+print $table->render, "\n";
+my $nelem = eval { $nc->nelem };
+if( defined $nelem ) {
+	# reformat number by separating digits with commas
+	# Perl Cookbook, 2nd Ed., p. 84 ;-)
+	my $text = reverse $nelem;
+	$text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+	$nelem = scalar reverse $text;
+}
+else {
+	$nelem = 'unknown';
+}
+print "($nelem data points)\n\n";
+
+#
+# a separate helper package implement on-demand loading of data
+# and data structure conversion
+#
+package OnDemand;
+use Fcntl;
+use PDL::NetCDF;
+use List::MoreUtils qw( pairwise );
+
+sub new    { my $class = shift; bless { filename => $_[0] }, $class }
+sub netcdf { my $self = shift; $self->{netcdf} ||= PDL::NetCDF->new( $self->{filename}, { MODE => O_RDONLY } ) }
+sub lat    { my $self = shift; $self->{lat}    //= $self->netcdf->get( 'latitude'  ) }
+sub lon    { my $self = shift; $self->{lon}    //= $self->netcdf->get( 'longitude' ) }
+sub flux   { my $self = shift; $self->{flux}   //= $self->netcdf->get( 'gerb_flux' ) }
+sub nelem  { my $self = shift; $self->lat->nelem }
+
+# conversions to put the data in the structures required by external packages
+sub lat_array         { my $self = shift; $self->{lat_array}         ||= [ $self->lat->list ] }
+sub lon_array         { my $self = shift; $self->{lon_array}         ||= [ $self->lon->list ] }
+sub lat_ref_array     { my $self = shift; $self->{lat_ref_array}     ||= [ map [ $_ ], @{ $self->lat_array } ] }
+sub lon_ref_array     { my $self = shift; $self->{lon_ref_array}     ||= [ map [ $_ ], @{ $self->lon_array } ] }
+sub lat_lon_ref_array { my $self = shift; $self->{lat_lon_ref_array} ||= [ pairwise { [ our $a, our $b ] } @{ $self->lat_array }, @{ $self->lon_array } ] }
