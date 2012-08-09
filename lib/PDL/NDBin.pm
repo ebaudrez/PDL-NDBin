@@ -29,25 +29,110 @@ $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
-	# returns a one-dimensional histogram
-	#    long( 0,2,1 )
+	# bin the values
+	#    pdl( 1,1,2 )
+	# in 3 bins with a width of 1, starting at 0:
 	my $histogram = ndbinning( pdl( 1,1,2 ), 1, 0, 3 );
+	# returns the one-dimensional histogram
+	#    long( 0,2,1 )
 
-	# returns a two-dimensional histogram
-	#    long( [0,0,0],
-	#	   [0,2,2],
-	#	   [0,1,0] );
+	# bin the values
 	$x = pdl( 1,1,1,2,2 );
 	$y = pdl( 2,1,1,1,1 );
+	# along two dimensions, with 3 bins per dimension:
 	my $histogram = ndbinning( $x => (1,0,3),
 				   $y => (1,0,3) );
+	# returns the two-dimensional histogram
+	#    long( [0,0,0],
+	#	   [0,2,2],
+	#	   [0,1,0] )
 
-For more detailed usage examples, consult the documentation of ndbin() and
-ndbinning() below.
+These examples only illustrate how to make a one- and a two-dimensional
+histogram. For more advanced usage, read on.
 
 =head1 DESCRIPTION
 
-PDL::NDBin is multidimensional binning and histogramming made easy.
+In scientific (and other) applications, it is frequently necessary to classify
+a series of values in a number of bins. For instance, particles may be
+classified according to particle size in a number of bins of, say, 0.01 mm
+wide, yielding a histogram. Or, to take an example from my own work: satellite
+measurements taken all over the globe must often be classified in
+latitude/longitude boxes for further processing.
+
+L<PDL> has a dedicated function to make histograms, hist(). To create a
+histogram of particle size from 0 mm to 10 mm, in bins of 0.1 mm, you would
+write:
+
+	my $histogram = hist $particles, 0, 10, 0.1;
+
+This will count the number of particles in every bin, yielding the 100 counts
+that form the histogram. But what if you wanted to perform other computations
+on the values in the bins? It is actually not that difficult to perform the
+binning by hand. The key is to associate a bin number with every data value.
+With fixed-size bins of 0.1 mm wide, that is accomplished with
+
+	my $bin_numbers = PDL::long( $particles/0.1 );
+
+(Note that the formulation above does not take care of data beyond 10 mm, but
+PDL::NDBin does.) We now have two arrays of data: the actual particle sizes in
+$particles, and the bin number associated with every data value. The histogram
+could now be produced with the following loop:
+
+	my $histogram = zeroes( long, $N );
+	for my $bin ( 0 .. $N-1 ) {
+		my $want = which( $bin_numbers == $bin );
+		$histogram->set( $bin, $want->nelem );
+	}
+
+But, once we have the indices of the data values corresponding to any bin, it
+is a small matter to extend the loop to actually extract the data values in the
+bin. A user-supplied subroutine can then be invoked on the values in every bin:
+
+	my $output = zeroes( long, $N )->setbadif( 1 );
+	for my $bin ( 0 .. $N-1 ) {
+		my $want = which( $bin_numbers == $bin );
+		my $selection = $particles->index( $want );
+		my $value = eval { $coderef->( $selection ) };
+		if( defined $value ) { $output->set( $bin, $value ) }
+	}
+
+(This is how early versions of PDL::NDBin were implemented.) The user
+subroutine could do anything with the values in the currently selected bin,
+$selection, including counting. But the subroutine could also output the data
+to disk, or to a plot. Or the data could be collected to perform a regression.
+Anything that can be expressed with a subroutine, can now easily be plugged
+into this core loop.
+
+This basic idea can even be extended by noticing that it is also possible to do
+multidimensional binning with the same core loop. The solution is to 'flatten'
+the bins, much like C and Perl flatten multidimensional arrays to a
+one-dimensional array in memory. So, you could perfectly bin satellite data
+along both latitude and longitude:
+
+	my( $latitude, $longitude ); # somehow get these data as 1-D vars
+	my $flattened = 0;
+	for my $var ( $latitude, $longitude ) {
+		my $bin_numbers = long( ($var - $min)/$step );
+		$bin_numbers->inplace->clip( 0, $n-1 );
+		$flattened = $flattened * $n + $bin_numbers;
+	}
+
+$flattened now contains pseudo-one-dimensional bin numbers, and can be used
+in the core loop shown above.
+
+I've left out many details to illustrate the idea. The basic idea is very
+simple, but the implementation does get a bit messy when multiple variables are
+binned in multiple dimensions, with user-defined actions. Of course, ideally,
+you'd like this to be very performant, so you can handle several millions of
+data values without hitting memory constraints or running out of time.
+PDL::NDBin is there to handle the details for you, so you can write
+
+	my $average_flux = ndbin( $longitude => { min => -70, max => 70, step => 20 },
+				  $latitude  => { min => -70, max => 70, step => 20 },
+				  VARS => [ $flux => 'Avg' ] );
+
+to obtain the average of the flux, binned in boxes of 20x20 degrees latitute
+and longitude.
 
 =head1 SUBROUTINES
 
