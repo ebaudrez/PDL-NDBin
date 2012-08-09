@@ -7,7 +7,7 @@ use Benchmark qw( cmpthese timethese );
 use Fcntl;
 use PDL;
 use PDL::NetCDF;
-use PDL::NDBin;
+use PDL::NDBin qw( ndbinning );
 use Path::Class;
 use Getopt::Long qw( :config bundling );
 use Text::TabularDisplay;
@@ -97,6 +97,7 @@ my %functions = (
 					vars => [[ lat => 'Count' ]] );
 				$binner->process( lat => $nc->lat )->output
 			},
+	ndbinning    => sub { ndbinning $nc->lat, $step, $min, $n },
 	MH           => sub {
 				my @dimensions = ( Math::Histogram::Axis->new( $n, $min, $max ) );
 				my $hist = Math::Histogram->new( \@dimensions );
@@ -127,6 +128,7 @@ my %functions = (
 					vars => [[ lat => 'Count' ]] );
 				$binner->process( lat => $nc->lat, lon => $nc->lon )->output
 			},
+	ndbinning2d  => sub { ndbinning $nc->lat, $step, $min, $n, $nc->lon, $step, $min, $n },
 	MH2d         => sub {
 				my @dimensions = (
 					Math::Histogram::Axis->new( $n, $min, $max ),
