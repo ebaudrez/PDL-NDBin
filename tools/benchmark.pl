@@ -18,6 +18,7 @@ my @functions;
 my $iter = 1;
 my $multi;
 my $n = 25;
+my $old_hashing;
 my $output;
 my $usage = <<EOF;
 Usage:  $0  [ options ]  input_file
@@ -29,6 +30,7 @@ Options:
                           option may be used more than once
   --iters    | -i <n>     perform <n> iterations for better accuracy (default: $iter)
   --multi    | -m         engage multi-mode to process multiple files
+  --old-hashing           use the old (pure-Perl) way of hashing
   --output   | -o         do output actual return value from functions
 
 EOF
@@ -36,6 +38,7 @@ GetOptions( 'bins|b=i'     => \$n,
 	    'function|f=s' => \@functions,
 	    'iter|i=i'     => \$iter,
 	    'multi|m'      => \$multi,
+	    'old-hashing'  => \$old_hashing,
 	    'output|o'     => \$output ) or die $usage;
 
 unless( @functions ) { @functions = qw( histogram want count ) }
@@ -58,6 +61,17 @@ my( $min, $max, $step ) = ( -70, 70, 140/$n );
 
 # this is our on-demand data loader:
 my $nc = OnDemand->new( $file );
+
+#
+if( $old_hashing ) {
+	no warnings 'redefine';
+	*PDL::_hash_into = sub (;@) {
+		my( $pdl, $hash, $step, $min, $n ) = @_;
+		my $binned = PDL::long( ($pdl - $min)/$step );
+		$binned->inplace->clip( 0, $n-1 );
+		$hash * $n + $binned
+	} 
+}
 
 #
 my %functions = (
