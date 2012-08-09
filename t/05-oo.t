@@ -1,7 +1,5 @@
 # multidimensional binning & histogramming - tests of the object-oriented interface
 
-# XXX TODO replace $got by $binner->output??
-
 use strict;
 use warnings;
 use Test::More tests => 44;
@@ -178,10 +176,7 @@ $binner = PDL::NDBin->new( axes => [ [ 'x', .1, 0, 10 ],
 				     [ 'y', .1, 0, 10 ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
-TODO: {
-	local $TODO = 'fails on 32-bit';
-	is_pdl $got, $expected, 'cross-check with histogram2d';
-}
+is_pdl $got, $expected, 'cross-check with histogram2d';
 
 #
 # MIXED CODEREFS/CLASSES
