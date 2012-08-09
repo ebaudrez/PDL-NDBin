@@ -75,7 +75,7 @@ unless( $multi ) {
 	@lat_list = $lat->list;
 	@lon_list = $lon->list;
 	@lat_list_ref = map [ $_ ], @lat_list;
-	@lat_lon_list_ref = pairwise { [ $a, $b ] } @lat_list, @lon_list;
+	@lat_lon_list_ref = pairwise { [ our $a, our $b ] } @lat_list, @lon_list;
 	print "done ($n data points)\n";
 }
 
