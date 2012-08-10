@@ -20,11 +20,11 @@ use UUID::Tiny qw( :std );
 
 =head1 VERSION
 
-Version 0.002
+Version 0.003
 
 =cut
 
-our $VERSION = "0.002";
+our $VERSION = "0.003";
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
