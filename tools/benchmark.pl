@@ -104,7 +104,7 @@ my %functions = (
 				my @dimensions = ( Math::Histogram::Axis->new( $n, $min, $max ) );
 				my $hist = Math::Histogram->new( \@dimensions );
 				#$hist->fill( [ $_ ] ) for @{ $nc->lat_array };		# inefficient
-				$hist->fill_n( $nc->lat_ref_list );
+				$hist->fill_n( $nc->lat_ref_array );
 				[ map $hist->get_bin_content( [ $_ ] ), 1 .. $n ]
 			},
 	MSHXS        => sub {
