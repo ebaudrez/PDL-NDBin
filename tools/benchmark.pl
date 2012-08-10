@@ -13,6 +13,8 @@ use Getopt::Long qw( :config bundling );
 use Text::TabularDisplay;
 use Math::Histogram;
 use Math::SimpleHisto::XS;
+use Math::GSL::Histogram qw( :all );
+use Math::GSL::Histogram2D qw( :all );
 
 my @functions;
 my $iter = 1;
@@ -113,6 +115,14 @@ my %functions = (
 				$hist->fill( $nc->lat_array );
 				$hist->all_bin_contents
 			},
+	MGH          => sub {
+				my $h = gsl_histogram_alloc( $n );
+				gsl_histogram_set_ranges_uniform( $h, $min, $max );
+				gsl_histogram_increment( $h, $_ ) for @{ $nc->lat_array };
+				my $hist = [ map { gsl_histogram_get( $h, $_ ) } 0 .. $n-1 ];
+				gsl_histogram_free( $h );
+				$hist
+			},
 
 	# two-dimensional histograms
 	histogram2d  => sub { histogram2d $nc->lat, $nc->lon, $step, $min, $n, $step, $min, $n },
@@ -137,6 +147,14 @@ my %functions = (
 				my $hist = Math::Histogram->new( \@dimensions );
 				$hist->fill_n( $nc->lat_lon_ref_array );
 				[ map { my $j = $_; [ map $hist->get_bin_content( [ $_, $j ] ), 1 .. $n ] } 1 .. $n ]
+			},
+	MGH2d        => sub {
+				my $h = gsl_histogram2d_alloc( $n, $n );
+				gsl_histogram2d_set_ranges_uniform( $h, $min, $max, $min, $max );
+				gsl_histogram2d_increment( $h, @$_ ) for @{ $nc->lat_lon_ref_array };
+				my $hist = [ map { my $j = $_; [ map gsl_histogram2d_get( $h, $_, $j ), 0 .. $n-1 ] } 0 .. $n-1 ];
+				gsl_histogram2d_free( $h );
+				$hist
 			},
 
 	# average flux using either a coderef or a class (XS-optimized)
