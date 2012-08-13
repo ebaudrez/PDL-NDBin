@@ -14,15 +14,15 @@ my( $iter, @bins, @variables, $hash, $bin, $var, @expected, @got, $k );
 
 #
 @bins = ( 4 );
-@variables = ( PDL->null );
-$hash = PDL->null;
+@variables = ( null );
+$hash = null;
 $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
 isa_ok $iter, 'PDL::NDBin::Iterator', 'return value from constructor';
 
 # test iteration
 @bins = ( 4 );
-@variables = ( PDL->null );
-$hash = PDL->null;
+@variables = ( null );
+$hash = null;
 $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
 $k = 4;
 while( my @return = $iter->next ) { last if $k-- == 0 }

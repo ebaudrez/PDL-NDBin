@@ -94,7 +94,7 @@ for my $class ( __PACKAGE__->actions ) {
 	$obj = $class->new( @{ $test_args{ $class } } );
 	isa_ok $obj, $class;
 	can_ok $obj, qw( new process result );
-	my $ret = $obj->process( iter(PDL->null, PDL->null, $N) );
+	my $ret = $obj->process( iter null, null, $N );
 	isa_ok $ret, $class, 'return value of process()';
 	my $result = $obj->result;
 	ok eval { $result->isa('PDL') }, 'result() returns a pdl';
@@ -185,9 +185,9 @@ is_pdl $got, $expected, "icount, input type float";
 $got = icount( iter undef, $y, $N );
 is_pdl $got, $expected, "icount, input undef";
 # the following test would fail with "Error in _icount_loop:Wrong dims" because
-# the PDL->null isn't resized automatically, it seems
+# PDL::null isn't resized automatically, it seems
 #$got = icount( iter null, $y, $N );
-#is_pdl $got, $expected, "icount, input PDL->null";
+#is_pdl $got, $expected, "icount, input null";
 
 # isum
 $expected = long( 24,7,-1,8 )->inplace->setvaltobad( -1 );
