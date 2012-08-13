@@ -224,7 +224,7 @@ is_pdl $got, $expected, 'example from PDL::hist';
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
 $got = ndbin( $x, 0,20,1, VARS => $x );
-is_pdl $got, $expected, 'variable with default action';
+is_pdl $got, $expected->long, 'variable with default action';
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
 $got = ndbin( $x, 0,20,1, VARS => [ $x => sub { my $iter = shift; $iter->want->nelem ? $iter->selection->avg : undef } ] );
 is_pdl $got, $expected, 'variable with action = average, specified as a coderef';
@@ -302,7 +302,7 @@ dies_ok { ndbin( short( 1,2 ), { n => 4 } ) } 'invalid data: step size < 1 for i
 # test exceptions in actions
 $x = pdl( 1,2,3 );
 $expected = create_bad long, 3;
-throws_ok { ndbin( $x, DEFAULT_ACTION => sub { die } ) }
+throws_ok { ndbin( $x, VARS => [ null() ], DEFAULT_ACTION => sub { die } ) }
 	qr/^Died at /, 'exceptions in actions passed through';
 lives_ok { ndbin( $x, VARS => [ null() => sub { shift->want->min } ] ) }
 	'want->min on empty piddle does not die';
@@ -310,7 +310,7 @@ throws_ok { ndbin( $x, VARS => [ null() => sub { shift->selection->min } ] ) }
 	qr/^PDL::index: invalid index 0 /, 'selection->min on empty piddle';
 throws_ok { ndbin( $x, VARS => [ null() => sub { shift->wrong_method } ] ) }
 	qr/^Can't locate object method "wrong_method"/, 'call nonexistent method';
-lives_ok { $got = ndbin( $x, DEFAULT_ACTION => sub { eval { die } } ) }
+lives_ok { $got = ndbin( $x, VARS => [ null->long ], DEFAULT_ACTION => sub { eval { die } } ) }
 	'does not raise an exception when wrapping action in an eval block ...';
 is_pdl $got, $expected, '... and all values are unset';
 
@@ -322,6 +322,7 @@ $expected = zeroes(2,3,4)->long + 1;
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 3 },
 	      $z => { n => 4 },
+	      VARS => [ null->long ],
 	      DEFAULT_ACTION => sub { @_ } );
 is_pdl $got, $expected, 'number of arguments for actions';
 
@@ -333,6 +334,7 @@ $expected = sequence( 2*5*3 )->long->reshape( 2, 5, 3 );
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 5 },
 	      $z => { n => 3 },
+	      VARS => [ null->long ],
 	      DEFAULT_ACTION => sub { my @u = shift->unhash; $u[0] + 2*$u[1] + 2*5*$u[2] } );
 is_pdl $got, $expected, 'bin numbers returned from iterator';
 

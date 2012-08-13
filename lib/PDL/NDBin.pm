@@ -1028,23 +1028,14 @@ sub ndbin
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
-	my $default_action = $args->{DEFAULT_ACTION} || sub { shift->want->nelem };
+	my $default_action = $args->{DEFAULT_ACTION} || 'Count';
 	my @vars = expand_vars( expand_value $args->{VARS} );
-	# the presence of any of these keys requires a variable
-	if( ! @vars and grep { /^(DEFAULT_ACTION)$/ } keys %$args ) {
-		@vars = ( { pdl => PDL->null->long } );
-	}
 	for my $var ( @vars ) { $var->{action} ||= $default_action }
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
 	# the real work is done by ndbinning()
-	if( @vars ) {
-		ndbinning( ( map { $_->{pdl}, $_->{step}, $_->{min}, $_->{n} } @axes ),
-			   ( map { $_->{pdl}, $_->{action} } @vars ) );
-	}
-	else {
-		ndbinning map { $_->{pdl}, $_->{step}, $_->{min}, $_->{n} } @axes;
-	}
+	ndbinning( ( map { $_->{pdl}, $_->{step}, $_->{min}, $_->{n} } @axes ),
+		   ( map { $_->{pdl}, $_->{action} } @vars ) );
 }
 
 1;
