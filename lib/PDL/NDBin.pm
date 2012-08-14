@@ -379,28 +379,21 @@ sub consume (&\@)
 	return splice @$list;
 }
 
-=head2 convert_to_hash()
+=head2 _collect_args()
 
-A function to normalize the arguments: we have to end up with a hash
-reference containing C<< key => value >> pairs with the arguments
-
-For internal use.
+Convert the argument list into a hash reference suitable for further
+processing. Leading arguments which are not valid key names, are assumed to be
+axis coordinates and parameters, and are collected under the C<AXES> key. The
+remaining arguments are assumed to be C<< key => value >> pairs.
 
 =cut
 
-sub convert_to_hash
+sub _collect_args
 {
-	PDL::Core::barf( 'need at least one axis to bin along' ) unless @_;
-	if( ref $_[0] eq 'HASH' ) {
-		PDL::Core::barf( 'when supplying an anonymous hash, it must be the only parameter' ) if @_ > 1;
-		return shift;
-	}
 	# technical note: PDL overloads the `eq' and `ne' operators; by
 	# checking for a PDL first, we avoid (invalid) comparisons between
 	# piddles and strings in the `grep'
 	if( my @axes = consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
-		# all leading arguments which are not valid key names are
-		# assumed to be axis coordinates and parameters
 		return { AXES => [ @axes ], @_ };
 	}
 	# no arguments matched the previous two conditions, so the argument
@@ -1018,7 +1011,7 @@ sub ndbin
 {
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	# parameters
-	my $args = convert_to_hash( @_ );
+	my $args = _collect_args( @_ );
 	$log->debug( 'parameters: ' . Dumper $args ) if $log->is_debug;
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
