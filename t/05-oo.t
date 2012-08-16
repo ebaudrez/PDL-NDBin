@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 44;
+use Test::More tests => 51;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -21,39 +21,46 @@ my ( $expected, $got, $binner, $x, $y );
 note 'LOW-LEVEL INTERFACE';
 
 # test argument parsing
-lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ] ] ) } 'correct arguments: one axis';
-lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ] ] ) } 'correct arguments: two axes';
-lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ] ] ) } 'correct arguments: three axes';
-lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ] ],
+lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ] ] ) } 'correct arguments: one axis';
+lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ] ] ) } 'correct arguments: two axes';
+lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ] ] ) } 'correct arguments: three axes';
+lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ] ],
 			    vars => [ [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, one variable';
-lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ] ],
+lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ] ],
 			    vars => [ [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, two variables';
-lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ],
-				      [ 'dummy', 0, 0, 1 ] ],
+lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ],
+				      [ 'dummy', step=>0, min=>0, n=>1 ] ],
 			    vars => [ [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, three variables';
 dies_ok { PDL::NDBin->new() } 'no arguments';
-dies_ok { PDL::NDBin->new( axes => [ [ 0 ] ] ) } 'wrong arguments: 0';
-dies_ok { PDL::NDBin->new( axes => [ [ 'dummy' ] ] ) } 'wrong arguments: null';
-dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0 ] ] ) } 'wrong arguments: null, 0';
-dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0 ] ] ) } 'wrong arguments: null, 0, 0';
-dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				     [ 'dummy' ] ] ) } 'wrong arguments: null, 0, 0, 1, null';
-dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ],
-				     [ 'dummy', 0 ] ] ) } 'wrong arguments: null, 0, 0, 1, null, 0';
+dies_ok { PDL::NDBin->new( axes => [ [ 0 ] ] ) } 'no axis name';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy' ] ] ) } 'no specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0 ] ] ) } 'wrong specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ] ] ) } 'oldstyle specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', min=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', n=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, n=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', min=>0, n=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				     [ 'dummy' ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
+				     [ 'dummy', step=>0 ] ] ) } 'too few specs';
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', unknown=>3 ] ] ) } 'unknown key in axis spec';
 
 # return values
-$binner = PDL::NDBin->new( axes => [ [ u => (1,0,10) ] ] );
+$binner = PDL::NDBin->new( axes => [ [ u => (step=>1,min=>0,n=>10) ] ] );
 ok $binner, 'constructor returns a value';
 isa_ok $binner, 'PDL::NDBin', 'return value from new()';
 isa_ok $binner->process( u => sequence(10) ), 'PDL::NDBin', 'return value from process()';
@@ -64,24 +71,24 @@ $x = pdl( 1,1,2 );
 # by default histogram() returns a piddle of the same type as the axis,
 # but output() returns a piddle of type I<long> when histogramming
 $expected = long( 0,2,1 );
-$binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ] );
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>0, n=>3 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'example from PDL::histogram';
-$binner = PDL::NDBin->new( axes => [ [ 'x', 1, 0, 3 ] ],
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>0, n=>3 ] ],
 			   vars => [ [ 'z', sub { shift->want->nelem } ] ] );
 $binner->process( x => $x, z => zeroes( long, $x->nelem ) );
 $got = $binner->output;
 is_pdl $got, $expected, 'variable and action specified explicitly';
 $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
-$binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
+$binner = PDL::NDBin->new( axes => [ [ x => ( step=>1, min=>0, n=>3 ) ] ],
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'different syntax';
 $expected = long( 0,2,1 );
-$binner = PDL::NDBin->new( axes => [ [ x => ( 1, 0, 3 ) ] ],
+$binner = PDL::NDBin->new( axes => [ [ x => ( step=>1, min=>0, n=>3 ) ] ],
 			   vars => [ [ x => 'Count' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -90,7 +97,7 @@ is_pdl $got, $expected, 'different syntax, using action class name';
 # this idiom with only chained calls should work
 $x = pdl( 1,1,2 );
 $expected = long( 0,2,1 );
-$got = PDL::NDBin->new( axes => [ [ v => (1,0,3) ] ] )->process( v => $x )->output;
+$got = PDL::NDBin->new( axes => [ [ v => (step=>1,min=>0,n=>3) ] ] )->process( v => $x )->output;
 is_pdl $got, $expected, 'all calls chained';
 
 # the example from PDL::histogram2d
@@ -99,8 +106,8 @@ $y = pdl( 2,1,1,1,1 );
 $expected = long( [0,0,0],
 		  [0,2,2],
 		  [0,1,0] );
-$binner = PDL::NDBin->new( axes => [ [ x => (1,0,3) ],
-				     [ y => (1,0,3) ] ] );
+$binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>0,n=>3) ],
+				     [ y => (step=>1,min=>0,n=>3) ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
 is_pdl $got, $expected, 'example from PDL::histogram2d';
@@ -112,8 +119,8 @@ $expected = long( [1,1],
 		  [1,0],
 		  [1,0],
 		  [2,1] );
-$binner = PDL::NDBin->new( axes => [ [ 'x', 1, 1, 2 ],
-				     [ 'y', 1, 1, 4 ] ] );
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>1, n=>2 ],
+				     [ 'y', step=>1, min=>1, n=>4 ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
 is_pdl $got, $expected, 'nonsquare two-dimensional histogram';
@@ -121,19 +128,19 @@ is_pdl $got, $expected, 'nonsquare two-dimensional histogram';
 # binning integer data
 $x = byte(1,2,3,4);
 $expected = long(1,1,1,1);
-$binner = PDL::NDBin->new( axes => [ [ x => (1,1,4) ] ] );
+$binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>1,n=>4) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'binning integer data: base case';
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
 $expected = short( 8,9,1,0,5 );
-$binner = PDL::NDBin->new( axes => [ [ x => (1,2,5) ] ],
+$binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>2,n=>5) ] ],
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'binning integer data: step = 1';
 $expected = long( 18,1,1,1,2 );
-$binner = PDL::NDBin->new( axes => [ [ x => (2,3,5) ] ] );
+$binner = PDL::NDBin->new( axes => [ [ x => (step=>2,min=>3,n=>5) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'binning integer data: step = 2';
@@ -141,19 +148,19 @@ is_pdl $got, $expected, 'binning integer data: step = 2';
 # more actions & missing/undefined/invalid stuff
 $x = sequence 21;
 $expected = double( 1,4,7,10,13,16,19 );
-$binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>3, min=>0, n=>7 ] ],
 			   vars => [ [ 'x', sub { shift->selection->avg } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'variable with action = average';
-$binner = PDL::NDBin->new( axes => [ [ 'x', 3, 0, 7 ] ],
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>3, min=>0, n=>7 ] ],
 			   vars => [ [ 'x', 'Avg' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'variable with action = average, using action class name';
 $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
-$binner = PDL::NDBin->new( axes => [ [ 'x', 1,3,5 ] ],
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>1,min=>3,n=>5 ] ],
 			   vars => [ [ 'x', sub { shift->want->nelem || undef } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -167,13 +174,13 @@ $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 	0.1480, 0.4297, 0.5000, 0.9637, 0.1148, 0.2922, 0.0846, 0.0954, 0.1379,
 	0.3187, 0.1655, 0.5777, 0.3047 );
 $expected = histogram( $x, .1, 0, 10 )->long;
-$binner = PDL::NDBin->new( axes => [ [ 'x', .1, 0, 10 ] ] );
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'cross-check with histogram';
 $expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long;
-$binner = PDL::NDBin->new( axes => [ [ 'x', .1, 0, 10 ],
-				     [ 'y', .1, 0, 10 ] ] );
+$binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ],
+				     [ 'y', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
 is_pdl $got, $expected, 'cross-check with histogram2d';
@@ -224,7 +231,7 @@ $x = pdl( 0.665337628832283, -0.629370177449402, -0.611923922242319,
 	0.175506066710255, 0.94968424874434, -0.423133727109544,
 	0.890747106335546, 0.596571315205153, 0.536266550130698,
 	-0.553391321294256 ); # 100 random values in the range [-1:1]
-$binner = PDL::NDBin->new( axes => [ [ data => 2,-1,1 ] ],
+$binner = PDL::NDBin->new( axes => [ [ data => step=>2,min=>-1,n=>1 ] ],
 			   vars => [ [ data => sub { shift->selection->avg } ],
 				     [ data => 'Avg' ] ] );
 $binner->process( data => $x );
@@ -233,7 +240,7 @@ is @$got, 2;
 cmp_ok abs( $got->[0]->at(0) ), '<', 1e-2, 'average of 100 random numbers in the range [-1:1] should be (more or less) close to 0';
 is_pdl $got->[0], $got->[1], 'mixed coderef/class with one bin, average';
 
-$binner = PDL::NDBin->new( axes => [ [ data => .1,-1,20 ] ],
+$binner = PDL::NDBin->new( axes => [ [ data => step=>.1,min=>-1,n=>20 ] ],
 			   vars => [ [ data => sub { (shift->selection->stats)[6] } ],
 				     [ data => 'StdDev' ] ] );
 $binner->process( data => $x );
@@ -266,11 +273,11 @@ note 'CONCATENATION';
 	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate results
 		next if $class eq 'PDL::NDBin::Action::CodeRef';
-		my $binner = PDL::NDBin->new( axes => [ [ u => (4,-50,25) ] ],
+		my $binner = PDL::NDBin->new( axes => [ [ u => (step=>4,min=>-50,n=>25) ] ],
 					      vars => [ [ u => "+$class" ] ] );
 		for my $var ( $u0, $u1, $u2, $u3, $u4 ) { $binner->process( u => $var ) };
 		my $got = $binner->output;
-		my $expected = PDL::NDBin->new( axes => [ [ u => (4,-50,25) ] ],
+		my $expected = PDL::NDBin->new( axes => [ [ u => (step=>4,min=>-50,n=>25) ] ],
 						vars => [ [ u => "+$class" ] ] )
 					 ->process( u => $u )
 					 ->output;

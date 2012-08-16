@@ -220,9 +220,10 @@ sub new
 	my %args = @_;
 	$log->debug( 'arguments = ' . Dumper \%args ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless %args;
-	PDL::Core::barf( "too few arguments for axis: @$_" ) for grep { @$_ != 4 } @{ $args{axes} };
+	PDL::Core::barf( "wrong number of arguments for axis: @$_" ) for grep { @$_ != 7 } @{ $args{axes} };
 	if( ref $args{vars} ) {
-		PDL::Core::barf( "too few arguments for variable: @$_" ) for grep { @$_ != 2 } @{ $args{vars} };
+		PDL::Core::barf( "wrong number of arguments for variable: @$_" )
+			for grep { @$_ != 2 } @{ $args{vars} };
 	}
 	my $self = {
 		axes => $args{axes},
@@ -278,12 +279,13 @@ sub process
 	# find the last axis and hash all axes into one dimension, working our
 	# way backwards from the last to the first axis
 	for my $axis ( reverse @{ $self->{axes} } ) {
-		my( $name, $step, $min, $n ) = @$axis;
+		my( $name, %spec ) = @$axis;
 		my $pdl = $pdls{ $name };
 		$log->debug( 'input (' . $pdl->info . ') = ' . $pdl ) if $log->is_debug;
-		$log->debug( "bin with parameters step=$step, min=$min, n=$n" ) if $log->is_debug;
-		unshift @n, $n;				# remember that we are working backwards!
-		$hash = $pdl->_hash_into( $hash, $step, $min, $n );
+		$log->debug( "bin with parameters step=$spec{step}, min=$spec{min}, n=$spec{n}" )
+			if $log->is_debug;
+		unshift @n, $spec{n};			# remember that we are working backwards!
+		$hash = $pdl->_hash_into( $hash, $spec{step}, $spec{min}, $spec{n} );
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 	$self->{n} = \@n;
@@ -334,7 +336,7 @@ sub ndbinning
 		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
 		my $name = _random_name;
 		$pdls{ $name } = $pdl;
-		push @axes, [ $name, $step, $min, $n ];
+		push @axes, [ $name, step => $step, min => $min, n => $n ];
 	}
 	# consume and process variables
 	my @vars;
