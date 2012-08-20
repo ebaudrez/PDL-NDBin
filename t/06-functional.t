@@ -107,20 +107,20 @@ is_deeply $got, $expected, 'make_labels with one axis, integral data, range 1..4
 note 'LOW-LEVEL INTERFACE';
 
 # test argument parsing
-lives_ok { ndbinning( null, 0, 0, 1 ) } 'correct arguments: one axis';
-lives_ok { ndbinning( null, 0, 0, 1, null, 0, 0, 1 ) } 'correct arguments: two axes';
-lives_ok { ndbinning( null, 0, 0, 1, null, 0, 0, 1, null, 0, 0, 1 ) } 'correct arguments: three axes';
-lives_ok { ndbinning( null, 0, 0, 1, null, 0, 0, 1, null, 0, 0, 1, null, sub {} ) } 'correct arguments: three axes, one variable, one action';
-lives_ok { ndbinning( null, 0, 0, 1, null, 0, 0, 1, null, 0, 0, 1, null, sub {}, null, sub {} ) } 'correct arguments: three axes, two variables, two actions';
-lives_ok { ndbinning( null, 0, 0, 1, null, 0, 0, 1, null, 0, 0, 1, null, sub {}, null, sub {}, null, sub {} ) } 'correct arguments: three axes, three variables, three actions';
+lives_ok { ndbinning( null, 1, 0, 1 ) } 'correct arguments: one axis';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1 ) } 'correct arguments: two axes';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1 ) } 'correct arguments: three axes';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, null, sub {} ) } 'correct arguments: three axes, one variable, one action';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, null, sub {}, null, sub {} ) } 'correct arguments: three axes, two variables, two actions';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, null, sub {}, null, sub {}, null, sub {} ) } 'correct arguments: three axes, three variables, three actions';
 dies_ok { ndbinning() } 'no arguments';
 dies_ok { ndbinning( 0 ) } 'wrong arguments: 0';
 dies_ok { ndbinning( null ) } 'wrong arguments: null';
-dies_ok { ndbinning( null, 0 ) } 'wrong arguments: null, 0';
-dies_ok { ndbinning( null, 0, 0 ) } 'wrong arguments: null, 0, 0';
-dies_ok { ndbinning( null, 0, 0, null ) } 'wrong arguments: null, 0, 0, null';
-dies_ok { ndbinning( null, 0, 0, 1, null ) } 'wrong arguments: null, 0, 0, 1, null';
-dies_ok { ndbinning( null, 0, 0, 1, null, 0 ) } 'wrong arguments: null, 0, 0, 1, null, 0';
+dies_ok { ndbinning( null, 1 ) } 'wrong arguments: null, 1';
+dies_ok { ndbinning( null, 1, 0 ) } 'wrong arguments: null, 1, 0';
+dies_ok { ndbinning( null, 1, 0, null ) } 'wrong arguments: null, 1, 0, null';
+dies_ok { ndbinning( null, 1, 0, 1, null ) } 'wrong arguments: null, 1, 0, 1, null';
+dies_ok { ndbinning( null, 1, 0, 1, null, 1 ) } 'wrong arguments: null, 1, 0, 1, null, 1';
 
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 51;
+use Test::More tests => 52;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -14,11 +14,6 @@ use Module::Pluggable sub_name    => 'actions',
 
 # variable declarations
 my ( $expected, $got, $binner, $x, $y );
-
-#
-# LOW-LEVEL INTERFACE
-#
-note 'LOW-LEVEL INTERFACE';
 
 # test argument parsing
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ] ] ) } 'correct arguments: one axis';
@@ -166,7 +161,7 @@ $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'empty bins unset'; # cannot be achieved with action classes
 
-# cross-check with hist and some random data
+# cross-check with histogram and some random data
 $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
 	0.4099, 0.7701, 0.1881, 0.9412, 0.0034, 0.4440, 0.9423, 0.2065, 0.9656,
 	0.5672, 0.2300, 0.5300, 0.1842 );
@@ -184,6 +179,17 @@ $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ],
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
 is_pdl $got, $expected, 'cross-check with histogram2d';
+
+# the example from PDL::hist
+$x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
+$expected = long( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
+$binner = PDL::NDBin->new( axes => [ [ x => min=>0, max=>20, step=>1 ] ] );
+$binner->process( x => $x );
+$got = $binner->output;
+is_pdl $got, $expected, 'example from PDL::hist';
+
+# test auto axes
+#TODO
 
 #
 # MIXED CODEREFS/CLASSES

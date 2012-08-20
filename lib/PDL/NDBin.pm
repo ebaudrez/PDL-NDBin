@@ -280,12 +280,13 @@ sub process
 	# way backwards from the last to the first axis
 	for my $axis ( reverse @{ $self->{axes} } ) {
 		my( $name, %spec ) = @$axis;
-		my $pdl = $pdls{ $name };
-		$log->debug( 'input (' . $pdl->info . ') = ' . $pdl ) if $log->is_debug;
+		$spec{pdl} = $pdls{ $name };
+		$log->debug( 'input (' . $spec{pdl}->info . ') = ' . $spec{pdl} ) if $log->is_debug;
+		_auto_axis( \%spec );
 		$log->debug( "bin with parameters step=$spec{step}, min=$spec{min}, n=$spec{n}" )
 			if $log->is_debug;
 		unshift @n, $spec{n};			# remember that we are working backwards!
-		$hash = $pdl->_hash_into( $hash, $spec{step}, $spec{min}, $spec{n} );
+		$hash = $spec{pdl}->_hash_into( $hash, $spec{step}, $spec{min}, $spec{n} );
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 	$self->{n} = \@n;
@@ -509,6 +510,92 @@ sub expand_vars
 	return @out;
 }
 
+sub _auto_axis
+{
+	my $axis = shift;
+	# first get & sanify the arguments
+	PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
+	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
+
+=for comment
+	# allow options the way histogram() and histogram2d() do, but
+	# warn if a maximum has been given, because it is not possible
+	# to honour four constraints
+	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
+		if( defined $axis->{max} ) {
+			my $warning = join '',
+				'step size, minimum value and number of bins are given; ',
+				'the given maximum value will be ignored';
+			if( $axis->{pdl}->type < PDL::float ) {
+				if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} - 1 ) {
+					carp $warning;
+				}
+			}
+			else {
+				if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} ) {
+					carp $warning;
+				}
+			}
+		}
+	}
+
+=cut
+
+	$axis->{max} = $axis->{pdl}->max unless defined $axis->{max};
+	if( defined $axis->{round} and $axis->{round} > 0 ) {
+		$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
+		$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
+	}
+	PDL::Core::barf( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
+	if( $axis->{pdl}->type >= PDL::float ) {
+		PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
+	}
+	# if step size has been supplied by user, check it
+	if( defined $axis->{step} ) {
+		PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
+		if( $axis->{pdl}->type < PDL::float && $axis->{step} < 1 ) {
+			PDL::Core::barf( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
+		}
+	}
+	# number of bins I<n>
+	if( defined $axis->{n} ) {
+		PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
+	}
+	else {
+		if( defined $axis->{step} ) {
+			# data range and step size were verified above,
+			# so the result of this calculation is
+			# guaranteed to be > 0
+			# XXX CORE:: is ugly -- but can be remedied
+			# later when we reimplement the hashing in PP
+			$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
+			if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
+		}
+		else {
+			# if neither number of bins nor step size is
+			# defined, take the default behaviour of hist()
+			# (see F<Basic.pm>)
+			$axis->{n} = $axis->{pdl}->nelem > 100 ? 100 : $axis->{pdl}->nelem;
+		}
+	}
+	# step size I<step>
+	# if we get here, the data range is certain to be larger than
+	# zero, and I<n> is sure to be defined and valid (either
+	# because it was supplied explicitly and verified to be valid,
+	# or because it was calculated automatically)
+	if( ! defined $axis->{step} ) {
+		if( $axis->{pdl}->type < PDL::float ) {
+			# result of this calculation is guaranteed to be >= 1
+			$axis->{step} = ( $axis->{max} - $axis->{min} + 1 ) / $axis->{n};
+			PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
+		}
+		else {
+			# result of this calculation is guaranteed to be > 0
+			$axis->{step} = ( $axis->{max} - $axis->{min} ) / $axis->{n};
+		}
+	}
+}
+
 =head2 process_axes()
 
 Process the axes. This is the function that ndbin() will call when you give it
@@ -535,10 +622,10 @@ explained in the documentation of ndbin() (see L<Number of bins>).
 sub process_axes
 {
 	my @axes = expand_axes( expand_value @_ );
+	# checking whether the length of all axes is equal can only be done
+	# here, and not in _auto_axis()
 	my $length;
 	for my $axis ( @axes ) {
-		# first get & sanify the arguments
-		PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
 		$length = $axis->{pdl}->nelem unless defined $length;
 		if( $axis->{pdl}->nelem != $length ) {
 			PDL::Core::barf( join '', 'number of coordinates (',
@@ -546,86 +633,8 @@ sub process_axes
 				') along this axis is different from previous',
 				" ($length)" );
 		}
-		$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
-
-=for comment
-		# allow options the way histogram() and histogram2d() do, but
-		# warn if a maximum has been given, because it is not possible
-		# to honour four constraints
-		if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
-			if( defined $axis->{max} ) {
-				my $warning = join '',
-					'step size, minimum value and number of bins are given; ',
-					'the given maximum value will be ignored';
-				if( $axis->{pdl}->type < PDL::float ) {
-					if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} - 1 ) {
-						carp $warning;
-					}
-				}
-				else {
-					if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} ) {
-						carp $warning;
-					}
-				}
-			}
-		}
-
-=cut
-
-		$axis->{max} = $axis->{pdl}->max unless defined $axis->{max};
-		if( defined $axis->{round} and $axis->{round} > 0 ) {
-			$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
-			$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
-		}
-		PDL::Core::barf( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
-		if( $axis->{pdl}->type >= PDL::float ) {
-			PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
-		}
-		# if step size has been supplied by user, check it
-		if( defined $axis->{step} ) {
-			PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
-			if( $axis->{pdl}->type < PDL::float && $axis->{step} < 1 ) {
-				PDL::Core::barf( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
-			}
-		}
-		# number of bins I<n>
-		if( defined $axis->{n} ) {
-			PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
-		}
-		else {
-			if( defined $axis->{step} ) {
-				# data range and step size were verified above,
-				# so the result of this calculation is
-				# guaranteed to be > 0
-				# XXX CORE:: is ugly -- but can be remedied
-				# later when we reimplement the hashing in PP
-				$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
-				if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
-			}
-			else {
-				# if neither number of bins nor step size is
-				# defined, take the default behaviour of hist()
-				# (see F<Basic.pm>)
-				$axis->{n} = $axis->{pdl}->nelem > 100 ? 100 : $axis->{pdl}->nelem;
-			}
-		}
-		# step size I<step>
-		# if we get here, the data range is certain to be larger than
-		# zero, and I<n> is sure to be defined and valid (either
-		# because it was supplied explicitly and verified to be valid,
-		# or because it was calculated automatically)
-		if( ! defined $axis->{step} ) {
-			if( $axis->{pdl}->type < PDL::float ) {
-				# result of this calculation is guaranteed to be >= 1
-				$axis->{step} = ( $axis->{max} - $axis->{min} + 1 ) / $axis->{n};
-				PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
-			}
-			else {
-				# result of this calculation is guaranteed to be > 0
-				$axis->{step} = ( $axis->{max} - $axis->{min} ) / $axis->{n};
-			}
-		}
 	}
+	_auto_axis( $_ ) for @axes;
 	return @axes;
 }
 
