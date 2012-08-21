@@ -220,20 +220,40 @@ sub new
 	my %args = @_;
 	$log->debug( 'arguments = ' . Dumper \%args ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless %args;
-	PDL::Core::barf( "wrong number of arguments for axis: @$_" ) for grep { @$_ != 7 } @{ $args{axes} };
-	if( ref $args{vars} ) {
-		PDL::Core::barf( "wrong number of arguments for variable: @$_" )
-			for grep { @$_ != 2 } @{ $args{vars} };
-	}
-	my $self = {
-		axes => $args{axes},
-		vars => $args{vars},
-	};
-	unless( $self->{vars} && @{ $self->{vars} } ) {
-		$self->{vars} = [ [ _random_name, 'Count' ] ];
-	}
-	return bless $self, $class;
+	# object construction
+	my $self = bless {}, $class;
+	# axes
+	$args{axes} ||= [];		# be sure we can dereference
+	my @axes = @{ $args{axes} } or PDL::Core::barf( 'no axes supplied' );
+	$self->_add_axis( @$_ ) for @axes;
+	# vars
+	$args{vars} ||= [];		# be sure we can dereference
+	my @vars = @{ $args{vars} };
+	if( ! @vars ) { @vars = ( [ _random_name, 'Count' ] ) }
+	$self->_add_var( @$_ ) for @vars;
+	return $self;
 }
+
+sub _add_axis
+{
+	my $self = shift;
+	PDL::Core::barf( "wrong number of arguments for axis: @$_" ) if @_ != 7;
+	my( $name, %spec ) = @_;
+	push @{ $self->{axes} }, { name => $name, %spec };
+}
+
+sub _add_var
+{
+	my $self = shift;
+	PDL::Core::barf( "wrong number of arguments for variable: @$_" ) if @_ != 2;
+	my( $name, $action ) = @_;
+	push @{ $self->{vars} }, { name => $name, action => $action };
+}
+
+# read-only accessors to the axes and variables; return lists instead of array
+# references
+sub axes { @{ $_[0]->{axes} } }
+sub vars { @{ $_[0]->{vars} } }
 
 # stolen from Log::Dispatch
 sub _require_dynamic
@@ -278,23 +298,22 @@ sub process
 	my @n;			# number of bins in each direction
 	# find the last axis and hash all axes into one dimension, working our
 	# way backwards from the last to the first axis
-	for my $axis ( reverse @{ $self->{axes} } ) {
-		my( $name, %spec ) = @$axis;
-		$spec{pdl} = $pdls{ $name };
-		$log->debug( 'input (' . $spec{pdl}->info . ') = ' . $spec{pdl} ) if $log->is_debug;
-		_auto_axis( \%spec );
-		$log->debug( "bin with parameters step=$spec{step}, min=$spec{min}, n=$spec{n}" )
+	for my $axis ( reverse $self->axes ) {
+		$axis->{pdl} = $pdls{ $axis->{name} };
+		$log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} ) if $log->is_debug;
+		_auto_axis( $axis );
+		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
 			if $log->is_debug;
-		unshift @n, $spec{n};			# remember that we are working backwards!
-		$hash = $spec{pdl}->_hash_into( $hash, $spec{step}, $spec{min}, $spec{n} );
+		unshift @n, $axis->{n};			# remember that we are working backwards!
+		$hash = $axis->{pdl}->_hash_into( $hash, $axis->{step}, $axis->{min}, $axis->{n} );
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 	$self->{n} = \@n;
 
 	my $N = reduce { $a * $b } @n; # total number of bins
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
-	my @vars = map { $pdls{ $_ } } map { $_->[0] } @{ $self->{vars} };
-	$self->{instances} ||= [ map { _make_instance $N, $_->[1] } @{ $self->{vars} } ];
+	my @vars = map $pdls{ $_->{name} }, $self->vars;
+	$self->{instances} ||= [ map { _make_instance $N, $_->{action} } $self->vars ];
 
 	# now visit all the bins
 	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $hash );
