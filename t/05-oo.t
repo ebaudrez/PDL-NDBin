@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 52;
+use Test::More tests => 54;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -187,6 +187,18 @@ $binner = PDL::NDBin->new( axes => [ [ x => min=>0, max=>20, step=>1 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 is_pdl $got, $expected, 'example from PDL::hist';
+
+#
+$x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
+$binner = PDL::NDBin->new( axes => [[ x => (step=>1, min=>0, n=>10) ]] );
+$binner->process( x => $x );
+$got = [ $binner->axes ];
+# is_deeply(), is(), cmp_ok(), etc., don't handle piddles well, hence this workaround
+is_pdl delete $got->[0]->{pdl}, $x, '{pdl} in $self->{axes}';
+is_deeply $got, [ { name => 'x',
+		    step => 1,
+		    min  => 0,
+		    n    => 10 } ], 'contents of $self->{axes}';
 
 # test auto axes
 #TODO

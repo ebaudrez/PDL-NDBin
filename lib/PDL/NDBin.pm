@@ -531,7 +531,13 @@ sub expand_vars
 
 sub _auto_axis
 {
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	my $axis = shift;
+	# return early if step, min, and n have already been calculated
+	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
+		$log->tracef( 'step, min, n already calculated for %s; not recalculating', $axis );
+		return;
+	}
 	# first get & sanify the arguments
 	PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
 	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
