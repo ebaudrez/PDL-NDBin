@@ -2,10 +2,11 @@
 
 use strict;
 use warnings;
-use Test::More tests => 54;
+use Test::More tests => 67;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
+use Test::Deep;
 use PDL;
 use PDL::NDBin;
 use Module::Pluggable sub_name    => 'actions',
@@ -189,16 +190,83 @@ $got = $binner->output;
 is_pdl $got, $expected, 'example from PDL::hist';
 
 #
+# DATA FEEDING
+#
+note 'DATA FEEDING';
+
+#
+$x = random( 30 );
+$y = random( 30 );
+$binner = PDL::NDBin->new( axes => [[ x => (step=>.1,min=>0,n=>10) ],
+				    [ y => (step=>.1,min=>0,n=>10) ]] );
+$got = $binner->{axes};
+is_deeply $got, [ { name => 'x',
+		    step => .1,min=>0,n=>10 },
+		  { name => 'y',
+		    step => .1,min=>0,n=>10 } ], 'contents of axes() before feeding';
+$binner->feed( x => $x );
+$got = $binner->{axes};
+# is_deeply(), is(), cmp_ok(), etc., don't handle piddles well, hence this workaround
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding x';
+cmp_deeply $got, [ { name => 'x',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 },
+		   { name => 'y',
+		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding x';
+$binner->feed( y => $y );
+$got = $binner->{axes};
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding y';
+is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->{axes} after feeding y';
+cmp_deeply $got, [ { name => 'x',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 },
+		   { name => 'y',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding y';
+
+#
+$x = random( 30 );
+$y = random( 30 );
+$binner = PDL::NDBin->new( axes => [[ x => (step=>.1,min=>0,n=>10) ],
+				    [ y => (step=>.1,min=>0,n=>10) ]] );
+$got = $binner->{axes};
+is_deeply $got, [ { name => 'x',
+		    step => .1,min=>0,n=>10 },
+		  { name => 'y',
+		    step => .1,min=>0,n=>10 } ], 'contents of axes() before feeding';
+$binner->feed( x => $x,
+	       y => $y );
+$got = $binner->{axes};
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding x and y at once';
+is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->{axes} after feeding x and y at once';
+cmp_deeply $got, [ { name => 'x',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 },
+		   { name => 'y',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding x and y at once';
+$y = random( 30 );
+$binner->feed( y => $y );
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding x and y at once';
+is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->{axes} after feeding x and y at once';
+cmp_deeply $got, [ { name => 'x',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 },
+		   { name => 'y',
+		     pdl  => ignore(),
+		     step => .1, min => 0, n => 10 } ], 'contents of axes() after re-feeding y';
+
+#
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $binner = PDL::NDBin->new( axes => [[ x => (step=>1, min=>0, n=>10) ]] );
 $binner->process( x => $x );
-$got = [ $binner->axes ];
-# is_deeply(), is(), cmp_ok(), etc., don't handle piddles well, hence this workaround
-is_pdl delete $got->[0]->{pdl}, $x, '{pdl} in $self->{axes}';
-is_deeply $got, [ { name => 'x',
-		    step => 1,
-		    min  => 0,
-		    n    => 10 } ], 'contents of $self->{axes}';
+$got = $binner->{axes};
+is_pdl $got->[0]->{pdl}, $x, '{pdl} in $self->{axes}';
+cmp_deeply $got, [ { name => 'x',
+		     pdl  => ignore(),
+		     step => 1,
+		     min  => 0,
+		     n    => 10 } ], 'contents of $self->{axes}';
 
 # test auto axes
 #TODO

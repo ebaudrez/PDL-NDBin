@@ -287,11 +287,55 @@ sub _make_instance
 	}
 }
 
+=head2 feed()
+
+Set the piddles that will eventually be used for the axes and variables.
+
+Note that not all piddles need be set in one call. This function can be called
+repeatedly to set all piddles. This can be very useful when data must be read
+from disk, as in the following example (assuming $nc is an object that reads
+data from disk):
+
+	my $binner = PDL::NDBin->new( axes => [ [ x => ... ], [ y => ... ] ] );
+	for my $f ( 'x', 'y' ) { $binner->feed( $f => $nc->get( $f ) ) }
+	$binner->process;
+
+=cut
+
+sub feed
+{
+	my $self = shift;
+	my %pdls = @_;
+	while( my( $name, $pdl ) = each %pdls ) {
+		for my $v ( $self->axes, $self->vars ) {
+			$v->{pdl} = $pdl if $v->{name} eq $name;
+		}
+	}
+}
+
+sub _check_all_pdls_present
+{
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	my $self = shift;
+	my %warned_for;
+	for my $v ( $self->axes, $self->vars ) {
+		next if defined $v->{pdl};
+		next if $v->{action} eq 'Count'; # those variables don't need data
+		my $name = $v->{name};
+		next if $warned_for{ $name };
+		$log->error( "no data for $name" );
+		$warned_for{ $name }++;
+	}
+}
+
 sub process
 {
 	my $self = shift;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
-	my %pdls = @_;
+
+	#
+	$self->feed( @_ );
+	$self->_check_all_pdls_present;
 
 	# process axes
 	my $hash = 0;		# hashed bin number
@@ -299,7 +343,6 @@ sub process
 	# find the last axis and hash all axes into one dimension, working our
 	# way backwards from the last to the first axis
 	for my $axis ( reverse $self->axes ) {
-		$axis->{pdl} = $pdls{ $axis->{name} };
 		$log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} ) if $log->is_debug;
 		_auto_axis( $axis );
 		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
@@ -312,7 +355,7 @@ sub process
 
 	my $N = reduce { $a * $b } @n; # total number of bins
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
-	my @vars = map $pdls{ $_->{name} }, $self->vars;
+	my @vars = map $_->{pdl}, $self->vars;
 	$self->{instances} ||= [ map { _make_instance $N, $_->{action} } $self->vars ];
 
 	# now visit all the bins
