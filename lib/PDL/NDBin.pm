@@ -328,6 +328,27 @@ sub _check_all_pdls_present
 	}
 }
 
+sub _check_pdl_length
+{
+	my $self = shift;
+	# checking whether the lengths of all axes and variables are equal can
+	# only be done here (in a loop), and not in _auto_axis()
+	my $length;
+	for my $v ( $self->axes, $self->vars ) {
+		$length = $v->{pdl}->nelem unless defined $length;
+		# variables don't always need a pdl, or may be happy with a
+		# null pdl; let the action figure it out.
+		# note that the test isempty() is not a good test for null
+		# pdls, but until I have a better one, this will have to do
+		next if $v->{action} && ( ! defined $v->{pdl} || $v->{pdl}->isempty );
+		if( $v->{pdl}->nelem != $length ) {
+			PDL::Core::barf( join '', 'number of elements (',
+				$v->{pdl}->nelem, ") of '$v->{name}'",
+				" is different from previous ($length)" );
+		}
+	}
+}
+
 sub process
 {
 	my $self = shift;
@@ -336,6 +357,7 @@ sub process
 	#
 	$self->feed( @_ );
 	$self->_check_all_pdls_present;
+	$self->_check_pdl_length;
 
 	# process axes
 	my $hash = 0;		# hashed bin number
@@ -690,18 +712,6 @@ explained in the documentation of ndbin() (see L<Number of bins>).
 sub process_axes
 {
 	my @axes = expand_axes( expand_value @_ );
-	# checking whether the length of all axes is equal can only be done
-	# here, and not in _auto_axis()
-	my $length;
-	for my $axis ( @axes ) {
-		$length = $axis->{pdl}->nelem unless defined $length;
-		if( $axis->{pdl}->nelem != $length ) {
-			PDL::Core::barf( join '', 'number of coordinates (',
-				$axis->{pdl}->nelem,
-				') along this axis is different from previous',
-				" ($length)" );
-		}
-	}
 	_auto_axis( $_ ) for @axes;
 	return @axes;
 }
