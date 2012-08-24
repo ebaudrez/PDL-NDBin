@@ -349,15 +349,23 @@ sub _check_pdl_length
 	}
 }
 
+sub autoscale
+{
+	my $self = shift;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	$self->feed( @_ );
+	$self->_check_all_pdls_present;
+	$self->_check_pdl_length;
+	_auto_axis( $_ ) for $self->axes;
+}
+
 sub process
 {
 	my $self = shift;
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 
 	#
-	$self->feed( @_ );
-	$self->_check_all_pdls_present;
-	$self->_check_pdl_length;
+	$self->autoscale( @_ );
 
 	# process axes
 	my $hash = 0;		# hashed bin number
@@ -366,7 +374,6 @@ sub process
 	# way backwards from the last to the first axis
 	for my $axis ( reverse $self->axes ) {
 		$log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} ) if $log->is_debug;
-		_auto_axis( $axis );
 		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
 			if $log->is_debug;
 		unshift @n, $axis->{n};			# remember that we are working backwards!

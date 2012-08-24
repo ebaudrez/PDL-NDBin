@@ -2,19 +2,21 @@
 
 use strict;
 use warnings;
-use Test::More tests => 67;
+use Test::More tests => 68;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Deep;
 use PDL;
 use PDL::NDBin;
+use List::Util qw( reduce );
 use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
 		      search_path => [ 'PDL::NDBin::Action' ];
 
 # variable declarations
 my ( $expected, $got, $binner, $x, $y );
+our ( $a, $b );
 
 # test argument parsing
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ] ] ) } 'correct arguments: one axis';
@@ -190,9 +192,9 @@ $got = $binner->output;
 is_pdl $got, $expected, 'example from PDL::hist';
 
 #
-# DATA FEEDING
+# DATA FEEDING & AUTOSCALING
 #
-note 'DATA FEEDING';
+note 'DATA FEEDING & AUTOSCALING';
 
 #
 $x = random( 30 );
@@ -256,20 +258,19 @@ cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after re-feeding y';
 
-#
+# test auto axes
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $binner = PDL::NDBin->new( axes => [[ x => (step=>1, min=>0, n=>10) ]] );
-$binner->process( x => $x );
+$binner->autoscale( x => $x );
 $got = $binner->{axes};
-is_pdl $got->[0]->{pdl}, $x, '{pdl} in $self->{axes}';
+is_pdl $got->[0]->{pdl}, $x, 'returns early if step,min,n are known (1)';
 cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
 		     step => 1,
 		     min  => 0,
-		     n    => 10 } ], 'contents of $self->{axes}';
-
-# test auto axes
-#TODO
+		     n    => 10 } ], 'returns early if step,min,n are known (2)';
+$got = reduce { $a * $b } map { $_->{n} } $binner->axes;
+is $got, 10, 'number of bins';
 
 #
 # MIXED CODEREFS/CLASSES
