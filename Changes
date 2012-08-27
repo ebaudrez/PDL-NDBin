@@ -1,0 +1,59 @@
+Revision history for PDL::NDBin
+
+0.004 20??-??-??
+
+ - never released on CPAN
+ - completed the object-oriented refactoring: calling interface has changed
+   (see below for details); the object-oriented interface is now the preferred
+   interface (Edward Baudrez)
+ - require the axis specifications in new() to be given as key => value pairs
+   (Edward Baudrez)
+ - in addition to 'step', 'min', and 'n', new() now also accepts 'max' and
+   'round' in axis specifications (Edward Baudrez)
+ - added a method feed() to feed data piecewise (or all at once) before calling
+   process(); this can be very useful when data is being read from a file. It
+   essential separates the data feeding from the processing step (both were
+   done at the same time before, in the call to process()). This also means you
+   can now call process() without arguments, provided that you have already fed
+   all required data before. (Edward Baudrez)
+ - added a method autoscale() to have missing axis specifications derived
+   automatically from the data. As a side effect, it is now allowed to call the
+   constructor with too few or even without any axis specifications:
+      my $binner = PDL::NDBin->new( axes => [ [ x => ( n => 10 ) ],
+                                              [ 'y' ] ] );
+      $binner->process( x => $x, y => $y );
+   This used to raise an error in previous versions. (Edward Baudrez)
+
+0.003 2012-08-10
+
+ - never released on CPAN
+ - PDL::NDBin now supports concatenation of calls: very useful to process
+   multiple input files. You need use the object-oriented interface to do this.
+   (Edward Baudrez)
+ - API change for action coderefs: the first (and only) argument is now an
+   iterator instead of a piddle containing the selected data. This means that
+   where coderefs looked like this in the previous version:
+      sub { my $pdl = shift; return $pdl->avg }
+   you now have to write:
+      sub { my $iter = shift; return $iter->selection->avg }
+   (Edward Baudrez)
+ - exceptions in actions are no longer caught. This change requires the user to
+   protect from potentially dangerous code with an 'eval' block. (Edward
+   Baudrez)
+ - in addition to coderefs, now also accepts action class names (Edward
+   Baudrez)
+ - continued the object-oriented refactoring (Edward Baudrez)
+ - greatly expanded the test suite (Edward Baudrez)
+
+0.002 2012-07-11
+
+ - never released on CPAN
+ - now using Log::Any for logging (Edward Baudrez)
+ - started refactoring by moving to object-oriented core implementation, with
+   functional wrappers. This change is not yet visible at the user level, but
+   will become so in the next version. (Edward Baudrez)
+
+0.001 2012-06-28
+
+ - never released on CPAN
+ - imported the code in a Git repository (Edward Baudrez)
