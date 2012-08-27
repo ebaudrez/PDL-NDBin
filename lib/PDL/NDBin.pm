@@ -247,9 +247,26 @@ sub _add_axis
 sub _add_var
 {
 	my $self = shift;
+	if( @_ == 2 ) { $self->_add_var2( @_ ) }
+	else { $self->_add_var_specs( @_ ) }
+}
+
+sub _add_var2
+{
+	my $self = shift;
 	PDL::Core::barf( "wrong number of arguments for variable: @$_" ) if @_ != 2;
 	my( $name, $action ) = @_;
 	push @{ $self->{vars} }, { name => $name, action => $action };
+}
+
+sub _add_var_specs
+{
+	my $self = shift;
+	my $name = shift;
+	PDL::Core::barf( 'need at least a name for every variable' ) unless $name;
+	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
+	my %specs = @_;
+	push @{ $self->{vars} }, { name => $name, %specs };
 }
 
 # read-only accessors to the axes and variables; return lists instead of array
