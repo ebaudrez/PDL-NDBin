@@ -237,9 +237,11 @@ sub new
 sub _add_axis
 {
 	my $self = shift;
-	PDL::Core::barf( "wrong number of arguments for axis: @$_" ) if @_ != 7;
-	my( $name, %spec ) = @_;
-	push @{ $self->{axes} }, { name => $name, %spec };
+	my $name = shift;
+	PDL::Core::barf( 'need at least a name for every axis' ) unless $name;
+	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
+	my %specs = @_;
+	push @{ $self->{axes} }, { name => $name, %specs };
 }
 
 sub _add_var
