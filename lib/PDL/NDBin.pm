@@ -147,8 +147,8 @@ and longitude.
 
 our @ISA = qw( Exporter );
 our @EXPORT = qw( );
-our @EXPORT_OK = qw( ndbinning ndbin process_axes make_labels );
-our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes make_labels ) ] );
+our @EXPORT_OK = qw( ndbinning ndbin process_axes );
+our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes ) ] );
 
 # the list of valid keys
 my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION );
@@ -359,6 +359,33 @@ sub autoscale
 	$self->_check_all_pdls_present;
 	$self->_check_pdl_length;
 	_auto_axis( $_ ) for $self->axes;
+}
+
+=head2 labels()
+
+Return the labels for the bins as a list of lists of ranges.
+
+=cut
+
+sub labels
+{
+	my $self = shift;
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	$self->autoscale( @_ );
+	my @list = map {
+		my $axis = $_;
+		my ( $pdl, $min, $step ) = @{ $axis }{ qw( pdl min step ) };
+		[ map {
+			{ # anonymous hash
+				range => $pdl->type() >= PDL::float()
+					? [ $min + $step*$_, $min + $step*($_+1) ]
+					: $step > 1
+						? [ nhimult( 1, $min + $step*$_ ), nhimult( 1, $min + $step*($_+1) - 1 ) ]
+						: $min + $step*$_
+			}
+		} 0 .. $axis->{n}-1 ];
+	} $self->axes;
+	return wantarray ? @list : \@list;
 }
 
 sub process
@@ -699,8 +726,8 @@ sub _auto_axis
 
 Process the axes. This is the function that ndbin() will call when you give it
 axis specifications. This function has been separated from ndbin() so that you
-can call it, and feed its output to make_labels() and ndbin() afterwards,
-without needing to reparse your arguments.
+can call it, and feed its output to ndbin() afterwards, without needing to
+reparse your arguments.
 
 process_axes() returns a list that should be fed into ndbin() as follows:
 
@@ -723,30 +750,6 @@ sub process_axes
 	my @axes = expand_axes( expand_value @_ );
 	_auto_axis( $_ ) for @axes;
 	return @axes;
-}
-
-=head2 make_labels()
-
-Make the labels for the bins.
-
-=cut
-
-sub make_labels
-{
-	my @axes = process_axes @_;
-	map {
-		my $axis = $_;
-		my ( $pdl, $min, $step ) = @{ $axis }{ qw( pdl min step ) };
-		[ map {
-			{ # anonymous hash
-				range => $pdl->type() >= PDL::float()
-					? [ $min + $step*$_, $min + $step*($_+1) ]
-					: $step > 1
-						? [ nhimult( 1, $min + $step*$_ ), nhimult( 1, $min + $step*($_+1) - 1 ) ]
-						: $min + $step*$_
-			}
-		} 0 .. $axis->{n}-1 ];
-	} @axes;
 }
 
 =head2 ndbin()

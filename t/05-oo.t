@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 68;
+use Test::More tests => 74;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -17,6 +17,11 @@ use Module::Pluggable sub_name    => 'actions',
 # variable declarations
 my ( $expected, $got, $binner, $x, $y );
 our ( $a, $b );
+
+#
+# SETUP
+#
+note 'SETUP';
 
 # test argument parsing
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ] ] ) } 'correct arguments: one axis';
@@ -66,6 +71,38 @@ ok $binner, 'constructor returns a value';
 isa_ok $binner, 'PDL::NDBin', 'return value from new()';
 isa_ok $binner->process( u => sequence(10) ), 'PDL::NDBin', 'return value from process()';
 isa_ok $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PDL::NDBin', 'return value from chained calls to process()';
+
+#
+# SUPPORT STUFF
+#
+note 'SUPPORT STUFF';
+
+# labels
+$expected = [ [ { range => [0,4] }, { range => [4,8] }, { range => [8,12] } ] ];
+$got = PDL::NDBin->new( axes => [[ x => (min=>0, max=>12, step=>4) ]] )->labels( x => pdl );
+is_deeply $got, $expected, 'labels() with one axis, range 0..12, step = 4';
+$expected = [ [ { range => [0,7]  },  { range => [7,14] } ],
+	      [ { range => [0,11]  }, { range => [11,22] }, { range => [22,33] } ] ];
+$got = PDL::NDBin->new( axes => [[ x => ( n => 2 ) ],
+				 [ y => ( n => 3 ) ]] )->labels( x => pdl( 0,14 ), y => pdl( 0,33 ) );
+is_deeply $got, $expected, 'labels() with two axes, range 0..14 x 0..33, n = 2 x 3';
+$expected = [ [ { range => [-3,-2] }, { range => [-1,0] }, { range => [1,2] } ] ];
+$got = PDL::NDBin->new( axes => [[ x => ( n => 3 ) ]] )->labels( x => short( -3,2 ) );
+is_deeply $got, $expected, 'labels() with one axis, integral data, range -3..2, n = 3';
+$expected = [ [ { range => [-3,0] }, { range => [1,3] } ] ];
+$got = PDL::NDBin->new( axes => [[ x => ( n => 2 ) ]] )->labels( x => short( -3,3 ) );
+is_deeply $got, $expected, 'labels() with one axis, integral data, range -3..3, n = 2';
+$expected = [ [ { range => [-3,-1] }, { range => [0,1] }, { range => [2,3] } ] ];
+$got = PDL::NDBin->new( axes => [[ x => ( n => 3 ) ]] )->labels( x => short( -3,3 ) );
+is_deeply $got, $expected, 'labels() with one axis, integral data, range -3..3, n = 3';
+$expected = [ [ { range => 1 }, { range => 2 }, { range => 3 }, { range => 4 } ] ];
+$got = PDL::NDBin->new( axes => [[ x => ( step => 1 ) ]] )->labels( x => short( 1,2,3,4 ) );
+is_deeply $got, $expected, 'labels() with one axis, integral data, range 1..4, step = 1';
+
+#
+# BASIC FUNCTIONALITY
+#
+note 'BASIC FUNCTIONALITY';
 
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );

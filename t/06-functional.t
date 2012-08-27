@@ -2,12 +2,12 @@
 
 use strict;
 use warnings;
-use Test::More tests => 91;
+use Test::More tests => 85;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use PDL;
-use PDL::NDBin qw( ndbinning ndbin process_axes make_labels );
+use PDL::NDBin qw( ndbinning ndbin process_axes );
 
 # because PDL overloads the comparison operators, it is no fun to run
 # is_deeply() on piddles; as a workaround, we remove them
@@ -79,27 +79,6 @@ $arg = [ process_axes $x ];
 is_deeply_without_pdl $arg, [ process_axes( $arg ) ], 'process_axes is idempotent';
 $arg = [ process_axes $x->long ];
 is_deeply_without_pdl $arg, [ process_axes( $arg ) ], 'process_axes is idempotent, integral data';
-
-# labels
-$expected = [ [ { range => [0,4] }, { range => [4,8] }, { range => [8,12] } ] ];
-$got = [ make_labels pdl(), 0, 12, 4 ];
-is_deeply $got, $expected, 'make_labels with one axis, range 0..12, step = 4';
-$expected = [ [ { range => [0,7]  },  { range => [7,14] } ],
-	      [ { range => [0,11]  }, { range => [11,22] }, { range => [22,33] } ] ];
-$got = [ make_labels pdl( 0,14 ), { n => 2 }, pdl( 0,33 ), { n => 3 } ];
-is_deeply $got, $expected, 'make_labels with two axes, range 0..14 x 0..33, n = 2 x 3';
-$expected = [ [ { range => [-3,-2] }, { range => [-1,0] }, { range => [1,2] } ] ];
-$got = [ make_labels short( -3,2 ), { n => 3 } ];
-is_deeply $got, $expected, 'make_labels with one axis, integral data, range -3..2, n = 3';
-$expected = [ [ { range => [-3,0] }, { range => [1,3] } ] ];
-$got = [ make_labels short( -3,3 ), { n => 2 } ];
-is_deeply $got, $expected, 'make_labels with one axis, integral data, range -3..3, n = 2';
-$expected = [ [ { range => [-3,-1] }, { range => [0,1] }, { range => [2,3] } ] ];
-$got = [ make_labels short( -3,3 ), { n => 3 } ];
-is_deeply $got, $expected, 'make_labels with one axis, integral data, range -3..3, n = 3';
-$expected = [ [ { range => 1 }, { range => 2 }, { range => 3 }, { range => 4 } ] ];
-$got = [ make_labels short( 1,2,3,4 ), { step => 1 } ];
-is_deeply $got, $expected, 'make_labels with one axis, integral data, range 1..4, step = 1';
 
 #
 # LOW-LEVEL INTERFACE

@@ -23,6 +23,14 @@ Revision history for PDL::NDBin
                                               [ 'y' ] ] );
       $binner->process( x => $x, y => $y );
    This used to raise an error in previous versions. (Edward Baudrez)
+ - the function make_labels() has been turned into a method called labels();
+   call as follows:
+      my $binner = PDL::NDBin->new( axes => [ [ 'x', ... ] ] );
+      $binner->feed( x => $x );
+      my @labels = $binner->labels;
+   The required data can also be fed directly to labels() if desired:
+      my @labels = $binner->labels( x => $x );
+   (Edward Baudrez)
 
 0.003 2012-08-10
 
