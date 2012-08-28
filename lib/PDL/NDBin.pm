@@ -1128,6 +1128,8 @@ by ndbin(), as described above.
 sub ndbin
 {
 	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	# store the mapping from name to pdl
+	my %pdls;
 	# parameters
 	my $args = _collect_args( @_ );
 	$log->debug( 'parameters: ' . Dumper $args ) if $log->is_debug;
@@ -1144,9 +1146,16 @@ sub ndbin
 	for my $var ( @vars ) { $var->{action} ||= $default_action }
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
-	# the real work is done by ndbinning()
-	ndbinning( ( map { $_->{pdl}, $_->{step}, $_->{min}, $_->{n} } @axes ),
-		   ( map { $_->{pdl}, $_->{action} } @vars ) );
+	#
+	for my $v ( @axes, @vars ) {
+		my $name = _random_name;
+		$pdls{ $name } = $v->{pdl};
+		$v->{name} = $name;
+	}
+	my $binner = __PACKAGE__->new( axes => [ map [ $_->{name}, %$_ ], @axes ],
+				       vars => [ map [ $_->{name}, %$_ ], @vars ] );
+	$binner->process( %pdls );
+	return $binner->output;
 }
 
 1;
