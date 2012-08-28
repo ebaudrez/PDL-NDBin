@@ -3,16 +3,28 @@ Revision history for PDL::NDBin
 0.004 20??-??-??
 
  - never released on CPAN
- - completed the object-oriented refactoring: calling interface has changed
-   (see below for details); the object-oriented interface is now the preferred
-   interface (Edward Baudrez)
+
+ [API change: preferred interface]
+ - the object-oriented interface is now the preferred interface (Edward Baudrez)
  - require the axis specifications in new() to be given as key => value pairs
    (Edward Baudrez)
+ - make_labels() has been removed; you should use the method labels() now; call
+   as follows:
+      my $binner = PDL::NDBin->new( axes => [ [ 'x', ... ] ] );
+      $binner->feed( x => $x );
+      my @labels = $binner->labels;
+   The required data can also be fed directly to labels() if desired:
+      my @labels = $binner->labels( x => $x );
+   (Edward Baudrez)
+ - process_axes() has been removed; you should use autoscale() now (see below)
+   (Edward Baudrez)
+
+ [New features]
  - in addition to 'step', 'min', and 'n', new() now also accepts 'max' and
    'round' in axis specifications (Edward Baudrez)
  - added a method feed() to feed data piecewise (or all at once) before calling
    process(); this can be very useful when data is being read from a file. It
-   essential separates the data feeding from the processing step (both were
+   essentially separates the data feeding from the processing step (both were
    done at the same time before, in the call to process()). This also means you
    can now call process() without arguments, provided that you have already fed
    all required data before. (Edward Baudrez)
@@ -23,14 +35,6 @@ Revision history for PDL::NDBin
                                               [ 'y' ] ] );
       $binner->process( x => $x, y => $y );
    This used to raise an error in previous versions. (Edward Baudrez)
- - the function make_labels() has been turned into a method called labels();
-   call as follows:
-      my $binner = PDL::NDBin->new( axes => [ [ 'x', ... ] ] );
-      $binner->feed( x => $x );
-      my @labels = $binner->labels;
-   The required data can also be fed directly to labels() if desired:
-      my @labels = $binner->labels( x => $x );
-   (Edward Baudrez)
 
 0.003 2012-08-10
 

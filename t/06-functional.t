@@ -2,24 +2,12 @@
 
 use strict;
 use warnings;
-use Test::More tests => 85;
+use Test::More tests => 80;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use PDL;
-use PDL::NDBin qw( ndbinning ndbin process_axes );
-
-# because PDL overloads the comparison operators, it is no fun to run
-# is_deeply() on piddles; as a workaround, we remove them
-#
-# XXX actually we should delete the `pdl' key only in a private, deep copy of
-# $got, instead of messing up the original
-sub is_deeply_without_pdl
-{
-	my ( $got, $expected, $name ) = @_;
-	for( @$got, @$expected ) { delete $_->{pdl} }
-	is_deeply $got, $expected, $name;
-}
+use PDL::NDBin qw( ndbinning ndbin );
 
 sub debug_action
 {
@@ -54,31 +42,7 @@ sub create_bad
 }
 
 # variable declarations
-my ( $expected, $got, $x, $y, $z, $arg );
-
-#
-# SUPPORT STUFF
-#
-note 'SUPPORT STUFF';
-
-# axis processing
-$x = pdl( -65,13,31,69 );
-$y = pdl( 3,30,41,-66.9 );
-$expected = [ { min => -65, max => 69, n => 4, step => 33.5 } ];
-$got = [ process_axes $x ];
-is_deeply_without_pdl $got, $expected, 'process_axes with auto parameters';
-$expected = [ { min => -70, max => 70, n => 7, step => 20 } ];
-$got = [ process_axes $x, -70, 70, 20 ];
-is_deeply_without_pdl $got, $expected, 'process_axes with manual parameters';
-$expected = [ { min => -70, max => 70, n => 7, step => 20, round => 10 },
-	      { min => -70, max => 50, n => 6, step => 20, round => 10 } ];
-$got = [ process_axes $x => { round => 10, step => 20 },
-		      $y => { round => 10, step => 20 } ];
-is_deeply_without_pdl $got, $expected, 'process_axes with two axes and rounding';
-$arg = [ process_axes $x ];
-is_deeply_without_pdl $arg, [ process_axes( $arg ) ], 'process_axes is idempotent';
-$arg = [ process_axes $x->long ];
-is_deeply_without_pdl $arg, [ process_axes( $arg ) ], 'process_axes is idempotent, integral data';
+my ( $expected, $got, $x, $y, $z );
 
 #
 # LOW-LEVEL INTERFACE

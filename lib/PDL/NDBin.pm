@@ -147,8 +147,8 @@ and longitude.
 
 our @ISA = qw( Exporter );
 our @EXPORT = qw( );
-our @EXPORT_OK = qw( ndbinning ndbin process_axes );
-our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin process_axes ) ] );
+our @EXPORT_OK = qw( ndbinning ndbin );
+our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin ) ] );
 
 # the list of valid keys
 my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION );
@@ -739,36 +739,6 @@ sub _auto_axis
 	}
 }
 
-=head2 process_axes()
-
-Process the axes. This is the function that ndbin() will call when you give it
-axis specifications. This function has been separated from ndbin() so that you
-can call it, and feed its output to ndbin() afterwards, without needing to
-reparse your arguments.
-
-process_axes() returns a list that should be fed into ndbin() as follows:
-
-	my @axes = process_axes( ... );
-	ndbin( AXES => \@axes, ... );
-
-This function is useful if you want to find out exactly how ndbin() is going to
-process your data. For example, to find the total number of bins:
-
-	my @axes = process_axes( ... );
-	my $N = List::Util::reduce { $a * $b } map { int $_->{n} } @axes;
-
-Note the use of I<int> inside the I<map>. I<n> may be fractional, for reasons
-explained in the documentation of ndbin() (see L<Number of bins>).
-
-=cut
-
-sub process_axes
-{
-	my @axes = expand_axes( expand_value @_ );
-	_auto_axis( $_ ) for @axes;
-	return @axes;
-}
-
 =head2 ndbin()
 
 A high-level function with sophisticated argument parsing.
@@ -1099,7 +1069,7 @@ be proved to be equivalent.
 
 	ceil( x/y ) = floor( (x+y-1)/y )
 
-	XXX the docs are out of sync here: we truncate in process_axes()
+	XXX the docs are out of sync here: we truncate in _auto_axis()
 	because we were having trouble with PDL doing conversion to double on
 	$hash = $hash * $n + $binned
 	when $n is fractional (i.e., PDL doesn't truncate); but this is
@@ -1123,6 +1093,14 @@ numbers in the data, and the function will abort.
 Note that when the number of I<n> is not given either, a default value is used
 by ndbin(), as described above.
 
+=head2 Probing PDL::NDBin's parameters
+
+=head3 Find the total number of bins
+
+	my $binner = PDL::NDBin->new( axes => [ [ 'x', step => 10, min => ... ], [ 'y', ... ] ] );
+	$binner->autoscale( x => $x, y => $y );
+	my $N = List::Util::reduce { our $a * our $b } map { $_->{n} } $binner->axes;
+
 =cut
 
 sub ndbin
@@ -1137,7 +1115,7 @@ sub ndbin
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
-	my @axes = process_axes $args->{AXES};
+	my @axes = expand_axes( expand_value $args->{AXES} );
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
@@ -1165,14 +1143,15 @@ sub ndbin
 To hook a progress bar to ndbin():
 
 	use Term::ProgressBar::Simple;
-	my @axes = process_axes( ... );
-	my $N = List::Util::reduce { $a * $b } map { int $_->{n} } @axes;
-	my $progress = Term::ProgressBar::Simple->new( $N );
-	ndbin(
-		AXES => \@axes,
-		VARS => [ ...,
-			  PDL::null => sub { $progress++; return } ]
+	my $binner = PDL::NDBin->new(
+		axes => \@axes,
+		vars => [ [ ... ],
+			  [ 'dummy' => sub { $progress++; return } ] ]
 	);
+	$binner->autoscale( x => ... );
+	my $N = List::Util::reduce { $a * $b } map { $_->{n} } $binner->axes;
+	my $progress = Term::ProgressBar::Simple->new( $N );
+	$binner->process();
 
 Note that the progress bar updater returns I<undef>. You
 probably do not want to return the result of C<$progress++>! If you were to

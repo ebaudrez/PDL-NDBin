@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 74;
+use Test::More tests => 81;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -76,6 +76,31 @@ isa_ok $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PDL
 # SUPPORT STUFF
 #
 note 'SUPPORT STUFF';
+
+# axis processing
+$x = pdl( -65,13,31,69 );
+$y = pdl( 3,30,41,-66.9 );
+$expected = [ { name => ignore, pdl => ignore, min => -65, max => 69, n => 4, step => 33.5 } ];
+$binner = PDL::NDBin->new( axes => [[ 'x' ]] );
+$binner->autoscale( x => $x );
+$got = $binner->{axes};
+is_pdl $got->[0]->{pdl}, $x;
+cmp_deeply $got, $expected, 'autoscale() with auto parameters';
+$expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, step => 20 } ];
+$binner = PDL::NDBin->new( axes => [[ x => (min => -70, max => 70, step => 20) ]] );
+$binner->autoscale( x => $x );
+$got = $binner->{axes};
+is_pdl $got->[0]->{pdl}, $x;
+cmp_deeply $got, $expected, 'autoscale() with manual parameters';
+$expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, step => 20, round => 10 },
+	      { name => ignore, pdl => ignore, min => -70, max => 50, n => 6, step => 20, round => 10 } ];
+$binner = PDL::NDBin->new( axes => [[ x => ( round => 10, step => 20 ) ],
+				    [ y => ( round => 10, step => 20 ) ]] );
+$binner->autoscale( x => $x, y => $y );
+$got = $binner->{axes};
+is_pdl $got->[0]->{pdl}, $x;
+is_pdl $got->[1]->{pdl}, $y;
+cmp_deeply $got, $expected, 'autoscale() with two axes and rounding';
 
 # labels
 $expected = [ [ { range => [0,4] }, { range => [4,8] }, { range => [8,12] } ] ];
