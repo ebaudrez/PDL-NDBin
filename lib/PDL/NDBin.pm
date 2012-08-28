@@ -462,39 +462,6 @@ sub output
 	return wantarray ? @output : $output[0];
 }
 
-sub ndbinning
-{
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
-	# store the mapping from name to pdl
-	my %pdls;
-	# consume and process axes
-	# axes require three numerical specifications following it
-	my @axes;
-	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
-		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
-		my $name = _random_name;
-		$pdls{ $name } = $pdl;
-		push @axes, [ $name, step => $step, min => $min, n => $n ];
-	}
-	# consume and process variables
-	my @vars;
-	if( @_ ) {
-		# consume variables
-		# variables require an action following it
-		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
-			my( $pdl, $action ) = splice @_, 0, 2;
-			my $name = _random_name;
-			$pdls{ $name } = $pdl;
-			push @vars, [ $name, $action ];
-		}
-	}
-	# any arguments left indicate a usage error
-	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
-	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
-	$binner->process( %pdls );
-	return $binner->output;
-}
-
 =head2 consume()
 
 	consume BLOCK LIST
@@ -1102,6 +1069,39 @@ by ndbin(), as described above.
 	my $N = List::Util::reduce { our $a * our $b } map { $_->{n} } $binner->axes;
 
 =cut
+
+sub ndbinning
+{
+	my $log = Log::Any->get_logger( category => (caller 0)[3] );
+	# store the mapping from name to pdl
+	my %pdls;
+	# consume and process axes
+	# axes require three numerical specifications following it
+	my @axes;
+	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
+		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
+		my $name = _random_name;
+		$pdls{ $name } = $pdl;
+		push @axes, [ $name, step => $step, min => $min, n => $n ];
+	}
+	# consume and process variables
+	my @vars;
+	if( @_ ) {
+		# consume variables
+		# variables require an action following it
+		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
+			my( $pdl, $action ) = splice @_, 0, 2;
+			my $name = _random_name;
+			$pdls{ $name } = $pdl;
+			push @vars, [ $name, $action ];
+		}
+	}
+	# any arguments left indicate a usage error
+	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
+	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
+	$binner->process( %pdls );
+	return $binner->output;
+}
 
 sub ndbin
 {
