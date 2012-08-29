@@ -677,7 +677,7 @@ sub _auto_axis
 			# so the result of this calculation is
 			# guaranteed to be > 0
 			# XXX CORE:: is ugly -- but can be remedied
-			# later when we reimplement the hashing in PP
+			# later when we reimplement the hashing in XS
 			$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
 			if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
 		}
@@ -965,7 +965,7 @@ of the operation. The class must implement the three methods.
 When supplying a class instead of an action reference, it is possible to
 compute multiple bins at once in one call to process(). This can be much more
 efficient than calling the action for every bin, especially if the loop can be
-coded in PP/XS.
+coded in XS.
 
 =head2 Iteration strategy
 
@@ -1040,7 +1040,7 @@ be proved to be equivalent.
 	because we were having trouble with PDL doing conversion to double on
 	$hash = $hash * $n + $binned
 	when $n is fractional (i.e., PDL doesn't truncate); but this is
-	expected to go away when we reimplement the hashing in PP, since in
+	expected to go away when we reimplement the hashing in XS, since in
 	OtherPars we will specify `int'
 
 =head3 Step size
