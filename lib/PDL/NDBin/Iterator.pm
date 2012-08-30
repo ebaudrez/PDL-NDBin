@@ -7,14 +7,14 @@ use List::Util qw( reduce );
 sub new
 {
 	my $class = shift;
-	my( $bins, $array, $hash ) = @_;
+	my( $bins, $array, $idx ) = @_;
 	grep { ! ($_ > 0) } @$bins and croak 'new: need at least one bin along every dimension';
 	@$array or croak 'new: need at least one element in the array';
-	defined $hash or croak 'new: need a hash';
+	defined $idx or croak 'new: need a list of flattened bin numbers';
 	my $self = {
 		bins   => $bins,
 		array  => $array,
-		hash   => $hash,
+		idx    => $idx,
 		active => [ (1) x @$array ],
 		bin    => 0,
 		var    => -1,
@@ -55,7 +55,7 @@ sub bins  { @{ $_[0]->{bins} } }
 sub nbins { $_[0]->{nbins} ||= reduce { $a * $b } $_[0]->bins }
 sub nvars { $_[0]->{nvars} ||= scalar @{ $_[0]->{array} } }
 sub data  { $_[0]->{array}->[ $_[0]->{var} ] }
-sub hash  { $_[0]->{hash} }
+sub idx   { $_[0]->{idx} }
 
 # whether the current variable is still active, i.e., whether any bins remain
 # to be computed (if all bins have been computed, the variable is considered to
@@ -75,7 +75,7 @@ sub want
 {
 	my $self = shift;
 	unless( defined $self->{want} ) {
-		$self->{want} = PDL::which $self->hash == $self->{bin};
+		$self->{want} = PDL::which $self->idx == $self->{bin};
 	}
 	return $self->{want};
 }

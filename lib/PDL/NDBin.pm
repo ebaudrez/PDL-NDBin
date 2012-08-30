@@ -414,7 +414,7 @@ sub process
 	$self->autoscale( @_ );
 
 	# process axes
-	my $hash = 0;		# flattened bin number
+	my $idx = 0;		# flattened bin number
 	my @n;			# number of bins in each direction
 	# find the last axis and flatten all axes into one dimension, working
 	# our way backwards from the last to the first axis
@@ -423,9 +423,9 @@ sub process
 		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
 			if $log->is_debug;
 		unshift @n, $axis->{n};			# remember that we are working backwards!
-		$hash = $axis->{pdl}->_flatten_into( $hash, $axis->{step}, $axis->{min}, $axis->{n} );
+		$idx = $axis->{pdl}->_flatten_into( $idx, $axis->{step}, $axis->{min}, $axis->{n} );
 	}
-	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
+	$log->debug( 'idx (' . $idx->info . ') = ' . $idx ) if $log->is_debug;
 	$self->{n} = \@n;
 
 	my $N = reduce { $a * $b } @n; # total number of bins
@@ -434,7 +434,7 @@ sub process
 	$self->{instances} ||= [ map { _make_instance $N, $_->{action} } $self->vars ];
 
 	# now visit all the bins
-	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $hash );
+	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $idx );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
 	while( my( $bin, $i ) = $iter->next ) { $self->{instances}->[ $i ]->process( $iter ) }
 
@@ -1038,7 +1038,7 @@ be proved to be equivalent.
 
 	XXX the docs are out of sync here: we truncate in _auto_axis()
 	because we were having trouble with PDL doing conversion to double on
-	$hash = $hash * $n + $binned
+	$idx = $idx * $n + $binned
 	when $n is fractional (i.e., PDL doesn't truncate); but this is
 	expected to go away when we reimplement the flattening in XS, since in
 	OtherPars we will specify `int'

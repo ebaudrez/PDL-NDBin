@@ -11,7 +11,7 @@ use PDL::NDBin::Actions_PP;
 ###
 {
 	# variable declarations
-	my( $x, $y, $a, $b, $hash );
+	my( $x, $y, $a, $b, $idx );
 
 	#
 	$x = sequence 10;
@@ -29,13 +29,13 @@ use PDL::NDBin::Actions_PP;
 
 	$a = $x->_flatten_into( zeroes($x), 2,1,4 );
 	$b = $y->_flatten_into( $a, 2,1,4 );
-	is_pdl $b, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'flatten into existing hash';
+	is_pdl $b, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'flatten into existing list';
 
-	$hash = 0;
-	$hash = $x->_flatten_into( $hash, 2,1,4 );
-	is_pdl $hash, long( 0,0,0,1,1,2,2,3,3,3 ), 'chained flattening';
-	$hash = $y->_flatten_into( $hash, 2,1,4 );
-	is_pdl $hash, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'chained flattening';
+	$idx = 0;
+	$idx = $x->_flatten_into( $idx, 2,1,4 );
+	is_pdl $idx, long( 0,0,0,1,1,2,2,3,3,3 ), 'chained flattening';
+	$idx = $y->_flatten_into( $idx, 2,1,4 );
+	is_pdl $idx, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'chained flattening';
 }
 
 ###

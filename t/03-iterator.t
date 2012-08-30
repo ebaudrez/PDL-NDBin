@@ -10,32 +10,32 @@ use PDL;
 use PDL::NDBin::Iterator;
 
 # variable declarations
-my( $iter, @bins, @variables, $hash, $bin, $var, @expected, @got, $k );
+my( $iter, @bins, @variables, $idx, $bin, $var, @expected, @got, $k );
 
 #
 @bins = ( 4 );
 @variables = ( null );
-$hash = null;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$idx = null;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 isa_ok $iter, 'PDL::NDBin::Iterator', 'return value from constructor';
 
 # test iteration
 @bins = ( 4 );
 @variables = ( null );
-$hash = null;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$idx = null;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 $k = 4;
 while( my @return = $iter->next ) { last if $k-- == 0 }
 is $k, 0, 'next in list context';
 ok $iter->done, 'iteration complete';
 is_deeply [ $iter->next ], [], "doesn't reset";
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 $k = 4;
 while( my $return = $iter->next ) { last if $k-- == 0 }
 is $k, 0, 'next in scalar context';
 ok $iter->done, 'iteration complete';
 is_deeply [ $iter->next ], [], "doesn't reset";
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 $k = 4;
 while( $iter->next ) { last if $k-- == 0 }
 is $k, 0, 'next in boolean context';
@@ -45,38 +45,38 @@ is_deeply [ $iter->next ], [], "doesn't reset";
 #
 @bins = ( 4 );
 @variables = ( 'one', 'two', 'three' );
-$hash = 'this is my secret hash';
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$idx = 'this is my secret list';
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 is $iter->nbins, 4, 'number of bins';
 is $iter->nvars, 3, 'number of variables';
 @got = ();
 @expected = (
-	[ 0, 0, 'one',   $hash ],
-	[ 0, 1, 'two',   $hash ],
-	[ 0, 2, 'three', $hash ],
-	[ 1, 0, 'one',   $hash ],
-	[ 1, 1, 'two',   $hash ],
-	[ 1, 2, 'three', $hash ],
-	[ 2, 0, 'one',   $hash ],
-	[ 2, 1, 'two',   $hash ],
-	[ 2, 2, 'three', $hash ],
-	[ 3, 0, 'one',   $hash ],
-	[ 3, 1, 'two',   $hash ],
-	[ 3, 2, 'three', $hash ],
+	[ 0, 0, 'one',   $idx ],
+	[ 0, 1, 'two',   $idx ],
+	[ 0, 2, 'three', $idx ],
+	[ 1, 0, 'one',   $idx ],
+	[ 1, 1, 'two',   $idx ],
+	[ 1, 2, 'three', $idx ],
+	[ 2, 0, 'one',   $idx ],
+	[ 2, 1, 'two',   $idx ],
+	[ 2, 2, 'three', $idx ],
+	[ 3, 0, 'one',   $idx ],
+	[ 3, 1, 'two',   $idx ],
+	[ 3, 2, 'three', $idx ],
 );
 $k = 12;
 while( ( $bin, $var ) = $iter->next ) {
-	push @got, [ $bin, $var, $iter->data, $iter->hash ];
+	push @got, [ $bin, $var, $iter->data, $iter->idx ];
 	last if $k-- == 0; # prevent endless loops
 };
 ok $k == 0 && $iter->done, 'number of iterations';
-is_deeply \@got, \@expected, 'data(), hash()';
+is_deeply \@got, \@expected, 'data(), idx()';
 
 #
 @bins = ( 3, 2 );
 @variables = ( sequence(20), 20-sequence(20) );
-$hash = 2*sequence( 20 )->long;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$idx = 2*sequence( 20 )->long;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 is $iter->nbins, 6, 'number of bins';
 is $iter->nvars, 2, 'number of vars';
 @got = ();
@@ -105,8 +105,8 @@ is_deeply \@got, \@expected, 'unflatten()';
 #
 @bins = ( 3, 2 );
 @variables = ( sequence(20) );
-$hash = sequence( 20 )->long % 6;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$idx = sequence( 20 )->long % 6;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 is $iter->nbins*$iter->nvars, 6, 'nbins() * nvars()';
 @got = ();
 @expected = (
@@ -130,12 +130,12 @@ for( 0 .. $#got ) {
 #
 @bins = ( 2, 4 );
 @variables = ( sequence(20), 20-sequence(20) );
-# idx   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
-# hash  0  1  2  3  4  5  6  7  0  1  2  3  4  5  6  7  0  1  2  3
+# #     0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+# idx   0  1  2  3  4  5  6  7  0  1  2  3  4  5  6  7  0  1  2  3
 # var1  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
 # var2 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1
-$hash = sequence( 20 )->long % 8;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+$idx = sequence( 20 )->long % 8;
+$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 is $iter->nbins*$iter->nvars, 16, 'nbins() * nvars()';
 @got = ();
 @expected = (
@@ -169,9 +169,9 @@ for( 0 .. $#got ) {
 # test variable deactivation
 @bins = ( 2, 4, 3 );
 @variables = ( random(20), random(20), random(20), random(20) );
-$hash = 24*random( 20 )->long;
+$idx = 24*random( 20 )->long;
 {
-	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
 	my @visited = (0) x @variables;
 	$k = 96;
@@ -184,7 +184,7 @@ $hash = 24*random( 20 )->long;
 	is_deeply \@visited, [ ($iter->nbins) x @variables ], 'all variables visited n times, where n = number of bins';
 }
 {
-	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
 	my @visited = (0) x @variables;
 	$k = 4;
@@ -203,8 +203,8 @@ $hash = 24*random( 20 )->long;
 	# the second variable will deactivate after having been called once
 	my @variables = ( random(30), random(30), random(30) );
 	my @deactivates = ( 0, 1, 0 );
-	my $hash = 18*random( 20 )->long;
-	my $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $hash );
+	my $idx = 18*random( 20 )->long;
+	my $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 	is $iter->nbins*$iter->nvars, 54, 'nbins() * nvars()';
 	my $expected = [
 		    [ 1,1,1 ],

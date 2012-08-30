@@ -27,8 +27,8 @@ sub apply
 # create a temporary iterator with the given arguments
 sub iter
 {
-	my( $var, $hash, $N ) = @_;
-	PDL::NDBin::Iterator->new( [ $N ], [ $var ], $hash );
+	my( $var, $idx, $N ) = @_;
+	PDL::NDBin::Iterator->new( [ $N ], [ $var ], $idx );
 }
 
 # variable declarations

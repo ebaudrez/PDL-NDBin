@@ -1,10 +1,10 @@
 # _flatten_into
 #
 pp_def( '_flatten_into',
-	Pars => 'in(m); int b(m); int [o] hash(m)',
+	Pars => 'in(m); int b(m); int [o] idx(m)',
 	OtherPars => 'double step; double min; int n',
 	HandleBad => 1,
-	Doc => 'Bin a series of values and flatten into an existing hash',
+	Doc => 'Bin a series of values and flatten into an existing list of indices',
 	Code => '
 		register double min = $COMP( min );
 		register double step = $COMP( step );
@@ -14,7 +14,7 @@ pp_def( '_flatten_into',
 			j = (( $in() - min )/step);
 			if( j < 0 ) j = 0;
 			if( j > maxj ) j = maxj;
-			$hash() = j + $COMP( n ) * $b();
+			$idx() = j + $COMP( n ) * $b();
 		%}
 	',
 	BadCode => '
@@ -27,10 +27,10 @@ pp_def( '_flatten_into',
 				j = (( $in() - min )/step);
 				if( j < 0 ) j = 0;
 				if( j > maxj ) j = maxj;
-				$hash() = j + $COMP( n ) * $b();
+				$idx() = j + $COMP( n ) * $b();
 			}
 			else {
-				$SETBAD( hash() );
+				$SETBAD( idx() );
 			}
 		%}
 	',
@@ -61,7 +61,7 @@ pp_def( '_setnulltobad',
 # _icount_loop
 #
 pp_def( '_icount_loop',
-	Pars => 'in(n); int ind(n); int [o] out(m)',
+	Pars => 'in(n); int idx(n); int [o] out(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
 	Doc => 'Count the number of elements in each bin
@@ -70,13 +70,13 @@ This function assumes that the indices are always valid (i.e., there are no bad
 values among the indices). It always returns a piddle of type I<int>.',
 	Code => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			++( $out(m => j) );
 		%}
 	',
 	BadCode => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			if( $ISGOOD( in() ) ) { ++( $out(m => j) ); }
 		%}
 	',
@@ -85,7 +85,7 @@ values among the indices). It always returns a piddle of type I<int>.',
 # _isum_loop
 #
 pp_def( '_isum_loop',
-	Pars => 'in(n); int ind(n); int+ [o] out(m); int [t] count(m)',
+	Pars => 'in(n); int idx(n); int+ [o] out(m); int [t] count(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
 	Doc => 'Sum the elements in each bin
@@ -95,14 +95,14 @@ values among the indices). It returns a piddle of type I<int> or higher, to
 reduce the risk of overflow when collecting sums.',
 	Code => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			$out(m => j) += $in();
 			++( $count(m => j) );
 		%}
 	',
 	BadCode => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			if( $ISGOOD( in() ) ) {
 				$out(m => j) += $in();
 				++( $count(m => j) );
@@ -114,7 +114,7 @@ reduce the risk of overflow when collecting sums.',
 # _iavg_loop
 #
 pp_def( '_iavg_loop',
-	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m)',
+	Pars => 'in(n); int idx(n); double [o] out(m); int [t] count(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
 	Doc => q[Compute the average of the elements in each bin
@@ -156,13 +156,13 @@ being the default type in PDL and the `natural' floating-point type in C, it
 also makes the implementation easier.],
 	Code => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
 		%}
 	',
 	BadCode => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			if( $ISGOOD( in() ) ) {
 				$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
 			}
@@ -173,7 +173,7 @@ also makes the implementation easier.],
 # _istddev_loop
 #
 pp_def ( '_istddev_loop',
-	Pars => 'in(n); int ind(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
+	Pars => 'in(n); int idx(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
 	OtherPars => 'int msize => m',
 	HandleBad => 1,
 	Doc => q[Compute the standard deviation of the elements in each bin
@@ -216,7 +216,7 @@ I<double>. Besides being the default type in PDL and the `natural'
 floating-point type in C, it also makes the implementation easier.],
 	Code => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			double delta = $in() - $avg(m => j);
 			$avg(m => j) += delta / ++( $count(m => j) );
 			$out(m => j) += delta * ( $in() - $avg(m => j) );
@@ -224,7 +224,7 @@ floating-point type in C, it also makes the implementation easier.],
 	',
 	BadCode => '
 		loop(n) %{
-			register int j = $ind();
+			register int j = $idx();
 			double delta;
 			if( $ISGOOD( in() ) ) {
 				delta = $in() - $avg(m => j);

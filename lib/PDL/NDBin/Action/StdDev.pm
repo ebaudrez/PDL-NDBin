@@ -19,7 +19,7 @@ sub process
 	$self->{out} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
 	$self->{avg} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{avg};
-	PDL::NDBin::Actions_PP::_istddev_loop( $iter->data, $iter->hash, $self->{out}, $self->{count}, $self->{avg}, $self->{m} );
+	PDL::NDBin::Actions_PP::_istddev_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{avg}, $self->{m} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );

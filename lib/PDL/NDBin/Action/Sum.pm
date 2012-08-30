@@ -19,7 +19,7 @@ sub process
 	my $type = $iter->data->type < PDL::long() ? PDL::long : $iter->data->type;
 	$self->{out} = PDL->zeroes( $type, $self->{m} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
-	PDL::NDBin::Actions_PP::_isum_loop( $iter->data, $iter->hash, $self->{out}, $self->{count}, $self->{m} );
+	PDL::NDBin::Actions_PP::_isum_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{m} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );

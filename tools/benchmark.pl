@@ -68,10 +68,10 @@ my $nc = OnDemand->new( $file );
 if( $old_flattening ) {
 	no warnings 'redefine';
 	*PDL::_flatten_into = sub (;@) {
-		my( $pdl, $hash, $step, $min, $n ) = @_;
+		my( $pdl, $idx, $step, $min, $n ) = @_;
 		my $binned = PDL::long( ($pdl - $min)/$step );
 		$binned->inplace->clip( 0, $n-1 );
-		$hash * $n + $binned
+		$idx * $n + $binned
 	} 
 }
 
