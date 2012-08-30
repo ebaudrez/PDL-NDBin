@@ -1,10 +1,10 @@
-# _hash_into
+# _flatten_into
 #
-pp_def( '_hash_into',
+pp_def( '_flatten_into',
 	Pars => 'in(m); int b(m); int [o] hash(m)',
 	OtherPars => 'double step; double min; int n',
 	HandleBad => 1,
-	Doc => 'Bin a series of values and hash into an existing hash',
+	Doc => 'Bin a series of values and flatten into an existing hash',
 	Code => '
 		register double min = $COMP( min );
 		register double step = $COMP( step );

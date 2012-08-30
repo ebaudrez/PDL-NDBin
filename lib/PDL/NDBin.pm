@@ -199,9 +199,9 @@ of elements in the bin by calling nelem().
 =head2 Implementation details
 
 In PDL, the first dimension is the contiguous dimension, so we have to work
-back from the last axis to the first when building the hashed bin number.
+back from the last axis to the first when building the flattened bin number.
 
-Here are some examples of hashing multidimensional bins into one dimension:
+Here are some examples of flattening multidimensional bins into one dimension:
 
 	(i) = i
 	(i,j) = j*I + i
@@ -414,16 +414,16 @@ sub process
 	$self->autoscale( @_ );
 
 	# process axes
-	my $hash = 0;		# hashed bin number
+	my $hash = 0;		# flattened bin number
 	my @n;			# number of bins in each direction
-	# find the last axis and hash all axes into one dimension, working our
-	# way backwards from the last to the first axis
+	# find the last axis and flatten all axes into one dimension, working
+	# our way backwards from the last to the first axis
 	for my $axis ( reverse $self->axes ) {
 		$log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} ) if $log->is_debug;
 		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
 			if $log->is_debug;
 		unshift @n, $axis->{n};			# remember that we are working backwards!
-		$hash = $axis->{pdl}->_hash_into( $hash, $axis->{step}, $axis->{min}, $axis->{n} );
+		$hash = $axis->{pdl}->_flatten_into( $hash, $axis->{step}, $axis->{min}, $axis->{n} );
 	}
 	$log->debug( 'hash (' . $hash->info . ') = ' . $hash ) if $log->is_debug;
 	$self->{n} = \@n;
@@ -677,7 +677,7 @@ sub _auto_axis
 			# so the result of this calculation is
 			# guaranteed to be > 0
 			# XXX CORE:: is ugly -- but can be remedied
-			# later when we reimplement the hashing in XS
+			# later when we reimplement the flattening in XS
 			$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
 			if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
 		}
@@ -978,7 +978,7 @@ the selection and extraction of the data is time-consuming. If you have an
 action that knows how to deal with indirection, you can do away with the
 selection and extraction. Examples of such actions are:
 PDL::NDBin::Action::Count, PDL::NDBin::Action::Sum, etc. They take the original
-data and the hashed bin numbers and produce an output piddle in one step.
+data and the flattened bin numbers and produce an output piddle in one step.
 
 Note that empty bins are not skipped. If you want to use an action that cannot
 handle empty piddles, you can wrap the action as follows to skip empty bins:
@@ -1040,7 +1040,7 @@ be proved to be equivalent.
 	because we were having trouble with PDL doing conversion to double on
 	$hash = $hash * $n + $binned
 	when $n is fractional (i.e., PDL doesn't truncate); but this is
-	expected to go away when we reimplement the hashing in XS, since in
+	expected to go away when we reimplement the flattening in XS, since in
 	OtherPars we will specify `int'
 
 =head3 Step size

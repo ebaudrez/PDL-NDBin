@@ -96,11 +96,11 @@ is $iter->nvars, 2, 'number of vars';
 );
 $k = 12;
 while( ( $bin, $var ) = $iter->next ) {
-	push @got, [ $bin, $var, [ $iter->unhash ] ];
+	push @got, [ $bin, $var, [ $iter->unflatten ] ];
 	last if $k-- == 0; # prevent endless loops
 };
 ok $k == 0 && $iter->done, 'number of iterations';
-is_deeply \@got, \@expected, 'unhash()';
+is_deeply \@got, \@expected, 'unflatten()';
 
 #
 @bins = ( 3, 2 );

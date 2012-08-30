@@ -1,4 +1,4 @@
-# multidimensional binning & histogramming - hash tests
+# multidimensional binning & histogramming - flattening tests
 
 use strict;
 use warnings;
@@ -18,30 +18,30 @@ use PDL::NDBin::Actions_PP;
 	$y = sequence 10;
 	$y->inplace->setvaltobad( 5 );
 
-	$a = $x->_hash_into( 0, 2,1,4 );
+	$a = $x->_flatten_into( 0, 2,1,4 );
 	is_pdl $a, long( 0,0,0,1,1,2,2,3,3,3 ), 'start with pdl=0, clip to 4 bins';
 
-	$a = $x->_hash_into( zeroes($x), 2,1,4 );
+	$a = $x->_flatten_into( zeroes($x), 2,1,4 );
 	is_pdl $a, long( 0,0,0,1,1,2,2,3,3,3 ), 'start with pdl=zeroes, clip to 4 bins';
 
-	$a = $x->_hash_into( zeroes($x), 2,1,5 );
+	$a = $x->_flatten_into( zeroes($x), 2,1,5 );
 	is_pdl $a, long( 0,0,0,1,1,2,2,3,3,4 ), 'clip to 5 bins';
 
-	$a = $x->_hash_into( zeroes($x), 2,1,4 );
-	$b = $y->_hash_into( $a, 2,1,4 );
-	is_pdl $b, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'hash into existing hash';
+	$a = $x->_flatten_into( zeroes($x), 2,1,4 );
+	$b = $y->_flatten_into( $a, 2,1,4 );
+	is_pdl $b, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'flatten into existing hash';
 
 	$hash = 0;
-	$hash = $x->_hash_into( $hash, 2,1,4 );
-	is_pdl $hash, long( 0,0,0,1,1,2,2,3,3,3 ), 'chained hashing';
-	$hash = $y->_hash_into( $hash, 2,1,4 );
-	is_pdl $hash, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'chained hashing';
+	$hash = $x->_flatten_into( $hash, 2,1,4 );
+	is_pdl $hash, long( 0,0,0,1,1,2,2,3,3,3 ), 'chained flattening';
+	$hash = $y->_flatten_into( $hash, 2,1,4 );
+	is_pdl $hash, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'chained flattening';
 }
 
 ###
 {
 	my $x = pdl( -5.1,-4.1,-3.1,-2.1,-1.1,-0.1,0.9,1.9,2.9,3.9,4.9 );
-	my $a = $x->_hash_into( 0, 1,-2,5 );
+	my $a = $x->_flatten_into( 0, 1,-2,5 );
 	is_pdl $a, long( 0,0,0,0,0,1,2,3,4,4,4 ), 'clips at lowest and highest bin';
 }
 
@@ -85,7 +85,7 @@ use PDL::NDBin::Actions_PP;
 	my( $step, $min, $n ) = ( .1, 0, 10 );
 	my $expected = PDL::long( ($x - $min)/$step );
 	$expected->inplace->clip( 0, $n-1 );
-	my $got = $x->_hash_into( 0, $step, $min, $n );
+	my $got = $x->_flatten_into( 0, $step, $min, $n );
 	is_pdl $got, $expected, 'cross-check with PDL implementation (old implementation)';
 }
 
@@ -167,7 +167,7 @@ use PDL::NDBin::Actions_PP;
 		$binned->inplace->clip( 0, $n-1 );
 		$expected = $expected * $n + $binned;
 	}
-	my $got = $x->_hash_into( 0, $step, $min, $n );
-	$got = $y->_hash_into( $got, $step, $min, $n );
+	my $got = $x->_flatten_into( 0, $step, $min, $n );
+	$got = $y->_flatten_into( $got, $step, $min, $n );
 	is_pdl $got, $expected, 'cross-check with PDL implementation for two axes (old implementation)';
 }

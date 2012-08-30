@@ -32,7 +32,7 @@ sub next1
 		$self->{var} = 0;
 		$self->{bin}++;
 		undef $self->{want};		# we're switching to a new bin!
-		undef $self->{unhash};
+		undef $self->{unflattened};
 		return if $self->done;
 	}
 	return $self->{bin}, $self->{var};
@@ -89,20 +89,20 @@ sub selection
 	return $self->{selection};
 }
 
-# unhash bin number: yields bin number along each axis
-sub unhash
+# unflatten bin number: yields bin number along each axis
+sub unflatten
 {
 	my $self = shift;
-	unless( defined $self->{unhash} ) {
+	unless( defined $self->{unflattened} ) {
 		my $q = $self->{bin}; # quotient
-		$self->{unhash} =
+		$self->{unflattened} =
 			[ map {
 				( $q, my $r ) = do { use integer; ( $q / $_, $q % $_ ) };
 				$r
 			      } $self->bins
 			];
 	}
-	return @{ $self->{unhash} };
+	return @{ $self->{unflattened} };
 }
 
 1;

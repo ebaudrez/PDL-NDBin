@@ -269,7 +269,7 @@ $got = ndbin( $x => { n => 2 },
 	      DEFAULT_ACTION => sub { @_ } );
 is_pdl $got, $expected, 'number of arguments for actions';
 
-# test unhashed bin numbers
+# test unflattened bin numbers
 $x = sequence 10;
 $y = sequence 10;
 $z = sequence 10;
@@ -278,7 +278,7 @@ $got = ndbin( $x => { n => 2 },
 	      $y => { n => 5 },
 	      $z => { n => 3 },
 	      VARS => [ null->long ],
-	      DEFAULT_ACTION => sub { my @u = shift->unhash; $u[0] + 2*$u[1] + 2*5*$u[2] } );
+	      DEFAULT_ACTION => sub { my @u = shift->unflatten; $u[0] + 2*$u[1] + 2*5*$u[2] } );
 is_pdl $got, $expected, 'bin numbers returned from iterator';
 
 # simulate the functionality formerly known as SKIP_EMPTY
