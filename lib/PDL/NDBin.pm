@@ -14,7 +14,7 @@ use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Iterator;
 use PDL::NDBin::Actions_PP;
-use Log::Any;
+use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
 
@@ -216,7 +216,6 @@ sub _random_name { create_uuid( UUID_RANDOM ) }
 sub new
 {
 	my $class = shift;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	my %args = @_;
 	$log->debug( 'arguments = ' . Dumper \%args ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless %args;
@@ -278,7 +277,6 @@ sub vars { @{ $_[0]->{vars} } }
 sub _require_dynamic
 {
 	my $class = shift;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	if( $class->VERSION ) {
 		$log->info( "$class already loaded" );
 		return;
@@ -291,7 +289,6 @@ sub _require_dynamic
 sub _make_instance
 {
 	my( $N, $arg ) = @_;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	if( ref $arg eq 'CODE' ) {
 		my $class = "PDL::NDBin::Action::CodeRef";
 		_require_dynamic( $class );
@@ -334,7 +331,6 @@ sub feed
 
 sub _check_all_pdls_present
 {
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	my $self = shift;
 	my %warned_for;
 	for my $v ( $self->axes, $self->vars ) {
@@ -371,7 +367,6 @@ sub _check_pdl_length
 sub autoscale
 {
 	my $self = shift;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	$self->feed( @_ );
 	$self->_check_all_pdls_present;
 	$self->_check_pdl_length;
@@ -387,7 +382,6 @@ Return the labels for the bins as a list of lists of ranges.
 sub labels
 {
 	my $self = shift;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	$self->autoscale( @_ );
 	my @list = map {
 		my $axis = $_;
@@ -408,7 +402,6 @@ sub labels
 sub process
 {
 	my $self = shift;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 
 	#
 	$self->autoscale( @_ );
@@ -452,7 +445,6 @@ extent of each dimension equal to the number of bins along the axis.
 sub output
 {
 	my $self = shift;
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	# reshape output
 	return unless defined wantarray;
 	my $n = $self->{n};
@@ -616,7 +608,6 @@ sub expand_vars
 
 sub _auto_axis
 {
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	my $axis = shift;
 	# return early if step, min, and n have already been calculated
 	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
@@ -1072,7 +1063,6 @@ by ndbin(), as described above.
 
 sub ndbinning
 {
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	# store the mapping from name to pdl
 	my %pdls;
 	# consume and process axes
@@ -1105,7 +1095,6 @@ sub ndbinning
 
 sub ndbin
 {
-	my $log = Log::Any->get_logger( category => (caller 0)[3] );
 	# store the mapping from name to pdl
 	my %pdls;
 	# parameters
