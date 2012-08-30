@@ -269,9 +269,9 @@ sub _add_var_specs
 }
 
 # read-only accessors to the axes and variables; return lists instead of array
-# references
-sub axes { @{ $_[0]->{axes} } }
-sub vars { @{ $_[0]->{vars} } }
+# references in list context
+sub axes { wantarray ? @{ $_[0]->{axes} } : $_[0]->{axes} }
+sub vars { wantarray ? @{ $_[0]->{vars} } : $_[0]->{vars} }
 
 # stolen from Log::Dispatch
 sub _require_dynamic

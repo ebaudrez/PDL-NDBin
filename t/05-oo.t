@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 81;
+use Test::More tests => 85;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -72,6 +72,21 @@ isa_ok $binner, 'PDL::NDBin', 'return value from new()';
 isa_ok $binner->process( u => sequence(10) ), 'PDL::NDBin', 'return value from process()';
 isa_ok $binner->process( u => sequence(10) )->process( u => sequence(10) ), 'PDL::NDBin', 'return value from chained calls to process()';
 
+# context
+my $anon_sub = sub {};
+$binner = PDL::NDBin->new( axes => [ [ u => (step=>1,min=>0,n=>10) ] ],
+			   vars => [ [ v => $anon_sub ] ] );
+$expected = [ { name => 'u', min => 0, n => 10, step => 1 } ];
+$got = $binner->axes;
+cmp_deeply $got, $expected, 'axes in scalar context';
+$got = [ $binner->axes ];
+cmp_deeply $got, $expected, 'axes in list context';
+$expected = [ { name => 'v', action => $anon_sub } ];
+$got = $binner->vars;
+cmp_deeply $got, $expected, 'vars in scalar context';
+$got = [ $binner->vars ];
+cmp_deeply $got, $expected, 'vars in list context';
+
 #
 # SUPPORT STUFF
 #
@@ -83,13 +98,13 @@ $y = pdl( 3,30,41,-66.9 );
 $expected = [ { name => ignore, pdl => ignore, min => -65, max => 69, n => 4, step => 33.5 } ];
 $binner = PDL::NDBin->new( axes => [[ 'x' ]] );
 $binner->autoscale( x => $x );
-$got = $binner->{axes};
+$got = $binner->axes;
 is_pdl $got->[0]->{pdl}, $x;
 cmp_deeply $got, $expected, 'autoscale() with auto parameters';
 $expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, step => 20 } ];
 $binner = PDL::NDBin->new( axes => [[ x => (min => -70, max => 70, step => 20) ]] );
 $binner->autoscale( x => $x );
-$got = $binner->{axes};
+$got = $binner->axes;
 is_pdl $got->[0]->{pdl}, $x;
 cmp_deeply $got, $expected, 'autoscale() with manual parameters';
 $expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, step => 20, round => 10 },
@@ -97,7 +112,7 @@ $expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, st
 $binner = PDL::NDBin->new( axes => [[ x => ( round => 10, step => 20 ) ],
 				    [ y => ( round => 10, step => 20 ) ]] );
 $binner->autoscale( x => $x, y => $y );
-$got = $binner->{axes};
+$got = $binner->axes;
 is_pdl $got->[0]->{pdl}, $x;
 is_pdl $got->[1]->{pdl}, $y;
 cmp_deeply $got, $expected, 'autoscale() with two axes and rounding';
@@ -266,24 +281,24 @@ $x = random( 30 );
 $y = random( 30 );
 $binner = PDL::NDBin->new( axes => [[ x => (step=>.1,min=>0,n=>10) ],
 				    [ y => (step=>.1,min=>0,n=>10) ]] );
-$got = $binner->{axes};
+$got = $binner->axes;
 is_deeply $got, [ { name => 'x',
 		    step => .1,min=>0,n=>10 },
 		  { name => 'y',
 		    step => .1,min=>0,n=>10 } ], 'contents of axes() before feeding';
 $binner->feed( x => $x );
-$got = $binner->{axes};
+$got = $binner->axes;
 # is_deeply(), is(), cmp_ok(), etc., don't handle piddles well, hence this workaround
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding x';
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding x';
 cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
 		     step => .1, min => 0, n => 10 },
 		   { name => 'y',
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding x';
 $binner->feed( y => $y );
-$got = $binner->{axes};
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding y';
-is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->{axes} after feeding y';
+$got = $binner->axes;
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding y';
+is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->axes after feeding y';
 cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
 		     step => .1, min => 0, n => 10 },
@@ -296,16 +311,16 @@ $x = random( 30 );
 $y = random( 30 );
 $binner = PDL::NDBin->new( axes => [[ x => (step=>.1,min=>0,n=>10) ],
 				    [ y => (step=>.1,min=>0,n=>10) ]] );
-$got = $binner->{axes};
+$got = $binner->axes;
 is_deeply $got, [ { name => 'x',
 		    step => .1,min=>0,n=>10 },
 		  { name => 'y',
 		    step => .1,min=>0,n=>10 } ], 'contents of axes() before feeding';
 $binner->feed( x => $x,
 	       y => $y );
-$got = $binner->{axes};
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding x and y at once';
-is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->{axes} after feeding x and y at once';
+$got = $binner->axes;
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding x and y at once';
+is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->axes after feeding x and y at once';
 cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
 		     step => .1, min => 0, n => 10 },
@@ -314,8 +329,8 @@ cmp_deeply $got, [ { name => 'x',
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding x and y at once';
 $y = random( 30 );
 $binner->feed( y => $y );
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->{axes} after feeding x and y at once';
-is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->{axes} after feeding x and y at once';
+is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding x and y at once';
+is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->axes after feeding x and y at once';
 cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
 		     step => .1, min => 0, n => 10 },
@@ -327,7 +342,7 @@ cmp_deeply $got, [ { name => 'x',
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $binner = PDL::NDBin->new( axes => [[ x => (step=>1, min=>0, n=>10) ]] );
 $binner->autoscale( x => $x );
-$got = $binner->{axes};
+$got = $binner->axes;
 is_pdl $got->[0]->{pdl}, $x, 'returns early if step,min,n are known (1)';
 cmp_deeply $got, [ { name => 'x',
 		     pdl  => ignore(),
