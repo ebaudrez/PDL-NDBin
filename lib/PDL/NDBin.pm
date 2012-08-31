@@ -1063,16 +1063,12 @@ by ndbin(), as described above.
 
 sub ndbinning
 {
-	# store the mapping from name to pdl
-	my %pdls;
 	# consume and process axes
 	# axes require three numerical specifications following it
 	my @axes;
 	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
 		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
-		my $name = _random_name;
-		$pdls{ $name } = $pdl;
-		push @axes, [ $name, step => $step, min => $min, n => $n ];
+		push @axes, [ _random_name, pdl => $pdl, step => $step, min => $min, n => $n ];
 	}
 	# consume and process variables
 	my @vars;
@@ -1081,22 +1077,18 @@ sub ndbinning
 		# variables require an action following it
 		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
 			my( $pdl, $action ) = splice @_, 0, 2;
-			my $name = _random_name;
-			$pdls{ $name } = $pdl;
-			push @vars, [ $name, $action ];
+			push @vars, [ _random_name, pdl => $pdl, action => $action ];
 		}
 	}
 	# any arguments left indicate a usage error
 	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
 	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
-	$binner->process( %pdls );
+	$binner->process;
 	return $binner->output;
 }
 
 sub ndbin
 {
-	# store the mapping from name to pdl
-	my %pdls;
 	# parameters
 	my $args = _collect_args( @_ );
 	$log->debug( 'parameters: ' . Dumper $args ) if $log->is_debug;
@@ -1114,14 +1106,9 @@ sub ndbin
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
 	#
-	for my $v ( @axes, @vars ) {
-		my $name = _random_name;
-		$pdls{ $name } = $v->{pdl};
-		$v->{name} = $name;
-	}
-	my $binner = __PACKAGE__->new( axes => [ map [ $_->{name}, %$_ ], @axes ],
-				       vars => [ map [ $_->{name}, %$_ ], @vars ] );
-	$binner->process( %pdls );
+	my $binner = __PACKAGE__->new( axes => [ map [ _random_name, %$_ ], @axes ],
+				       vars => [ map [ _random_name, %$_ ], @vars ] );
+	$binner->process;
 	return $binner->output;
 }
 
