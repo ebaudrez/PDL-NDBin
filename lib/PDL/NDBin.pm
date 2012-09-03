@@ -1097,17 +1097,18 @@ sub ndbin
 
 	# axes
 	my @axes = expand_axes( expand_value $args->{AXES} );
+	@axes = map [ _random_name, %$_ ], @axes;
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
 	my $default_action = $args->{DEFAULT_ACTION} || 'Count';
 	my @vars = expand_vars( expand_value $args->{VARS} );
 	for my $var ( @vars ) { $var->{action} ||= $default_action }
+	@vars = map [ _random_name, %$_ ], @vars;
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
 	#
-	my $binner = __PACKAGE__->new( axes => [ map [ _random_name, %$_ ], @axes ],
-				       vars => [ map [ _random_name, %$_ ], @vars ] );
+	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process;
 	return $binner->output;
 }
