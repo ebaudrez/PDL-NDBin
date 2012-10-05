@@ -2,8 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 85;
-use Test::PDL;
+use Test::More tests => 73;
+use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Deep;
@@ -95,26 +95,22 @@ note 'SUPPORT STUFF';
 # axis processing
 $x = pdl( -65,13,31,69 );
 $y = pdl( 3,30,41,-66.9 );
-$expected = [ { name => ignore, pdl => ignore, min => -65, max => 69, n => 4, step => 33.5 } ];
+$expected = [ { name => 'x', pdl => test_pdl($x), min => -65, max => 69, n => 4, step => 33.5 } ];
 $binner = PDL::NDBin->new( axes => [[ 'x' ]] );
 $binner->autoscale( x => $x );
 $got = $binner->axes;
-is_pdl $got->[0]->{pdl}, $x;
 cmp_deeply $got, $expected, 'autoscale() with auto parameters';
-$expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, step => 20 } ];
+$expected = [ { name => 'x', pdl => test_pdl($x), min => -70, max => 70, n => 7, step => 20 } ];
 $binner = PDL::NDBin->new( axes => [[ x => (min => -70, max => 70, step => 20) ]] );
 $binner->autoscale( x => $x );
 $got = $binner->axes;
-is_pdl $got->[0]->{pdl}, $x;
 cmp_deeply $got, $expected, 'autoscale() with manual parameters';
-$expected = [ { name => ignore, pdl => ignore, min => -70, max => 70, n => 7, step => 20, round => 10 },
-	      { name => ignore, pdl => ignore, min => -70, max => 50, n => 6, step => 20, round => 10 } ];
+$expected = [ { name => 'x', pdl => test_pdl($x), min => -70, max => 70, n => 7, step => 20, round => 10 },
+	      { name => 'y', pdl => test_pdl($y), min => -70, max => 50, n => 6, step => 20, round => 10 } ];
 $binner = PDL::NDBin->new( axes => [[ x => ( round => 10, step => 20 ) ],
 				    [ y => ( round => 10, step => 20 ) ]] );
 $binner->autoscale( x => $x, y => $y );
 $got = $binner->axes;
-is_pdl $got->[0]->{pdl}, $x;
-is_pdl $got->[1]->{pdl}, $y;
 cmp_deeply $got, $expected, 'autoscale() with two axes and rounding';
 
 # labels
@@ -148,101 +144,102 @@ note 'BASIC FUNCTIONALITY';
 $x = pdl( 1,1,2 );
 # by default histogram() returns a piddle of the same type as the axis,
 # but output() returns a piddle of type I<long> when histogramming
-$expected = long( 0,2,1 );
+$expected = { histogram => test_long( 0,2,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>0, n=>3 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'example from PDL::histogram';
+cmp_deeply $got, $expected, 'example from PDL::histogram';
+$expected = { z => test_long( 0,2,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>0, n=>3 ] ],
 			   vars => [ [ 'z', sub { shift->want->nelem } ] ] );
 $binner->process( x => $x, z => zeroes( long, $x->nelem ) );
 $got = $binner->output;
-is_pdl $got, $expected, 'variable and action specified explicitly';
-$expected = pdl( 0,2,1 );	# this is an exception, because the type is
-				# locked to double by `$x => sub { ... }'
+cmp_deeply $got, $expected, 'variable and action specified explicitly';
+$expected = { x => test_pdl( 0,2,1 ) }; # this is an exception, because the type is
+					# locked to double by `$x => sub { ... }'
 $binner = PDL::NDBin->new( axes => [ [ x => ( step=>1, min=>0, n=>3 ) ] ],
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'different syntax';
-$expected = long( 0,2,1 );
+cmp_deeply $got, $expected, 'different syntax';
+$expected = { x => test_long( 0,2,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => ( step=>1, min=>0, n=>3 ) ] ],
 			   vars => [ [ x => 'Count' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'different syntax, using action class name';
+cmp_deeply $got, $expected, 'different syntax, using action class name';
 
 # this idiom with only chained calls should work
 $x = pdl( 1,1,2 );
-$expected = long( 0,2,1 );
+$expected = { histogram => test_long( 0,2,1 ) };
 $got = PDL::NDBin->new( axes => [ [ v => (step=>1,min=>0,n=>3) ] ] )->process( v => $x )->output;
-is_pdl $got, $expected, 'all calls chained';
+cmp_deeply $got, $expected, 'all calls chained';
 
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );
 $y = pdl( 2,1,1,1,1 );
-$expected = long( [0,0,0],
-		  [0,2,2],
-		  [0,1,0] );
+$expected = { histogram => test_long( [0,0,0],
+				      [0,2,2],
+				      [0,1,0] ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>0,n=>3) ],
 				     [ y => (step=>1,min=>0,n=>3) ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
-is_pdl $got, $expected, 'example from PDL::histogram2d';
+cmp_deeply $got, $expected, 'example from PDL::histogram2d';
 
 #
 $x = pdl( 1,1,1,2,2,1,1 );
 $y = pdl( 2,1,3,4,1,4,4 );
-$expected = long( [1,1],
-		  [1,0],
-		  [1,0],
-		  [2,1] );
+$expected = { histogram => test_long( [1,1],
+				      [1,0],
+				      [1,0],
+				      [2,1] ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>1, n=>2 ],
 				     [ 'y', step=>1, min=>1, n=>4 ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
-is_pdl $got, $expected, 'nonsquare two-dimensional histogram';
+cmp_deeply $got, $expected, 'nonsquare two-dimensional histogram';
 
 # binning integer data
 $x = byte(1,2,3,4);
-$expected = long(1,1,1,1);
+$expected = { histogram => test_long( 1,1,1,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>1,n=>4) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'binning integer data: base case';
+cmp_deeply $got, $expected, 'binning integer data: base case';
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
-$expected = short( 8,9,1,0,5 );
+$expected = { x => test_short( 8,9,1,0,5 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>2,n=>5) ] ],
 			   vars => [ [ x => sub { shift->want->nelem } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'binning integer data: step = 1';
-$expected = long( 18,1,1,1,2 );
+cmp_deeply $got, $expected, 'binning integer data: step = 1';
+$expected = { histogram => test_long( 18,1,1,1,2 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>2,min=>3,n=>5) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'binning integer data: step = 2';
+cmp_deeply $got, $expected, 'binning integer data: step = 2';
 
 # more actions & missing/undefined/invalid stuff
 $x = sequence 21;
-$expected = double( 1,4,7,10,13,16,19 );
+$expected = { x => test_double( 1,4,7,10,13,16,19 ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>3, min=>0, n=>7 ] ],
 			   vars => [ [ 'x', sub { shift->selection->avg } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'variable with action = average';
+cmp_deeply $got, $expected, 'variable with action = average';
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>3, min=>0, n=>7 ] ],
 			   vars => [ [ 'x', 'Avg' ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'variable with action = average, using action class name';
+cmp_deeply $got, $expected, 'variable with action = average, using action class name';
 $x = 5+sequence 3; # 5 6 7
-$expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
+$expected = { x => test_pdl( double( 0,0,1,1,1 )->inplace->setvaltobad( 0 ) ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>1,min=>3,n=>5 ] ],
 			   vars => [ [ 'x', sub { shift->want->nelem || undef } ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'empty bins unset'; # cannot be achieved with action classes
+cmp_deeply $got, $expected, 'empty bins unset'; # cannot be achieved with action classes
 
 # cross-check with histogram and some random data
 $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
@@ -251,25 +248,25 @@ $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
 $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 	0.1480, 0.4297, 0.5000, 0.9637, 0.1148, 0.2922, 0.0846, 0.0954, 0.1379,
 	0.3187, 0.1655, 0.5777, 0.3047 );
-$expected = histogram( $x, .1, 0, 10 )->long;
+$expected = { histogram => test_pdl( histogram( $x, .1, 0, 10 )->long ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'cross-check with histogram';
-$expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long;
+cmp_deeply $got, $expected, 'cross-check with histogram';
+$expected = { histogram => test_pdl( histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ],
 				     [ 'y', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x, y => $y );
 $got = $binner->output;
-is_pdl $got, $expected, 'cross-check with histogram2d';
+cmp_deeply $got, $expected, 'cross-check with histogram2d';
 
 # the example from PDL::hist
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
-$expected = long( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
+$expected = { histogram => test_long( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => min=>0, max=>20, step=>1 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
-is_pdl $got, $expected, 'example from PDL::hist';
+cmp_deeply $got, $expected, 'example from PDL::hist';
 
 #
 # DATA FEEDING & AUTOSCALING
@@ -288,22 +285,18 @@ is_deeply $got, [ { name => 'x',
 		    step => .1,min=>0,n=>10 } ], 'contents of axes() before feeding';
 $binner->feed( x => $x );
 $got = $binner->axes;
-# is_deeply(), is(), cmp_ok(), etc., don't handle piddles well, hence this workaround
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding x';
 cmp_deeply $got, [ { name => 'x',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($x),
 		     step => .1, min => 0, n => 10 },
 		   { name => 'y',
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding x';
 $binner->feed( y => $y );
 $got = $binner->axes;
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding y';
-is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->axes after feeding y';
 cmp_deeply $got, [ { name => 'x',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($x),
 		     step => .1, min => 0, n => 10 },
 		   { name => 'y',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($y),
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding y';
 
 #
@@ -319,23 +312,19 @@ is_deeply $got, [ { name => 'x',
 $binner->feed( x => $x,
 	       y => $y );
 $got = $binner->axes;
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding x and y at once';
-is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->axes after feeding x and y at once';
 cmp_deeply $got, [ { name => 'x',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($x),
 		     step => .1, min => 0, n => 10 },
 		   { name => 'y',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($y),
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after feeding x and y at once';
 $y = random( 30 );
 $binner->feed( y => $y );
-is_pdl $got->[0]->{pdl}, $x, '{pdl} for \'x\' in $self->axes after feeding x and y at once';
-is_pdl $got->[1]->{pdl}, $y, '{pdl} for \'y\' in $self->axes after feeding x and y at once';
 cmp_deeply $got, [ { name => 'x',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($x),
 		     step => .1, min => 0, n => 10 },
 		   { name => 'y',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($y),
 		     step => .1, min => 0, n => 10 } ], 'contents of axes() after re-feeding y';
 
 # test auto axes
@@ -343,12 +332,11 @@ $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 )
 $binner = PDL::NDBin->new( axes => [[ x => (step=>1, min=>0, n=>10) ]] );
 $binner->autoscale( x => $x );
 $got = $binner->axes;
-is_pdl $got->[0]->{pdl}, $x, 'returns early if step,min,n are known (1)';
 cmp_deeply $got, [ { name => 'x',
-		     pdl  => ignore(),
+		     pdl  => test_pdl($x),
 		     step => 1,
 		     min  => 0,
-		     n    => 10 } ], 'returns early if step,min,n are known (2)';
+		     n    => 10 } ], 'returns early if step,min,n are known';
 $got = reduce { $a * $b } map { $_->{n} } $binner->axes;
 is $got, 10, 'number of bins';
 
@@ -398,22 +386,26 @@ $x = pdl( 0.665337628832283, -0.629370177449402, -0.611923922242319,
 	0.175506066710255, 0.94968424874434, -0.423133727109544,
 	0.890747106335546, 0.596571315205153, 0.536266550130698,
 	-0.553391321294256 ); # 100 random values in the range [-1:1]
+$expected = { avg1 => code( sub { shift->isa('PDL') } ),
+	      avg2 => code( sub { shift->isa('PDL') } ) };
 $binner = PDL::NDBin->new( axes => [ [ data => step=>2,min=>-1,n=>1 ] ],
-			   vars => [ [ data => sub { shift->selection->avg } ],
-				     [ data => 'Avg' ] ] );
-$binner->process( data => $x );
-$got = [ $binner->output ];
-is @$got, 2;
-cmp_ok abs( $got->[0]->at(0) ), '<', 1e-2, 'average of 100 random numbers in the range [-1:1] should be (more or less) close to 0';
-is_pdl $got->[0], $got->[1], 'mixed coderef/class with one bin, average';
+			   vars => [ [ avg1 => sub { shift->selection->avg } ],
+				     [ avg2 => 'Avg' ] ] );
+$binner->process( data => $x, avg1 => $x, avg2 => $x );
+$got = $binner->output;
+cmp_deeply $got, $expected, 'mixed coderef/class with one bin, average';
+cmp_ok abs( $got->{avg1}->at(0) ), '<', 1e-2, 'average of 100 random numbers in the range [-1:1] should be (more or less) close to 0';
+is_pdl $got->{avg1}, $got->{avg2}, 'mixed coderef/class with one bin, average';
 
+$expected = { sd1 => code( sub { shift->isa('PDL') } ),
+	      sd2 => code( sub { shift->isa('PDL') } ) };
 $binner = PDL::NDBin->new( axes => [ [ data => step=>.1,min=>-1,n=>20 ] ],
-			   vars => [ [ data => sub { (shift->selection->stats)[6] } ],
-				     [ data => 'StdDev' ] ] );
-$binner->process( data => $x );
-$got = [ $binner->output ];
-is @$got, 2;
-is_pdl $got->[0], $got->[1], 'mixed coderef/class with 20 bins, standard deviation';
+			   vars => [ [ sd1 => sub { (shift->selection->stats)[6] } ],
+				     [ sd2 => 'StdDev' ] ] );
+$binner->process( data => $x, sd1 => $x, sd2 => $x );
+$got = $binner->output;
+cmp_deeply $got, $expected, 'mixed coderef/class with 20 bins, standard deviation';
+is_pdl $got->{sd1}, $got->{sd2}, 'mixed coderef/class with 20 bins, standard deviation';
 
 #
 # CONCATENATION
@@ -448,6 +440,9 @@ note 'CONCATENATION';
 						vars => [ [ u => "+$class" ] ] )
 					 ->process( u => $u )
 					 ->output;
-		is_pdl $got, $expected, "repeated invocation of process() equal to concatenation with action $class";
+		# we must turn the 'u' key into a special testing object, hence
+		# this somewhat dirty hack:
+		$expected->{u} = test_pdl( $expected->{u} );
+		cmp_deeply $got, $expected, "repeated invocation of process() equal to concatenation with action $class";
 	}
 }

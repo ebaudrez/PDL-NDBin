@@ -10,6 +10,7 @@ use strict;
 use warnings;
 use Exporter;
 use List::Util qw( reduce );
+use List::MoreUtils qw( pairwise );
 use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Iterator;
@@ -210,9 +211,6 @@ Here are some examples of flattening multidimensional bins into one dimension:
 
 =cut
 
-# generate a random, hopefully unique name for a pdl
-sub _random_name { create_uuid( UUID_RANDOM ) }
-
 sub new
 {
 	my $class = shift;
@@ -228,7 +226,7 @@ sub new
 	# vars
 	$args{vars} ||= [];		# be sure we can dereference
 	my @vars = @{ $args{vars} };
-	if( ! @vars ) { @vars = ( [ _random_name, 'Count' ] ) }
+	if( ! @vars ) { @vars = ( [ 'histogram', 'Count' ] ) }
 	$self->_add_var( @$_ ) for @vars;
 	return $self;
 }
@@ -451,7 +449,8 @@ sub output
 	my @output = map { $_->result } @{ $self->{instances} };
 	for my $pdl ( @output ) { $pdl->reshape( @$n ) }
 	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @output }
-	return wantarray ? @output : $output[0];
+	my %result = pairwise { $a->{name} => $b } @{ $self->vars }, @output;
+	return wantarray ? %result : \%result;
 }
 
 =head2 consume()
@@ -1061,6 +1060,9 @@ by ndbin(), as described above.
 
 =cut
 
+# generate a random, hopefully unique name for a pdl
+sub _random_name { create_uuid( UUID_RANDOM ) }
+
 sub ndbinning
 {
 	# consume and process axes
@@ -1084,7 +1086,9 @@ sub ndbinning
 	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
 	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process;
-	return $binner->output;
+	my $output = $binner->output;
+	my @result = map $output->{ $_->[0] }, @vars ? @vars : [ 'histogram' ];
+	return wantarray ? @result : $result[0];
 }
 
 sub ndbin
@@ -1110,7 +1114,9 @@ sub ndbin
 	#
 	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process;
-	return $binner->output;
+	my $output = $binner->output;
+	my @result = map $output->{ $_->[0] }, @vars ? @vars : [ 'histogram' ];
+	return wantarray ? @result : $result[0];
 }
 
 1;
