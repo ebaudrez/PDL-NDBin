@@ -130,7 +130,7 @@ PDL::NDBin is there to handle the details for you, so you can write
 
 	my $average_flux = ndbin( $longitude => { min => -70, max => 70, step => 20 },
 				  $latitude  => { min => -70, max => 70, step => 20 },
-				  VARS => [ $flux => 'Avg' ] );
+				  vars => [ $flux => 'Avg' ] );
 
 to obtain the average of the flux, binned in boxes of 20x20 degrees latitute
 and longitude.
@@ -152,7 +152,7 @@ our @EXPORT_OK = qw( ndbinning ndbin );
 our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin ) ] );
 
 # the list of valid keys
-my %valid_key = map { $_ => 1 } qw( AXES VARS );
+my %valid_key = map { $_ => 1 } qw( axes vars );
 
 =head2 ndbinning()
 
@@ -481,7 +481,7 @@ sub consume (&\@)
 
 Convert the argument list into a hash reference suitable for further
 processing. Leading arguments which are not valid key names, are assumed to be
-axis coordinates and parameters, and are collected under the C<AXES> key. The
+axis coordinates and parameters, and are collected under the C<axes> key. The
 remaining arguments are assumed to be C<< key => value >> pairs.
 
 =cut
@@ -492,7 +492,7 @@ sub _collect_args
 	# checking for a PDL first, we avoid (invalid) comparisons between
 	# piddles and strings in the `grep'
 	if( my @axes = consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
-		return { AXES => [ @axes ], @_ };
+		return { axes => [ @axes ], @_ };
 	}
 	# no arguments matched the previous two conditions, so the argument
 	# list consists entirely of key-value pairs
@@ -716,11 +716,11 @@ The arguments to ndbin() should be specified as one or more key-value pairs:
 	       [ ... ] );
 
 The argument list can optionally be enclosed by braces (i.e., an anonymous
-hash). The recognized keys are C<AXES> and C<VARS>. They are described in more
+hash). The recognized keys are C<axes> and C<vars>. They are described in more
 detail below. The keys must be paired with an array reference.
 
 For convenience, and for compatibility with hist(), a lot of abbreviations and
-shortcuts are allowed, though. It is allowed to omit the key C<AXES> and the
+shortcuts are allowed, though. It is allowed to omit the key C<axes> and the
 array reference, and to specify the axes followed by their specifications as
 ordinary parameters, provided they come first in the argument list. Thus, it is
 allowed to write
@@ -733,21 +733,21 @@ allowed to write
 	       [ ... ]
 
 Each of the specifications I<min>, I<max> and I<step> are optional; only the
-piddles are required. Any subsequent keys, such as C<VARS>, must be specified
+piddles are required. Any subsequent keys, such as C<vars>, must be specified
 again as key-value pairs. More abbreviations and shortcuts are allowed inside
-the values of C<AXES> and C<VARS>. For more information, refer to the
+the values of C<axes> and C<vars>. For more information, refer to the
 description of the keys below. See also L<Usage examples> below.
 
 =head2 Valid keys
 
 =over 4
 
-=item C<AXES>
+=item C<axes>
 
 Specifies the axes along which to bin. The axes are supplied as an arrayref
 containing anonymous hashes, as follows:
 
-	AXES => [
+	axes => [
 			{
 				pdl => $pdl,
 				step => $step,
@@ -766,19 +766,19 @@ specifications at the same time, because some may conflict.
 As a further convenience, the hashes may be omitted, and specifications may be
 written as follows:
 
-	AXES => [ $pdl, $min, $max, $step, $pdl, $min, $max, $step, ... ]
+	axes => [ $pdl, $min, $max, $step, $pdl, $min, $max, $step, ... ]
 
 Again all specifications other than the piddle itself, i.e., I<min>, I<max> and
 I<step>, are optional. Their order, when given, is important, though.
 
 At least one axis is required.
 
-=item C<VARS>
+=item C<vars>
 
 Specifies the values to bin. The variables are supplied as an arrayref
 containing anonymous hashes, as follows:
 
-	VARS => [
+	vars => [
 			{
 				pdl => $pdl,
 				action => $action
@@ -792,7 +792,7 @@ by a counting function in order to produce a histogram.
 As a further convenience, the hashes may be omitted, and the variables may be
 given as follows:
 
-	VARS => [ $pdl, $action, $pdl, $action, ... ]
+	vars => [ $pdl, $action, $pdl, $action, ... ]
 
 The action may again be omitted.
 
@@ -811,7 +811,7 @@ A one-dimensional histogram of height of individuals, binned between 0 and 2
 metres, with the step size determined automatically:
 
 	my $histogram = ndbin(
-		AXES => [ { pdl => $height, min => 0, max => 2 } ]
+		axes => [ { pdl => $height, min => 0, max => 2 } ]
 	);
 
 This example can be expressed concisely using the abbreviated form:
@@ -823,7 +823,7 @@ key-value pair to the hash in the first example, or by just adding the step
 size in second example:
 
 	my $histogram = ndbin(
-		AXES => [ { pdl => $height,
+		axes => [ { pdl => $height,
 			    min => 0, max => 2, step => 0.1 } ]
 	);
 	my $histogram = ndbin( $height, 0, 2, 0.1 );
@@ -835,7 +835,7 @@ with the sizes rounded to 0.01, the step size equal to 0.01, and minimum and
 maximum determined automatically, you must write:
 
 	my $histogram = ndbin(
-		AXES => [ { pdl => $particle_size,
+		axes => [ { pdl => $particle_size,
 			    round => 0.01, step => 0.01 } ]
 	);
 
@@ -843,7 +843,7 @@ Two- or multidimensional histograms are specified by enumerating the axes one
 by one. The coordinates must be followed immediately by their parameters.
 
 	my $histogram = ndbin(
-		AXES => [ { pdl => $longitude },
+		axes => [ { pdl => $longitude },
 			  { pdl => $latitude } ]
 	);
 
@@ -859,9 +859,9 @@ Extra parameters for the axes are specified as follows:
 
 A rather complete example of the interface:
 
-	ndbin( AXES => [ { pdl => $longitude, min => -70, max => 70, step => 20 },
+	ndbin( axes => [ { pdl => $longitude, min => -70, max => 70, step => 20 },
 			 { pdl => $latitude,  min => -70, max => 70, step => 20 } ],
-	       VARS => [ { pdl => $ceres_flux, action => \&do_ceres_flux },
+	       vars => [ { pdl => $ceres_flux, action => \&do_ceres_flux },
 			 { pdl => $gl_flux,    action => \&do_gl_flux    },
 			 { pdl => $gerb_flux,  action => \&do_gerb_flux  } ],
 	     );
@@ -872,25 +872,25 @@ using the abbreviated interface, write:
 
 	ndbin( $longitude, -70, 70, 20,
 	       $latitude,  -70, 70, 20,
-	       VARS => [ $ceres_flux, \&do_ceres_flux,
+	       vars => [ $ceres_flux, \&do_ceres_flux,
 			 $gl_flux,    \&do_gl_flux,
 			 $gerb_flux,  \&do_gerb_flux ],
 	     );
 
 More simple examples:
 
- 	my $histogram = ndbin( $x );
- 	my $histogram = ndbin( $x, $y );
- 	my $histogram = ndbin( AXES => [ { pdl => $x, min => 0, max => 10, n => 5 } ] );
+	my $histogram = ndbin( $x );
+	my $histogram = ndbin( $x, $y );
+	my $histogram = ndbin( axes => [ { pdl => $x, min => 0, max => 10, n => 5 } ] );
 
 And an example where the result does not contain the count, but rather the
 averages of the binned fluxes:
 
 	my $result = ndbin(
-			AXES => [ { pdl => $longitude, round => 10, step => 20 },
+			axes => [ { pdl => $longitude, round => 10, step => 20 },
 				  { pdl => $latitude,  round => 10, step => 20 } ],
-			VARS => [ $flux => sub { shift->selection->avg } ],
-	 	      );
+			vars => [ $flux => sub { shift->selection->avg } ],
+		     );
 
 =cut
 
@@ -1088,13 +1088,13 @@ sub ndbin
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
-	my @axes = expand_axes( expand_value $args->{AXES} );
+	my @axes = expand_axes( expand_value $args->{axes} );
 	@axes = map [ _random_name, %$_ ], @axes;
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
 	my $default_action = 'Count';
-	my @vars = expand_vars( expand_value $args->{VARS} );
+	my @vars = expand_vars( expand_value $args->{vars} );
 	for my $var ( @vars ) { $var->{action} ||= $default_action }
 	@vars = map [ _random_name, %$_ ], @vars;
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
