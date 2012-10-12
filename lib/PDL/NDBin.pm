@@ -152,7 +152,7 @@ our @EXPORT_OK = qw( ndbinning ndbin );
 our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin ) ] );
 
 # the list of valid keys
-my %valid_key = map { $_ => 1 } qw( AXES VARS DEFAULT_ACTION );
+my %valid_key = map { $_ => 1 } qw( AXES VARS );
 
 =head2 ndbinning()
 
@@ -716,9 +716,8 @@ The arguments to ndbin() should be specified as one or more key-value pairs:
 	       [ ... ] );
 
 The argument list can optionally be enclosed by braces (i.e., an anonymous
-hash). The recognized keys are C<AXES>, C<VARS>, and C<DEFAULT_ACTION>. They
-are described in more detail below. Any key requiring more than one value,
-e.g., C<AXES>, must be paired with an array reference.
+hash). The recognized keys are C<AXES> and C<VARS>. They are described in more
+detail below. The keys must be paired with an array reference.
 
 For convenience, and for compatibility with hist(), a lot of abbreviations and
 shortcuts are allowed, though. It is allowed to omit the key C<AXES> and the
@@ -734,11 +733,10 @@ allowed to write
 	       [ ... ]
 
 Each of the specifications I<min>, I<max> and I<step> are optional; only the
-piddles are required. Any subsequent keys, such as C<VARS> or
-C<DEFAULT_ACTION>, must be specified again as key-value pairs. More
-abbreviations and shortcuts are allowed inside the values of C<AXES> and
-C<VARS>. For more information, refer to the description of the keys below. See
-also L<Usage examples> below.
+piddles are required. Any subsequent keys, such as C<VARS>, must be specified
+again as key-value pairs. More abbreviations and shortcuts are allowed inside
+the values of C<AXES> and C<VARS>. For more information, refer to the
+description of the keys below. See also L<Usage examples> below.
 
 =head2 Valid keys
 
@@ -789,8 +787,7 @@ containing anonymous hashes, as follows:
 		]
 
 Only the piddle is required. The action may be omitted and will be substituted
-by the default action if supplied (see C<DEFAULT_ACTION> below), or by a
-counting function to produce a histogram.
+by a counting function in order to produce a histogram.
 
 As a further convenience, the hashes may be omitted, and the variables may be
 given as follows:
@@ -801,15 +798,10 @@ The action may again be omitted.
 
 There can be zero or more variables. If no variables are supplied, the
 behaviour of hist() is emulated, i.e., an I<n>-dimensional histogram is
-produced (unless C<DEFAULT_ACTION> is specified). This function, although more
-flexible than the former, is likely slower. If all you need is a
-one-dimensional histogram, use hist() instead. Note that, when no variables are
-supplied, the returned histogram is of type I<long>, in contrast with hist().
-
-=item C<DEFAULT_ACTION>
-
-The action to execute for a variable lacking an action. By default the number
-of values in each bin is counted to produce a histogram.
+produced. This function, although more flexible than the former, is likely
+slower. If all you need is a one-dimensional histogram, use hist() instead.
+Note that, when no variables are supplied, the returned histogram is of type
+I<long>, in contrast with hist().
 
 =back
 
@@ -897,21 +889,17 @@ averages of the binned fluxes:
 	my $result = ndbin(
 			AXES => [ { pdl => $longitude, round => 10, step => 20 },
 				  { pdl => $latitude,  round => 10, step => 20 } ],
-			VARS => [ $flux ],
-			DEFAULT_ACTION => sub { shift->selection->avg },
+			VARS => [ $flux => sub { shift->selection->avg } ],
 	 	      );
 
 =cut
 
 =head2 Actions
 
-You can, but are not required to, supply an action with every variable. If you
-don't supply an action, the default action will be used, as given by the
-C<DEFAULT_ACTION> key.
-
-An action can be either a code reference (i.e., a reference to a subroutine, or
-an anonymous subroutine), or the name of a class that implements the methods
-new(), process() and result().
+You are required supply an action with every variable. An action can be either
+a code reference (i.e., a reference to a subroutine, or an anonymous
+subroutine), or the name of a class that implements the methods new(),
+process() and result().
 
 It is important to note that the actions will be called in the order they are
 given for each bin, before proceeding to the next bin. You can depend on this
@@ -1105,7 +1093,7 @@ sub ndbin
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
-	my $default_action = $args->{DEFAULT_ACTION} || 'Count';
+	my $default_action = 'Count';
 	my @vars = expand_vars( expand_value $args->{VARS} );
 	for my $var ( @vars ) { $var->{action} ||= $default_action }
 	@vars = map [ _random_name, %$_ ], @vars;

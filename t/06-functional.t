@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 80;
+use Test::More tests => 79;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -154,7 +154,6 @@ TODO: {
 }
 lives_ok { ndbin( AXES => pdl( 1,2 ) ) } 'keyword AXES';
 lives_ok { ndbin( pdl( 1,2 ), VARS => pdl( 3,4 ) ) } 'keyword VARS';
-lives_ok { ndbin( pdl( 1,2 ), DEFAULT_ACTION => sub {} ) } 'keyword DEFAULT_ACTION';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
 # the example from PDL::hist
@@ -245,7 +244,7 @@ dies_ok { ndbin( short( 1,2 ), { n => 4 } ) } 'invalid data: step size < 1 for i
 # test exceptions in actions
 $x = pdl( 1,2,3 );
 $expected = create_bad long, 3;
-throws_ok { ndbin( $x, VARS => [ null ], DEFAULT_ACTION => sub { die } ) }
+throws_ok { ndbin( $x, VARS => [ null, sub { die } ] ) }
 	qr/^Died at /, 'exceptions in actions passed through';
 lives_ok { ndbin( $x, VARS => [ null() => sub { shift->want->min } ] ) }
 	'want->min on empty piddle does not die';
@@ -253,7 +252,7 @@ throws_ok { ndbin( $x, VARS => [ null() => sub { shift->selection->min } ] ) }
 	qr/^PDL::index: invalid index 0 /, 'selection->min on empty piddle';
 throws_ok { ndbin( $x, VARS => [ null() => sub { shift->wrong_method } ] ) }
 	qr/^Can't locate object method "wrong_method"/, 'call nonexistent method';
-lives_ok { $got = ndbin( $x, VARS => [ null->long ], DEFAULT_ACTION => sub { eval { die } } ) }
+lives_ok { $got = ndbin( $x, VARS => [ null->long, sub { eval { die } } ] ) }
 	'does not raise an exception when wrapping action in an eval block ...';
 is_pdl $got, $expected, '... and all values are unset';
 
@@ -265,8 +264,7 @@ $expected = zeroes(2,3,4)->long + 1;
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 3 },
 	      $z => { n => 4 },
-	      VARS => [ null->long ],
-	      DEFAULT_ACTION => sub { @_ } );
+	      VARS => [ null->long, sub { @_ } ] );
 is_pdl $got, $expected, 'number of arguments for actions';
 
 # test unflattened bin numbers
@@ -277,8 +275,7 @@ $expected = sequence( 2*5*3 )->long->reshape( 2, 5, 3 );
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 5 },
 	      $z => { n => 3 },
-	      VARS => [ null->long ],
-	      DEFAULT_ACTION => sub { my @u = shift->unflatten; $u[0] + 2*$u[1] + 2*5*$u[2] } );
+	      VARS => [ null->long, sub { my @u = shift->unflatten; $u[0] + 2*$u[1] + 2*5*$u[2] } ] );
 is_pdl $got, $expected, 'bin numbers returned from iterator';
 
 # simulate the functionality formerly known as SKIP_EMPTY

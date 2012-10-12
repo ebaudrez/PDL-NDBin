@@ -18,6 +18,8 @@ Revision history for PDL::NDBin
    (Edward Baudrez)
  - process_axes() has been removed; you should use autoscale() now (see below)
    (Edward Baudrez)
+ - support for DEFAULT_ACTION has been dropped; it is now required to specify
+   an action for every variable (Edward Baudrez)
 
  [New features]
  - in addition to 'step', 'min', and 'n', new() now also accepts 'max' and
