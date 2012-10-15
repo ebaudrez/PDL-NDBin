@@ -20,6 +20,11 @@ Revision history for PDL::NDBin
    (Edward Baudrez)
  - support for DEFAULT_ACTION has been dropped; it is now required to specify
    an action for every variable (Edward Baudrez)
+ - variables no longer assume a default action when none is supplied; it is now
+   required to state the action explicitly for every variable. To continue to
+   use the default action of producing a histogram, use the following:
+      ndbin( ..., vars => [ $x, 'Count' ] );
+   (Edward Baudrez)
 
  [New features]
  - in addition to 'step', 'min', and 'n', new() now also accepts 'max' and

@@ -153,7 +153,7 @@ TODO: {
 	lives_ok { ndbin( null, '9:1:11' ) } 'correct arguments: one axis, colon syntax, three args';
 }
 lives_ok { ndbin( axes => pdl( 1,2 ) ) } 'keyword axes';
-lives_ok { ndbin( pdl( 1,2 ), vars => pdl( 3,4 ) ) } 'keyword vars';
+lives_ok { ndbin( pdl( 1,2 ), vars => [ pdl( 3,4 ), 'Count' ] ) } 'keyword vars';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
 # the example from PDL::hist
@@ -165,8 +165,8 @@ is_pdl $got, $expected, 'example from PDL::hist';
 # test variables and actions
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
-$got = ndbin( $x, 0,20,1, vars => $x );
-is_pdl $got, $expected->long, 'variable with default action';
+$got = ndbin( $x, 0,20,1, vars => [ $x, 'Count' ] );
+is_pdl $got, $expected->long, 'variable with action Count';
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
 $got = ndbin( $x, 0,20,1, vars => [ $x => sub { my $iter = shift; $iter->want->nelem ? $iter->selection->avg : undef } ] );
 is_pdl $got, $expected, 'variable with action = average, specified as a coderef';

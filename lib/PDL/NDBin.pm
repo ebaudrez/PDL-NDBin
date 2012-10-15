@@ -1093,9 +1093,7 @@ sub ndbin
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
-	my $default_action = 'Count';
 	my @vars = expand_vars( expand_value $args->{vars} );
-	for my $var ( @vars ) { $var->{action} ||= $default_action }
 	@vars = map [ _random_name, %$_ ], @vars;
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
