@@ -1051,22 +1051,13 @@ by ndbin(), as described above.
 # generate a random, hopefully unique name for a pdl
 sub _random_name { create_uuid( UUID_RANDOM ) }
 
-sub _handle_var2
-{
-	my( $pdl, $action ) = @_;
-	return _random_name, pdl => $pdl, action => $action;
-}
-
-sub _handle_var_specs
-{
-	my %specs = @_;
-	return _random_name, %specs;
-}
-
 sub _handle_var
 {
-	if( @_ == 2 ) { _handle_var2 @_ }
-	else { _handle_var_specs @_ }
+	if( @_ == 2 ) {
+		my( $pdl, $action ) = @_;
+		return _random_name, pdl => $pdl, action => $action;
+	}
+	else { PDL::Core::barf( '_handle_var: wrong number of arguments' ) }
 }
 
 sub _handle_vars

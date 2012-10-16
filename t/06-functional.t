@@ -187,7 +187,7 @@ $got = ndbin( $x, { step=>1, min=>1, n=>2 },
 is_pdl $got, $expected, 'variable with action = debug_action';
 $got = ndbin( axes => [ { pdl => $x, step=>1, min=>1, n=>2 },
 			{ pdl => $y, step=>1, min=>1, n=>4 } ],
-	      vars => [ [ pdl => null->double, action => \&debug_action ] ] );
+	      vars => [ [ null->double, \&debug_action ] ] );
 is_pdl $got, $expected, 'variable with action = debug_action, null PDL, and full spec';
 
 # binning integer data
