@@ -564,47 +564,6 @@ sub expand_axes
 	return @out;
 }
 
-=head2 expand_vars()
-
-For internal use.
-
-=cut
-
-sub expand_vars
-{
-	my ( @out, $hash );
-	while( @_ ) {
-		if( eval { $_[0]->isa('PDL') } ) {
-			# a new variable; push the existing one on the output list
-			push @out, $hash if $hash;
-			$hash = { pdl => shift };
-		}
-		elsif( ref $_[0] eq 'HASH' ) {
-			# the user has supplied a hash directly, which may or
-			# may not yet contain a key-value pair pdl => $pdl
-			$hash = { } unless $hash;
-			push @out, { %$hash, %{ +shift } };
-			undef $hash; # do not collapse consecutive hashes into one, too confusing
-		}
-		elsif( ref $_[0] eq 'CODE' ) {
-			PDL::Core::barf( 'no variable given' ) unless $hash;
-			# an action to perform on this variable
-			$hash->{action} = shift;
-		}
-		elsif( $_[0] =~ /^(\w+::)*\w+$/ ) {
-			# if it looks like a package name, consider the argument
-			# to be the name of a class implementing the action
-			PDL::Core::barf( 'no variable given' ) unless $hash;
-			$hash->{action} = shift;
-		}
-		else {
-			PDL::Core::barf( "while expanding variables: invalid argument at `@_'" );
-		}
-	}
-	push @out, $hash if $hash;
-	return @out;
-}
-
 sub _auto_axis
 {
 	my $axis = shift;
