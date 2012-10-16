@@ -1051,6 +1051,30 @@ by ndbin(), as described above.
 # generate a random, hopefully unique name for a pdl
 sub _random_name { create_uuid( UUID_RANDOM ) }
 
+sub _handle_var2
+{
+	my( $pdl, $action ) = @_;
+	return _random_name, pdl => $pdl, action => $action;
+}
+
+sub _handle_var_specs
+{
+	my %specs = @_;
+	return _random_name, %specs;
+}
+
+sub _handle_var
+{
+	if( @_ == 2 ) { _handle_var2 @_ }
+	else { _handle_var_specs @_ }
+}
+
+sub _handle_vars
+{
+	my $ref = shift;
+	return map [ _handle_var @$_ ], @$ref;
+}
+
 sub ndbinning
 {
 	# consume and process axes
@@ -1093,8 +1117,7 @@ sub ndbin
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 
 	# variables
-	my @vars = expand_vars( expand_value $args->{vars} );
-	@vars = map [ _random_name, %$_ ], @vars;
+	my @vars = _handle_vars $args->{vars};
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 
 	#

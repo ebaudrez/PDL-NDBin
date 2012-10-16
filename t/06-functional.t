@@ -153,7 +153,7 @@ TODO: {
 	lives_ok { ndbin( null, '9:1:11' ) } 'correct arguments: one axis, colon syntax, three args';
 }
 lives_ok { ndbin( axes => pdl( 1,2 ) ) } 'keyword axes';
-lives_ok { ndbin( pdl( 1,2 ), vars => [ pdl( 3,4 ), 'Count' ] ) } 'keyword vars';
+lives_ok { ndbin( pdl( 1,2 ), vars => [ [ pdl( 3,4 ), 'Count' ] ] ) } 'keyword vars';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
 # the example from PDL::hist
@@ -165,12 +165,14 @@ is_pdl $got, $expected, 'example from PDL::hist';
 # test variables and actions
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
-$got = ndbin( $x, 0,20,1, vars => [ $x, 'Count' ] );
+$got = ndbin( $x, 0,20,1, vars => [ [ $x, 'Count' ] ] );
 is_pdl $got, $expected->long, 'variable with action Count';
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
-$got = ndbin( $x, 0,20,1, vars => [ $x => sub { my $iter = shift; $iter->want->nelem ? $iter->selection->avg : undef } ] );
+$got = ndbin( $x, 0,20,1,
+	      vars => [ [ $x => sub { my $iter = shift;
+				      $iter->want->nelem ? $iter->selection->avg : undef } ] ] );
 is_pdl $got, $expected, 'variable with action = average, specified as a coderef';
-$got = ndbin( $x, 0,20,1, vars => [ $x => 'Avg' ] );
+$got = ndbin( $x, 0,20,1, vars => [ [ $x => 'Avg' ] ] );
 is_pdl $got, $expected, 'variable with action = average, specified as a class name';
 $x = pdl( 1,1,1,2,2,1,1,1,2 );
 $y = pdl( 2,1,3,4,1,4,4,4,1 );
@@ -181,11 +183,11 @@ $expected = pdl( [1,2],
 		 [3,1] );
 $got = ndbin( $x, { step=>1, min=>1, n=>2 },
 	      $y, { step=>1, min=>1, n=>4 },
-	      vars => [ $z => \&debug_action ] );
+	      vars => [ [ $z => \&debug_action ] ] );
 is_pdl $got, $expected, 'variable with action = debug_action';
 $got = ndbin( axes => [ { pdl => $x, step=>1, min=>1, n=>2 },
 			{ pdl => $y, step=>1, min=>1, n=>4 } ],
-	      vars => [ { pdl => null->double, action => \&debug_action } ] );
+	      vars => [ [ pdl => null->double, action => \&debug_action ] ] );
 is_pdl $got, $expected, 'variable with action = debug_action, null PDL, and full spec';
 
 # binning integer data
@@ -244,15 +246,15 @@ dies_ok { ndbin( short( 1,2 ), { n => 4 } ) } 'invalid data: step size < 1 for i
 # test exceptions in actions
 $x = pdl( 1,2,3 );
 $expected = create_bad long, 3;
-throws_ok { ndbin( $x, vars => [ null, sub { die } ] ) }
+throws_ok { ndbin( $x, vars => [ [ null, sub { die } ] ] ) }
 	qr/^Died at /, 'exceptions in actions passed through';
-lives_ok { ndbin( $x, vars => [ null() => sub { shift->want->min } ] ) }
+lives_ok { ndbin( $x, vars => [ [ null() => sub { shift->want->min } ] ] ) }
 	'want->min on empty piddle does not die';
-throws_ok { ndbin( $x, vars => [ null() => sub { shift->selection->min } ] ) }
+throws_ok { ndbin( $x, vars => [ [ null() => sub { shift->selection->min } ] ] ) }
 	qr/^PDL::index: invalid index 0 /, 'selection->min on empty piddle';
-throws_ok { ndbin( $x, vars => [ null() => sub { shift->wrong_method } ] ) }
+throws_ok { ndbin( $x, vars => [ [ null() => sub { shift->wrong_method } ] ] ) }
 	qr/^Can't locate object method "wrong_method"/, 'call nonexistent method';
-lives_ok { $got = ndbin( $x, vars => [ null->long, sub { eval { die } } ] ) }
+lives_ok { $got = ndbin( $x, vars => [ [ null->long, sub { eval { die } } ] ] ) }
 	'does not raise an exception when wrapping action in an eval block ...';
 is_pdl $got, $expected, '... and all values are unset';
 
@@ -264,7 +266,7 @@ $expected = zeroes(2,3,4)->long + 1;
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 3 },
 	      $z => { n => 4 },
-	      vars => [ null->long, sub { @_ } ] );
+	      vars => [ [ null->long, sub { @_ } ] ] );
 is_pdl $got, $expected, 'number of arguments for actions';
 
 # test unflattened bin numbers
@@ -275,7 +277,7 @@ $expected = sequence( 2*5*3 )->long->reshape( 2, 5, 3 );
 $got = ndbin( $x => { n => 2 },
 	      $y => { n => 5 },
 	      $z => { n => 3 },
-	      vars => [ null->long, sub { my @u = shift->unflatten; $u[0] + 2*$u[1] + 2*5*$u[2] } ] );
+	      vars => [ [ null->long, sub { my @u = shift->unflatten; $u[0] + 2*$u[1] + 2*5*$u[2] } ] ] );
 is_pdl $got, $expected, 'bin numbers returned from iterator';
 
 # simulate the functionality formerly known as SKIP_EMPTY
@@ -283,12 +285,12 @@ is_pdl $got, $expected, 'bin numbers returned from iterator';
 # behaviour of PDL::NDBin::Action::Count
 $x = pdl( 1,3,3 );		# 3 bins, but middle bin will be empty
 $expected = long( 1,0,2 );
-$got = ndbin( $x, vars => [ $x => 'Count' ] );
+$got = ndbin( $x, vars => [ [ $x => 'Count' ] ] );
 is_pdl $got, $expected, 'do not skip empty bins, action class';
-$got = ndbin( $x, vars => [ null->long => sub { shift->want->nelem } ] );
+$got = ndbin( $x, vars => [ [ null->long => sub { shift->want->nelem } ] ] );
 is_pdl $got, $expected, 'do not skip empty bins, action coderef';
 $expected->inplace->setvaltobad( 0 );
-$got = ndbin( $x, vars => [ null->long => sub { my $n = shift->want->nelem; return unless $n; $n } ] );
+$got = ndbin( $x, vars => [ [ null->long => sub { my $n = shift->want->nelem; return unless $n; $n } ] ] );
 is_pdl $got, $expected, 'skip empty bins (cannot be achieved with action class)';
 
 # cross-check with hist and some random data
