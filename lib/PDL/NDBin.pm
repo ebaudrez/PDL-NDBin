@@ -211,59 +211,60 @@ Here are some examples of flattening multidimensional bins into one dimension:
 
 =cut
 
+sub create
+{
+	my $class = shift;
+	my $self = bless {}, $class;
+	return $self;
+}
+
+sub add_axis
+{
+	my $self = shift;
+	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
+	my %params = @_;
+	PDL::Core::barf( 'need at least a name for every axis' ) unless $params{name};
+	push @{ $self->{axes} }, \%params;
+}
+
+sub add_var
+{
+	my $self = shift;
+	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
+	my %params = @_;
+	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
+	push @{ $self->{vars} }, \%params;
+}
+
 sub new
 {
 	my $class = shift;
 	my %args = @_;
-	$log->debug( 'arguments = ' . Dumper \%args ) if $log->is_debug;
+	$log->debug( 'new: arguments = ' . Dumper \%args ) if $log->is_debug;
 	PDL::Core::barf( 'no arguments' ) unless %args;
-	# object construction
-	my $self = bless {}, $class;
+	my $self = $class->create;
 	# axes
 	$args{axes} ||= [];		# be sure we can dereference
 	my @axes = @{ $args{axes} } or PDL::Core::barf( 'no axes supplied' );
-	$self->_add_axis( @$_ ) for @axes;
+	for my $axis ( @axes ) {
+		my $name = shift @$axis;
+		$self->add_axis( name => $name, @$axis );
+	}
 	# vars
 	$args{vars} ||= [];		# be sure we can dereference
 	my @vars = @{ $args{vars} };
 	if( ! @vars ) { @vars = ( [ 'histogram', 'Count' ] ) }
-	$self->_add_var( @$_ ) for @vars;
+	for my $var ( @vars ) {
+		if( @$var == 2 ) {
+			my( $name, $action ) = @$var;
+			$self->add_var( name => $name, action => $action );
+		}
+		else {
+			# this else clause should disappear in time TODO FIXME
+			$self->add_var( @$var );
+		}
+	}
 	return $self;
-}
-
-sub _add_axis
-{
-	my $self = shift;
-	my $name = shift;
-	PDL::Core::barf( 'need at least a name for every axis' ) unless $name;
-	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
-	my %specs = @_;
-	push @{ $self->{axes} }, { name => $name, %specs };
-}
-
-sub _add_var
-{
-	my $self = shift;
-	if( @_ == 2 ) { $self->_add_var2( @_ ) }
-	else { $self->_add_var_specs( @_ ) }
-}
-
-sub _add_var2
-{
-	my $self = shift;
-	PDL::Core::barf( "wrong number of arguments for variable: @$_" ) if @_ != 2;
-	my( $name, $action ) = @_;
-	push @{ $self->{vars} }, { name => $name, action => $action };
-}
-
-sub _add_var_specs
-{
-	my $self = shift;
-	my $name = shift;
-	PDL::Core::barf( 'need at least a name for every variable' ) unless $name;
-	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
-	my %specs = @_;
-	push @{ $self->{vars} }, { name => $name, %specs };
 }
 
 # read-only accessors to the axes and variables; return lists instead of array
@@ -448,8 +449,9 @@ sub output
 	my $n = $self->{n};
 	my @output = map { $_->result } @{ $self->{instances} };
 	for my $pdl ( @output ) { $pdl->reshape( @$n ) }
-	if( $log->is_debug ) { $log->debug( 'output (' . $_->info . ') = ' . $_ ) for @output }
+	if( $log->is_debug ) { $log->debug( 'output: output (' . $_->info . ') = ' . $_ ) for @output }
 	my %result = pairwise { $a->{name} => $b } @{ $self->vars }, @output;
+	if( $log->is_debug ) { $log->debug( 'output: result = ' . Dumper \%result ) }
 	return wantarray ? %result : \%result;
 }
 
@@ -1014,7 +1016,7 @@ sub _handle_var
 {
 	if( @_ == 2 ) {
 		my( $pdl, $action ) = @_;
-		return _random_name, pdl => $pdl, action => $action;
+		return name => _random_name, pdl => $pdl, action => $action;
 	}
 	else { PDL::Core::barf( '_handle_var: wrong number of arguments' ) }
 }
@@ -1041,7 +1043,7 @@ sub ndbinning
 		# variables require an action following it
 		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
 			my( $pdl, $action ) = splice @_, 0, 2;
-			push @vars, [ _random_name, pdl => $pdl, action => $action ];
+			push @vars, [ name => _random_name, pdl => $pdl, action => $action ];
 		}
 	}
 	# any arguments left indicate a usage error
@@ -1049,7 +1051,7 @@ sub ndbinning
 	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process;
 	my $output = $binner->output;
-	my @result = map $output->{ $_->[0] }, @vars ? @vars : [ 'histogram' ];
+	my @result = map $output->{ $_->[1] }, @vars ? @vars : [ name => 'histogram' ];
 	return wantarray ? @result : $result[0];
 }
 
@@ -1074,7 +1076,7 @@ sub ndbin
 	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process;
 	my $output = $binner->output;
-	my @result = map $output->{ $_->[0] }, @vars ? @vars : [ 'histogram' ];
+	my @result = map $output->{ $_->[1] }, @vars ? @vars : [ name => 'histogram' ];
 	return wantarray ? @result : $result[0];
 }
 
