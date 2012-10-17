@@ -260,7 +260,7 @@ sub new
 			my( $name, $action ) = @$var;
 			$self->add_var( name => $name, action => $action );
 		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @_" ) }
+		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
 	}
 	return $self;
 }
@@ -1021,21 +1021,6 @@ by ndbin(), as described above.
 # generate a random, hopefully unique name for a pdl
 sub _random_name { create_uuid( UUID_RANDOM ) }
 
-sub _handle_var
-{
-	if( @_ == 2 ) {
-		my( $pdl, $action ) = @_;
-		return name => _random_name, pdl => $pdl, action => $action;
-	}
-	else { PDL::Core::barf( '_handle_var: wrong number of arguments' ) }
-}
-
-sub _handle_vars
-{
-	my $ref = shift;
-	return map [ _handle_var @$_ ], @$ref;
-}
-
 sub ndbinning
 {
 	#
@@ -1043,24 +1028,20 @@ sub ndbinning
 
 	# consume and process axes
 	# axes require three numerical specifications following it
-	my @axes;
 	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
 		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
-		push @axes, [ name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n ];
+		$binner->add_axis( name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n );
 	}
-	$binner->add_axis( @$_ ) for @axes;
 
 	# consume and process variables
-	my @vars;
 	if( @_ ) {
 		# consume variables
 		# variables require an action following it
 		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
 			my( $pdl, $action ) = splice @_, 0, 2;
-			push @vars, [ name => _random_name, pdl => $pdl, action => $action ];
+			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
 		}
 	}
-	$binner->add_var( @$_ ) for @vars;
 
 	# any arguments left indicate a usage error
 	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
@@ -1068,7 +1049,7 @@ sub ndbinning
 	#
 	$binner->process;
 	my $output = $binner->output;
-	my @result = map $output->{ $_->[1] }, @vars ? @vars : [ name => 'histogram' ];
+	my @result = map $output->{ $_->{name} }, @{ $binner->vars };
 	return wantarray ? @result : $result[0];
 }
 
@@ -1089,13 +1070,18 @@ sub ndbin
 	$binner->add_axis( name => _random_name, %$_ ) for @axes;
 
 	# variables
-	my @vars = _handle_vars $args->{vars};
-	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
-	$binner->add_var( @$_ ) for @vars;
+	$args->{vars} ||= [];
+	for my $var ( @{ $args->{vars} } ) {
+		if( @$var == 2 ) {
+			my( $pdl, $action ) = @$var;
+			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
+		}
+		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+	}
 
 	$binner->process;
 	my $output = $binner->output;
-	my @result = map $output->{ $_->[1] }, @vars ? @vars : [ name => 'histogram' ];
+	my @result = map $output->{ $_->{name} }, @{ $binner->vars };
 	return wantarray ? @result : $result[0];
 }
 
