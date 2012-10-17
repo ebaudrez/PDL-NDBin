@@ -224,6 +224,7 @@ sub add_axis
 	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
 	my %params = @_;
 	PDL::Core::barf( 'need at least a name for every axis' ) unless $params{name};
+	$log->tracef( 'adding axis with specs %s', \%params );
 	push @{ $self->{axes} }, \%params;
 }
 
@@ -233,6 +234,7 @@ sub add_var
 	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
 	my %params = @_;
 	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
+	$log->tracef( 'adding variable with specs %s', \%params );
 	push @{ $self->{vars} }, \%params;
 }
 
@@ -259,10 +261,7 @@ sub new
 			my( $name, $action ) = @$var;
 			$self->add_var( name => $name, action => $action );
 		}
-		else {
-			# this else clause should disappear in time TODO FIXME
-			$self->add_var( @$var );
-		}
+		else { PDL::Core::barf( "wrong number of arguments for var: @_" ) }
 	}
 	return $self;
 }
@@ -424,6 +423,12 @@ sub process
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
 	my @vars = map $_->{pdl}, $self->vars;
 	$self->{instances} ||= [ map { _make_instance $N, $_->{action} } $self->vars ];
+
+	#
+	{
+		local $Data::Dumper::Terse = 1;
+		$log->trace( 'process: $self = ' . Dumper $self );
+	}
 
 	# now visit all the bins
 	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $idx );
@@ -1029,13 +1034,18 @@ sub _handle_vars
 
 sub ndbinning
 {
+	#
+	my $binner = __PACKAGE__->create;
+
 	# consume and process axes
 	# axes require three numerical specifications following it
 	my @axes;
 	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
 		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
-		push @axes, [ _random_name, pdl => $pdl, step => $step, min => $min, n => $n ];
+		push @axes, [ name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n ];
 	}
+	$binner->add_axis( @$_ ) for @axes;
+
 	# consume and process variables
 	my @vars;
 	if( @_ ) {
@@ -1046,9 +1056,13 @@ sub ndbinning
 			push @vars, [ name => _random_name, pdl => $pdl, action => $action ];
 		}
 	}
+	if( ! @vars ) { @vars = ( [ name => 'histogram', action => 'Count' ] ) }
+	$binner->add_var( @$_ ) for @vars;
+
 	# any arguments left indicate a usage error
 	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
-	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
+
+	#
 	$binner->process;
 	my $output = $binner->output;
 	my @result = map $output->{ $_->[1] }, @vars ? @vars : [ name => 'histogram' ];
@@ -1057,6 +1071,9 @@ sub ndbinning
 
 sub ndbin
 {
+	#
+	my $binner = __PACKAGE__->create;
+
 	# parameters
 	my $args = _collect_args( @_ );
 	$log->debug( 'parameters: ' . Dumper $args ) if $log->is_debug;
@@ -1065,15 +1082,15 @@ sub ndbin
 
 	# axes
 	my @axes = expand_axes( expand_value $args->{axes} );
-	@axes = map [ _random_name, %$_ ], @axes;
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
+	$binner->add_axis( name => _random_name, %$_ ) for @axes;
 
 	# variables
 	my @vars = _handle_vars $args->{vars};
+	if( ! @vars ) { @vars = ( [ name => 'histogram', action => 'Count' ] ) }
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
+	$binner->add_var( @$_ ) for @vars;
 
-	#
-	my $binner = __PACKAGE__->new( axes => \@axes, vars => \@vars );
 	$binner->process;
 	my $output = $binner->output;
 	my @result = map $output->{ $_->[1] }, @vars ? @vars : [ name => 'histogram' ];
