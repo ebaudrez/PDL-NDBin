@@ -214,7 +214,7 @@ Here are some examples of flattening multidimensional bins into one dimension:
 sub create
 {
 	my $class = shift;
-	my $self = bless {}, $class;
+	my $self = bless { axes => [], vars => [] }, $class;
 	return $self;
 }
 
@@ -255,7 +255,6 @@ sub new
 	# vars
 	$args{vars} ||= [];		# be sure we can dereference
 	my @vars = @{ $args{vars} };
-	if( ! @vars ) { @vars = ( [ 'histogram', 'Count' ] ) }
 	for my $var ( @vars ) {
 		if( @$var == 2 ) {
 			my( $name, $action ) = @$var;
@@ -400,6 +399,11 @@ sub labels
 sub process
 {
 	my $self = shift;
+
+	# sanity check
+	PDL::Core::barf( 'no axes supplied' ) unless @{ $self->axes };
+	# default action, when no variables are given, is to produce a histogram
+	$self->add_var( name => 'histogram', action => 'Count' ) unless @{ $self->vars };
 
 	#
 	$self->autoscale( @_ );
@@ -1056,7 +1060,6 @@ sub ndbinning
 			push @vars, [ name => _random_name, pdl => $pdl, action => $action ];
 		}
 	}
-	if( ! @vars ) { @vars = ( [ name => 'histogram', action => 'Count' ] ) }
 	$binner->add_var( @$_ ) for @vars;
 
 	# any arguments left indicate a usage error
@@ -1087,7 +1090,6 @@ sub ndbin
 
 	# variables
 	my @vars = _handle_vars $args->{vars};
-	if( ! @vars ) { @vars = ( [ name => 'histogram', action => 'Count' ] ) }
 	$log->debug( 'vars: ' . Dumper \@vars ) if $log->is_debug;
 	$binner->add_var( @$_ ) for @vars;
 
