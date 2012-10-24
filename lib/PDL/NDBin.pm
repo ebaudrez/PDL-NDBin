@@ -1036,9 +1036,13 @@ sub ndbin
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
-	my @axes = expand_axes( @{ $args->{axes} } );
+	$args->{axes} ||= [];
+	my @axes = @{ $args->{axes} };
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
-	$binner->add_axis( name => _random_name, %$_ ) for @axes;
+	for my $axis ( @axes ) {
+		my $pdl = shift @$axis;
+		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
+	}
 
 	# variables
 	$args->{vars} ||= [];
