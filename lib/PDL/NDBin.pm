@@ -464,9 +464,9 @@ sub output
 	return wantarray ? %result : \%result;
 }
 
-=head2 consume()
+=head2 _consume()
 
-	consume BLOCK LIST
+	_consume BLOCK LIST
 
 Shift and return (zero or more) leading items from I<LIST> meeting the
 condition in I<BLOCK>. Sets C<$_> for each item of I<LIST> in turn.
@@ -475,7 +475,7 @@ For internal use.
 
 =cut
 
-sub consume (&\@)
+sub _consume (&\@)
 {
 	my ( $f, $list ) = @_;
 	for my $i ( 0 .. $#$list ) {
@@ -502,7 +502,7 @@ sub _collect_args
 	# technical note: PDL overloads the `eq' and `ne' operators; by
 	# checking for a PDL first, we avoid (invalid) comparisons between
 	# piddles and strings in the `grep'
-	if( my @axes = consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
+	if( my @axes = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
 		return { axes => [ @axes ], @_ };
 	}
 	# no arguments matched the previous two conditions, so the argument
@@ -532,7 +532,7 @@ sub expand_axes
 			push @out, { %$hash, %{ +shift } };
 			undef $hash; # do not collapse consecutive hashes into one, too confusing
 		}
-		elsif( @num = consume { /^[-+]?(\d+(\.\d*)?|\.\d+)([Ee][-+]?\d+)?$/ } @_ ) {
+		elsif( @num = _consume { /^[-+]?(\d+(\.\d*)?|\.\d+)([Ee][-+]?\d+)?$/ } @_ ) {
 			PDL::Core::barf( 'no axis given' ) unless $hash;
 			PDL::Core::barf( "too many arguments to axis in `@num'" ) if @num > 3;
 			# a series of floating-point numbers
