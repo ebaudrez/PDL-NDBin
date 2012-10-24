@@ -223,8 +223,8 @@ sub add_axis
 	my $self = shift;
 	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
 	my %params = @_;
-	PDL::Core::barf( 'need at least a name for every axis' ) unless $params{name};
 	$log->tracef( 'adding axis with specs %s', \%params );
+	PDL::Core::barf( 'need at least a name for every axis' ) unless $params{name};
 	push @{ $self->{axes} }, \%params;
 }
 
@@ -233,8 +233,8 @@ sub add_var
 	my $self = shift;
 	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
 	my %params = @_;
-	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
 	$log->tracef( 'adding variable with specs %s', \%params );
+	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
 	push @{ $self->{vars} }, \%params;
 }
 
@@ -1010,7 +1010,6 @@ sub ndbinning
 	# axes
 	$args->{axes} ||= [];
 	my @axes = @{ $args->{axes} };
-	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 	for my $axis ( @axes ) {
 		my $pdl = shift @$axis;
 		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
@@ -1045,7 +1044,6 @@ sub ndbin
 	# the `grep'
 	if( my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
 		my @axes = expand_axes( @leading );
-		$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 		$binner->add_axis( name => _random_name, %$_ ) for @axes;
 	}
 
@@ -1057,7 +1055,6 @@ sub ndbin
 	# axes
 	$args->{axes} ||= [];
 	my @axes = @{ $args->{axes} };
-	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 	for my $axis ( @axes ) {
 		my $pdl = shift @$axis;
 		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
