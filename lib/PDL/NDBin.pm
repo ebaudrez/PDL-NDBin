@@ -510,23 +510,6 @@ sub _collect_args
 	return { @_ };
 }
 
-=head2 expand_value()
-
-For internal use.
-
-=cut
-
-sub expand_value
-{
-	return unless @_;
-	if( ! defined $_[0] ) { return }
-	elsif( ref $_[0] eq 'ARRAY' ) {
-		PDL::Core::barf( 'when supplying an anonymous array, it must be the only element' ) if @_ > 1;
-		return @{ +shift };
-	}
-	else { return @_ }
-}
-
 =head2 expand_axes()
 
 For internal use.
@@ -1065,7 +1048,7 @@ sub ndbin
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
-	my @axes = expand_axes( expand_value $args->{axes} );
+	my @axes = expand_axes( @{ $args->{axes} } );
 	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
 	$binner->add_axis( name => _random_name, %$_ ) for @axes;
 

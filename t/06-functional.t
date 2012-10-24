@@ -152,7 +152,7 @@ TODO: {
 	lives_ok { ndbin( null, '9:1' ) } 'correct arguments: one axis, colon syntax, two args';
 	lives_ok { ndbin( null, '9:1:11' ) } 'correct arguments: one axis, colon syntax, three args';
 }
-lives_ok { ndbin( axes => pdl( 1,2 ) ) } 'keyword axes';
+lives_ok { ndbin( axes => [ pdl( 1,2 ) ] ) } 'keyword axes';
 lives_ok { ndbin( pdl( 1,2 ), vars => [ [ pdl( 3,4 ), 'Count' ] ] ) } 'keyword vars';
 dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected and reported';
 
