@@ -488,28 +488,6 @@ sub _consume (&\@)
 	return splice @$list;
 }
 
-=head2 _collect_args()
-
-Convert the argument list into a hash reference suitable for further
-processing. Leading arguments which are not valid key names, are assumed to be
-axis coordinates and parameters, and are collected under the C<axes> key. The
-remaining arguments are assumed to be C<< key => value >> pairs.
-
-=cut
-
-sub _collect_args
-{
-	# technical note: PDL overloads the `eq' and `ne' operators; by
-	# checking for a PDL first, we avoid (invalid) comparisons between
-	# piddles and strings in the `grep'
-	if( my @axes = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
-		return { axes => [ @axes ], @_ };
-	}
-	# no arguments matched the previous two conditions, so the argument
-	# list consists entirely of key-value pairs
-	return { @_ };
-}
-
 =head2 expand_axes()
 
 For internal use.
@@ -1041,9 +1019,19 @@ sub ndbin
 	#
 	my $binner = __PACKAGE__->create;
 
-	# parameters
-	my $args = _collect_args( @_ );
-	$log->debug( 'parameters: ' . Dumper $args ) if $log->is_debug;
+	# leading arguments are axes and axis specifications
+	#
+	# PDL overloads the `eq' and `ne' operators; by checking for a PDL
+	# first, we avoid (invalid) comparisons between piddles and strings in
+	# the `grep'
+	if( my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
+		my @axes = expand_axes( @leading );
+		$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
+		$binner->add_axis( name => _random_name, %$_ ) for @axes;
+	}
+
+	# remaining arguments are key => value pairs
+	my $args = { @_ };
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
 	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
