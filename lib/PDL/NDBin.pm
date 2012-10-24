@@ -987,25 +987,44 @@ sub ndbinning
 	#
 	my $binner = __PACKAGE__->create;
 
+	# leading arguments are axes and axis specifications
+	#
+	# PDL overloads the `eq' and `ne' operators; by checking for a PDL
+	# first, we avoid (invalid) comparisons between piddles and strings in
+	# the `grep'
+	my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_;
+
 	# consume and process axes
 	# axes require three numerical specifications following it
-	while( @_ > 3 && eval { $_[0]->isa('PDL') } && ! grep ref, @_[ 1 .. 3 ] ) {
-		my( $pdl, $step, $min, $n ) = splice @_, 0, 4;
+	while( @leading > 3 && eval { $leading[0]->isa('PDL') } && ! grep ref, @leading[ 1 .. 3 ] ) {
+		my( $pdl, $step, $min, $n ) = splice @leading, 0, 4;
 		$binner->add_axis( name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n );
 	}
+	if( @leading ) { PDL::Core::barf( "error parsing arguments in `@leading'" ) }
 
-	# consume and process variables
-	if( @_ ) {
-		# consume variables
-		# variables require an action following it
-		while( @_ >= 2 && eval { $_[0]->isa('PDL') } && ! eval { $_[1]->isa('PDL') } ) {
-			my( $pdl, $action ) = splice @_, 0, 2;
-			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
-		}
+	# remaining arguments are key => value pairs
+	my $args = { @_ };
+	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
+	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
+
+	# axes
+	$args->{axes} ||= [];
+	my @axes = @{ $args->{axes} };
+	$log->debug( 'axes: ' . Dumper \@axes ) if $log->is_debug;
+	for my $axis ( @axes ) {
+		my $pdl = shift @$axis;
+		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
 	}
 
-	# any arguments left indicate a usage error
-	if( @_ ) { PDL::Core::barf( "error parsing arguments in `@_'" ) }
+	# variables
+	$args->{vars} ||= [];
+	for my $var ( @{ $args->{vars} } ) {
+		if( @$var == 2 ) {
+			my( $pdl, $action ) = @$var;
+			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
+		}
+		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+	}
 
 	#
 	$binner->process;

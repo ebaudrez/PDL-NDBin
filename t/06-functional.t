@@ -53,9 +53,9 @@ note 'LOW-LEVEL INTERFACE';
 lives_ok { ndbinning( null, 1, 0, 1 ) } 'correct arguments: one axis';
 lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1 ) } 'correct arguments: two axes';
 lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1 ) } 'correct arguments: three axes';
-lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, null, sub {} ) } 'correct arguments: three axes, one variable, one action';
-lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, null, sub {}, null, sub {} ) } 'correct arguments: three axes, two variables, two actions';
-lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, null, sub {}, null, sub {}, null, sub {} ) } 'correct arguments: three axes, three variables, three actions';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, vars => [[ null, sub {} ]] ) } 'correct arguments: three axes, one variable, one action';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, vars => [[ null, sub {} ], [ null, sub {} ]] ) } 'correct arguments: three axes, two variables, two actions';
+lives_ok { ndbinning( null, 1, 0, 1, null, 1, 0, 1, null, 1, 0, 1, vars => [[ null, sub {} ], [ null, sub {} ], [ null, sub {} ]] ) } 'correct arguments: three axes, three variables, three actions';
 dies_ok { ndbinning() } 'no arguments';
 dies_ok { ndbinning( 0 ) } 'wrong arguments: 0';
 dies_ok { ndbinning( null ) } 'wrong arguments: null';
@@ -73,16 +73,16 @@ $expected = long( 0,2,1 );
 $got = ndbinning( $x, 1, 0, 3 );
 is_pdl $got, $expected, 'example from PDL::histogram';
 $got = ndbinning( $x, 1, 0, 3,
-		  zeroes( long, $x->nelem ), sub { shift->want->nelem } );
+		  vars => [[ zeroes( long, $x->nelem ), sub { shift->want->nelem } ]] );
 is_pdl $got, $expected, 'variable and action specified explicitly';
 $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
 $got = ndbinning( $x => ( 1, 0, 3 ),
-		  $x => sub { shift->want->nelem } );
+		  vars => [[ $x => sub { shift->want->nelem } ]] );
 is_pdl $got, $expected, 'different syntax';
 $expected = long( 0,2,1 );
 $got = ndbinning( $x => ( 1, 0, 3 ),
-		  $x => 'Count' );
+		  vars => [[ $x => 'Count' ]] );
 is_pdl $got, $expected, 'different syntax, using action class name';
 
 # the example from PDL::histogram2d
@@ -113,7 +113,7 @@ $got = ndbinning( $x => (1,1,4) );
 is_pdl $got, $expected, 'binning integer data: base case';
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
 $expected = short( 8,9,1,0,5 );
-$got = ndbinning( $x => (1,2,5), $x => sub { shift->want->nelem } );
+$got = ndbinning( $x => (1,2,5), vars => [[ $x => sub { shift->want->nelem } ]] );
 is_pdl $got, $expected, 'binning integer data: step = 1';
 $expected = long( 18,1,1,1,2 );
 $got = ndbinning( $x => (2,3,5) );
@@ -122,13 +122,13 @@ is_pdl $got, $expected, 'binning integer data: step = 2';
 # more actions & missing/undefined/invalid stuff
 $x = sequence 21;
 $expected = double( 1,4,7,10,13,16,19 );
-$got = ndbinning( $x, 3, 0, 7, $x, sub { shift->selection->avg } );
+$got = ndbinning( $x, 3, 0, 7, vars => [[ $x, sub { shift->selection->avg } ]] );
 is_pdl $got, $expected, 'variable with action = average';
-$got = ndbinning( $x, 3, 0, 7, $x, 'Avg' );
+$got = ndbinning( $x, 3, 0, 7, vars => [[ $x, 'Avg' ]] );
 is_pdl $got, $expected, 'variable with action = average, using action class names';
 $x = 5+sequence 3; # 5 6 7
 $expected = double( 0,0,1,1,1 )->inplace->setvaltobad( 0 );
-$got = ndbinning( $x, 1,3,5, $x, sub { shift->want->nelem || undef } );
+$got = ndbinning( $x, 1,3,5, vars => [[ $x, sub { shift->want->nelem || undef } ]] );
 is_pdl $got, $expected, 'empty bins unset'; # cannot be achieved with action classes
 
 #
