@@ -69,7 +69,7 @@ Revision history for PDL::NDBin
  - never released on CPAN
  - now using Log::Any for logging (Edward Baudrez)
  - started refactoring by moving to object-oriented core implementation, with
-   functional wrappers. This change is not yet visible at the user level, but
+   wrapper functions. This change is not yet visible at the user level, but
    will become so in the next version. (Edward Baudrez)
 
 0.001 2012-06-28
