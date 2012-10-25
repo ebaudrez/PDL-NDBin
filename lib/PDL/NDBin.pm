@@ -211,13 +211,6 @@ Here are some examples of flattening multidimensional bins into one dimension:
 
 =cut
 
-sub create
-{
-	my $class = shift;
-	my $self = bless { axes => [], vars => [] }, $class;
-	return $self;
-}
-
 sub add_axis
 {
 	my $self = shift;
@@ -243,11 +236,10 @@ sub new
 	my $class = shift;
 	my %args = @_;
 	$log->debug( 'new: arguments = ' . Dumper \%args ) if $log->is_debug;
-	PDL::Core::barf( 'no arguments' ) unless %args;
-	my $self = $class->create;
+	my $self = bless { axes => [], vars => [] }, $class;
 	# axes
 	$args{axes} ||= [];		# be sure we can dereference
-	my @axes = @{ $args{axes} } or PDL::Core::barf( 'no axes supplied' );
+	my @axes = @{ $args{axes} };
 	for my $axis ( @axes ) {
 		my $name = shift @$axis;
 		$self->add_axis( name => $name, @$axis );
@@ -985,7 +977,7 @@ sub _random_name { create_uuid( UUID_RANDOM ) }
 sub ndbinning
 {
 	#
-	my $binner = __PACKAGE__->create;
+	my $binner = __PACKAGE__->new;
 
 	# leading arguments are axes and axis specifications
 	#
@@ -1035,7 +1027,7 @@ sub ndbinning
 sub ndbin
 {
 	#
-	my $binner = __PACKAGE__->create;
+	my $binner = __PACKAGE__->new;
 
 	# leading arguments are axes and axis specifications
 	#

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 73;
+use Test::More tests => 74;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -45,7 +45,11 @@ lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 			    vars => [ [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ],
 				      [ 'dummy', sub {} ] ] ) } 'correct arguments: three axes, three variables';
-dies_ok { PDL::NDBin->new() } 'no arguments';
+{
+	my $obj = PDL::NDBin->new;
+	ok $obj, 'no arguments';
+	isa_ok $obj, 'PDL::NDBin';
+}
 dies_ok { PDL::NDBin->new( axes => [ [ 0 ] ] ) } 'no axis name';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy' ] ] ) } 'no specs';
 dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0 ] ] ) } 'wrong specs';
