@@ -1092,6 +1092,48 @@ return values of the progress bar updater. You probably do not want this
 either. By putting the progress bar updater last, you can simply ignore that
 piddle.
 
+=head1 FEATURES
+
+=over 4
+
+=item Unlimited dimensions
+
+=item Arbitrary functions to apply to the bins
+
+=item Accepts data piecewise
+
+Necessary to process data that won't fit in memory at once.
+
+=item Handles integral data as well as floating-point data
+
+=item Can bin multiple variables at once
+
+=item High performance
+
+It can take advantage of actions coded in XS for speed.
+
+=back
+
+=head1 LIMITATIONS
+
+What it doesn't do (yet):
+
+=over 4
+
+=item Variable-width bins
+
+=item Weighted histograms
+
+=item Collecting the actual values in a bin
+
+This would be very useful for plotting or output.
+
+=item Threading
+
+=item Resampling a histogram
+
+=back
+
 =head1 BUGS
 
 None reported.
@@ -1107,6 +1149,128 @@ Edward Baudrez, ebaudrez@cpan.org, 2011.
 =head1 SEE ALSO
 
 L<PDL>, L<PDL::Basic>, L<PDL::Primitive>, the L<PDL::NDBin::Action::> namespace
+
+PDL::NDBin compared to alternative solutions on CPAN:
+
+=head2 hist(), histogram(), histogram2d(), whist(), whistogram(), whistogram2d()
+
+Pros:
+
+=over 4
+
+=item Threading support
+
+=item Faster ?????? seems to be slower now ?!? (see L<Benchmarks>)
+
+=item Support for weighted histograms
+
+=back
+
+Cons:
+
+=over 4
+
+=item No callback support
+
+=item Limited to histograms
+
+=item Limited to two dimensions
+
+=back
+
+PDL::NDBin can handle an arbitrary number of dimensions and any type of
+calculation on the values in the bins that you can express in Perl or XS,
+not only counting the number of elements.
+
+=head2 L<Math::GSL::Histogram>
+
+Ignores out-of-range values (you could simulate that with PDL::NDBin by using
+overflow and underflow bins as described below).
+
+Pros:
+
+=over 4
+
+=item Variable-width bins
+
+=back
+
+Cons:
+
+=over 4
+
+=item Slow
+
+=item Arguably somewhat awkward interface
+
+=back
+
+=head2 L<Math::Histogram>
+
+Does not work with L<PDL>. Partially implemented in XS, partially Perl.
+
+Pros:
+
+=over 4
+
+=item Support for variable-width bins
+
+=item Overflow and underflow bins
+
+PDL::NDBin doesn't have those, although you could create extra bins at either
+end of every dimension to simulate overflow and underflow bins. Remember that
+PDL::NDBin puts data lower than the lowest bin in the lowest bin, and similarly
+for the highest bin.
+
+=back
+
+Cons:
+
+=over 4
+
+=item No bad value support
+
+=item Slower (see L<Benchmarks>)
+
+=item No callback support
+
+=back
+
+=head2 L<Math::SimpleHisto::XS>
+
+Does not work with L<PDL>. Implemented in XS for speed.
+
+Pros:
+
+=over 4
+
+=item Support for variable-width bins
+
+=item Support for resampling
+
+=item Serialization hooks
+
+=back
+
+Cons:
+
+=over 4
+
+=item No bad value support
+
+=item Slower (see L<Benchmarks>)
+
+=item Limited to one dimension
+
+=item No callback support
+
+=item No automatic parameter calculation based on the data
+
+With PDL::NDBin, no need to supply a predetermined minimum, maximum, or step
+size (although you can). PDL::NDBin will calculate those from the data, or from
+the parameters you supply.
+
+=back
 
 =head1 COPYRIGHT and LICENSE
 
