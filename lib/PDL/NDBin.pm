@@ -128,14 +128,12 @@ you'd like this to be very performant, so you can handle several millions of
 data values without hitting memory constraints or running out of time.
 PDL::NDBin is there to handle the details for you, so you can write
 
-	my $average_flux = ndbin( $longitude => { min => -70, max => 70, step => 20 },
-				  $latitude  => { min => -70, max => 70, step => 20 },
-				  vars => [ $flux => 'Avg' ] );
+	my $average_flux = ndbin( $longitude, min => -70, max => 70, step => 20,
+				  $latitude,  min => -70, max => 70, step => 20,
+				  vars => [ [ $flux => 'Avg' ] ] );
 
-to obtain the average of the flux, binned in boxes of 20x20 degrees latitute
+to obtain the average of the flux, binned in boxes of 20x20 degrees latitude
 and longitude.
-
-=head1 SUBROUTINES
 
 =cut
 
@@ -154,60 +152,15 @@ our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin ) ] );
 # the list of valid keys
 my %valid_key = map { $_ => 1 } qw( axes vars );
 
-=head2 ndbinning()
+=head1 METHODS
 
-The low-level function implementing the core loop. This function does minimal
-error checking, and argument parsing is simple. For a high-level interface with
-sophisticated argument parsing and more options, use ndbin().
+=head2 add_axis()
 
-All data equal to or less than the minimum (either supplied or automatically
-determined) will be binned in the lowest bin. All data equal to or larger than
-the maximum (either supplied or automatically determined) will be binned in the
-highest bin. This is a slight asymmetry, as all other bins contain their lower
-bound but not their upper bound. However, it does the right thing when binning
-floating-point data.
+Add an axis to the current object, with optional axis specifications. The
+argument list must be a list of key-value pairs. The name of the axis is
+mandatory.
 
-There are as many output piddles as variables, and exactly one output piddle if
-no variables have been supplied. The output piddles take the type of the
-variables. All values in the output piddles are initialized to the bad value,
-so missing bins can be distinguished from zero.
-
-=head2 Argument parsing
-
-The arguments must be specified (almost) like in histogram() and histogram2d().
-That is, each axis must be followed by its three specifications I<step>, I<min>
-and I<n>, being the step size, the minimum value, and the number of bins,
-respectively. The difference with histogram2d() is that the axis specifications
-follow the piddle immediately, instead of coming at the end.
-
-	ndbinning( $pdl, $step, $min, $n
-		  [ , $pdl, $step, $min, $n ]
-		  [ ... ]
-		  [ , $variable, $action ]
-		  [ , $variable, $action ]
-		  [ ... ] )
-	## TODO!!! must at least mention the concepts of I<axis> and I<variable>
-
-If no variables are supplied, we emulate the behaviour of histogram() and
-histogram2d(), i.e., an I<n>-dimensional histogram is produced. This function,
-although more flexible than the former two, is likely slower. If all you need
-is a one- or two-dimensional histogram, use histogram() and histogram2d()
-instead. Note that, when no variables are supplied, the returned histogram is
-of type I<long>, in contrast with histogram() and histogram2d(). The
-histogramming is achieved by passing an action which simply counts the number
-of elements in the bin by calling nelem().
-
-=head2 Implementation details
-
-In PDL, the first dimension is the contiguous dimension, so we have to work
-back from the last axis to the first when building the flattened bin number.
-
-Here are some examples of flattening multidimensional bins into one dimension:
-
-	(i) = i
-	(i,j) = j*I + i
-	(i,j,k) = (k*J + j)*I + i = k*J*I + j*I + i
-	(i,j,k,l) = ((l*K + k)*J + j)*I + i = l*K*J*I + k*J*I + j*I + i
+	$self->add_axis( name => 'longitude', min => -70, max => 70, n => 14 );
 
 =cut
 
@@ -221,6 +174,15 @@ sub add_axis
 	push @{ $self->{axes} }, \%params;
 }
 
+=head2 add_var()
+
+Add a variable to the current object. The argument list must be a list of
+key-value pairs. The name of the variable is mandatory.
+
+	$self->add_var( name => 'flux', action => 'Avg' );
+
+=cut
+
 sub add_var
 {
 	my $self = shift;
@@ -230,6 +192,60 @@ sub add_var
 	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
 	push @{ $self->{vars} }, \%params;
 }
+
+=head2 new()
+
+Constructor for a PDL::NDBin object. The argument list must be a list of
+key-value pairs. No arguments are required, but you will want to add at least
+one axis eventually to do meaningful work.
+
+	my $obj = PDL::NDBin->new( axes => [ [ 'x', min => -1, max => 1, step => .1 ],
+					     [ 'y', min => -1, max => 1, step => .1 ] ],
+				   vars => [ [ 'F', 'Count' ] ] );
+
+The accepted keys are the following:
+
+=over 4
+
+=item C<axes>
+
+Specifies the axes along which to bin. The axes are supplied as an arrayref
+containing anonymous arrays, one per axis, as follows:
+
+	axes => [
+		  [ $name1, $key11 => $value11, $key12 => $value12, ... ],
+		  [ $name2, $key21 => $value21, $key22 => $value22, ... ],
+		  ...
+		]
+
+Only the name is required. All other specifications are optional and will be
+determined automatically as required. Note that you cannot specify all
+specifications at the same time, because some may conflict.
+
+At least one axis will eventually be required, although it needn't be specified
+at constructor time, and can be added later with add_axis(), if desired.
+
+=item C<vars>
+
+Specifies the values to bin. The variables are supplied as an arrayref
+containing anonymous arrays, one per variable, as follows:
+
+	vars => [
+		  [ $name1 => $action1 ],
+		  [ $name2 => $action2 ],
+		  ...
+		]
+
+Here, both the name and the action are required. In order to produce a
+histogram, supply C<'Count'> as the action.
+
+No variables are required (an I<n>-dimensional histogram is produced if no
+variables are supplied), but they can be specified at constructor time, or at a
+later time with add_var() if desired.
+
+=back
+
+=cut
 
 sub new
 {
@@ -257,8 +273,18 @@ sub new
 	return $self;
 }
 
-# read-only accessors to the axes and variables; return lists instead of array
-# references in list context
+=head2 axes()
+
+Read-only accessor to retrieve the axes. It will return a list in list context,
+and an array reference in scalar context.
+
+=head2 vars()
+
+Read-only accessor to retrieve the variables. It will return a list in list context,
+and an array reference in scalar context.
+
+=cut
+
 sub axes { wantarray ? @{ $_[0]->{axes} } : $_[0]->{axes} }
 sub vars { wantarray ? @{ $_[0]->{vars} } : $_[0]->{vars} }
 
@@ -295,6 +321,8 @@ sub _make_instance
 =head2 feed()
 
 Set the piddles that will eventually be used for the axes and variables.
+Arguments must be specified as key-value pairs, they keys being the name, and
+the values being the piddle for every piddle to is to be set.
 
 Note that not all piddles need be set in one call. This function can be called
 repeatedly to set all piddles. This can be very useful when data must be read
@@ -353,6 +381,13 @@ sub _check_pdl_length
 	}
 }
 
+=head2 autoscale()
+
+Determine missing parameters for the axes automatically. It is not usually
+required to call this method, as it is called automatically by process().
+
+=cut
+
 sub autoscale
 {
 	my $self = shift;
@@ -387,6 +422,17 @@ sub labels
 	} $self->axes;
 	return wantarray ? @list : \@list;
 }
+
+=head2 process()
+
+The core method. The actual piddles to be used for the axes and variables can
+be supplied to this function, although if all piddles have already been
+supplied, the argument list can be empty. The argument list is the same as the
+one of feed(), i.e., a list of key-value pairs specifying name and piddle.
+
+process() returns $self for chained method calls.
+
+=cut
 
 sub process
 {
@@ -480,13 +526,7 @@ sub _consume (&\@)
 	return splice @$list;
 }
 
-=head2 expand_axes()
-
-For internal use.
-
-=cut
-
-sub expand_axes
+sub _expand_axes
 {
 	my ( @out, $hash, @num );
 	while( @_ ) {
@@ -619,158 +659,212 @@ sub _auto_axis
 	}
 }
 
+# generate a random, hopefully unique name for a pdl
+sub _random_name { create_uuid( UUID_RANDOM ) }
+
+=head1 WRAPPER FUNCTIONS
+
+=head2 ndbinning()
+
+Wraps all calls needed to get output out of PDL::NDBin in one function. May be
+the most convenient way to work with PDL::NDBin for simple cases.
+
+The arguments must be specified (almost) like in histogram() and histogram2d().
+That is, each axis must be followed by its three specifications I<step>, I<min>
+and I<n>, being the step size, the minimum value, and the number of bins,
+respectively. The difference with histogram2d() is that the axis specifications
+follow the piddle immediately, instead of coming at the end.
+
+	ndbinning( $pdl, $step, $min, $n, < $pdl, $step, $min, $n, ... >
+		  < vars => [ [ $variable, $action ], [ $variable, $action ], ... ] > )
+
+If no variables are supplied, the behaviour of histogram() and histogram2d() is
+emulated, i.e., an I<n>-dimensional histogram is produced. This function,
+although more flexible than the former two, is likely slower. If all you need
+is a one- or two-dimensional histogram, use histogram() and histogram2d()
+instead. Note that, when no variables are supplied, the returned histogram is
+of type I<long>, in contrast with histogram() and histogram2d(). The
+histogramming is achieved by passing an action which simply counts the number
+of elements in the bin.
+
+Unlike the output of process(), the resulting piddles are output as an array
+reference, in the same order as the variables passed in. There are as many
+output piddles as variables, and exactly one output piddle if no variables have
+been supplied. The output piddles take the type of the variables. All values in
+the output piddles are initialized to the bad value, so missing bins can be
+distinguished from zero.
+
+=cut
+
+sub ndbinning
+{
+	#
+	my $binner = __PACKAGE__->new;
+
+	# leading arguments are axes and axis specifications
+	#
+	# PDL overloads the `eq' and `ne' operators; by checking for a PDL
+	# first, we avoid (invalid) comparisons between piddles and strings in
+	# the `grep'
+	my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_;
+
+	# consume and process axes
+	# axes require three numerical specifications following it
+	while( @leading > 3 && eval { $leading[0]->isa('PDL') } && ! grep ref, @leading[ 1 .. 3 ] ) {
+		my( $pdl, $step, $min, $n ) = splice @leading, 0, 4;
+		$binner->add_axis( name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n );
+	}
+	if( @leading ) { PDL::Core::barf( "error parsing arguments in `@leading'" ) }
+
+	# remaining arguments are key => value pairs
+	my $args = { @_ };
+	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
+	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
+
+	# axes
+	$args->{axes} ||= [];
+	my @axes = @{ $args->{axes} };
+	for my $axis ( @axes ) {
+		my $pdl = shift @$axis;
+		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
+	}
+
+	# variables
+	$args->{vars} ||= [];
+	for my $var ( @{ $args->{vars} } ) {
+		if( @$var == 2 ) {
+			my( $pdl, $action ) = @$var;
+			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
+		}
+		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+	}
+
+	#
+	$binner->process;
+	my $output = $binner->output;
+	my @result = map $output->{ $_->{name} }, @{ $binner->vars };
+	return wantarray ? @result : $result[0];
+}
+
 =head2 ndbin()
 
-A high-level function with sophisticated argument parsing.
+Wraps all calls needed to get output out of PDL::NDBin in one function. May be
+the most convenient way to work with PDL::NDBin for simple cases.
 
-All data equal to or less than the minimum (either supplied or automatically
-determined) will be binned in the lowest bin. All data equal to or larger than
-the maximum (either supplied or automatically determined) will be binned in the
-highest bin. This is a slight asymmetry, as all other bins contain their lower
-bound but not their upper bound. However, it does the right thing when binning
-floating-point data.
-
-=head2 Argument parsing
-
-The arguments to ndbin() should be specified as one or more key-value pairs:
-
-	ndbin(  KEY => VALUE
-	       [ , KEY => VALUE ]
-	       [ ... ] );
-
-The argument list can optionally be enclosed by braces (i.e., an anonymous
-hash). The recognized keys are C<axes> and C<vars>. They are described in more
-detail below. The keys must be paired with an array reference.
-
-For convenience, and for compatibility with hist(), a lot of abbreviations and
-shortcuts are allowed, though. It is allowed to omit the key C<axes> and the
-array reference, and to specify the axes followed by their specifications as
-ordinary parameters, provided they come first in the argument list. Thus, it is
-allowed to write
+The arguments must be specified like in hist(). That is, each axis may be
+followed by at most three specifications I<min>, I<max>, and I<step>, being the
+the minimum value, maximum value, and the step size, respectively.
 
 	ndbin(  $pdl [ , $min [ , $max [ , $step ] ] ]
 	       [ , $pdl [ , $min [ , $max [ , $step ] ] ] ]
 	       [ ... ]
-	       [ , KEY => VALUE ]
-	       [ , KEY => VALUE ]
-	       [ ... ]
+	       [ , vars => [ [ $variable, $action ], ... ] ]
 
-Each of the specifications I<min>, I<max> and I<step> are optional; only the
-piddles are required. Any subsequent keys, such as C<vars>, must be specified
-again as key-value pairs. More abbreviations and shortcuts are allowed inside
-the values of C<axes> and C<vars>. For more information, refer to the
-description of the keys below. See also L<Usage examples> below.
+If no variables are supplied, the behaviour of hist() is emulated, i.e., an
+I<n>-dimensional histogram is produced. This function, although more flexible
+than the other, is likely slower. If all you need is a one-dimensional
+histogram, use hist() instead. Note that, when no variables are supplied, the
+returned histogram is of type I<long>, in contrast with hist(). The
+histogramming is achieved by passing an action which simply counts the number
+of elements in the bin.
 
-=head2 Valid keys
+Unlike the output of process(), the resulting piddles are output as an array
+reference, in the same order as the variables passed in. There are as many
+output piddles as variables, and exactly one output piddle if no variables have
+been supplied. The output piddles take the type of the variables. All values in
+the output piddles are initialized to the bad value, so missing bins can be
+distinguished from zero.
 
-=over 4
+=cut
 
-=item C<axes>
+sub ndbin
+{
+	#
+	my $binner = __PACKAGE__->new;
 
-Specifies the axes along which to bin. The axes are supplied as an arrayref
-containing anonymous hashes, as follows:
+	# leading arguments are axes and axis specifications
+	#
+	# PDL overloads the `eq' and `ne' operators; by checking for a PDL
+	# first, we avoid (invalid) comparisons between piddles and strings in
+	# the `grep'
+	if( my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
+		my @axes = _expand_axes( @leading );
+		$binner->add_axis( name => _random_name, %$_ ) for @axes;
+	}
 
-	axes => [
-			{
-				pdl => $pdl,
-				step => $step,
-				min => $min,
-				max => $max,
-				n => $n,
-				round => $round
-			},
-			...
-		]
+	# remaining arguments are key => value pairs
+	my $args = { @_ };
+	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
+	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
-Only the piddle is required. All other specifications are optional and will be
-determined automatically as required. Note that you cannot specify all
-specifications at the same time, because some may conflict.
+	# axes
+	$args->{axes} ||= [];
+	my @axes = @{ $args->{axes} };
+	for my $axis ( @axes ) {
+		my $pdl = shift @$axis;
+		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
+	}
 
-As a further convenience, the hashes may be omitted, and specifications may be
-written as follows:
+	# variables
+	$args->{vars} ||= [];
+	for my $var ( @{ $args->{vars} } ) {
+		if( @$var == 2 ) {
+			my( $pdl, $action ) = @$var;
+			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
+		}
+		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+	}
 
-	axes => [ $pdl, $min, $max, $step, $pdl, $min, $max, $step, ... ]
+	$binner->process;
+	my $output = $binner->output;
+	my @result = map $output->{ $_->{name} }, @{ $binner->vars };
+	return wantarray ? @result : $result[0];
+}
 
-Again all specifications other than the piddle itself, i.e., I<min>, I<max> and
-I<step>, are optional. Their order, when given, is important, though.
+1;
 
-At least one axis is required.
-
-=item C<vars>
-
-Specifies the values to bin. The variables are supplied as an arrayref
-containing anonymous hashes, as follows:
-
-	vars => [
-			{
-				pdl => $pdl,
-				action => $action
-			},
-			...
-		]
-
-Only the piddle is required. The action may be omitted and will be substituted
-by a counting function in order to produce a histogram.
-
-As a further convenience, the hashes may be omitted, and the variables may be
-given as follows:
-
-	vars => [ $pdl, $action, $pdl, $action, ... ]
-
-The action may again be omitted.
-
-There can be zero or more variables. If no variables are supplied, the
-behaviour of hist() is emulated, i.e., an I<n>-dimensional histogram is
-produced. This function, although more flexible than the former, is likely
-slower. If all you need is a one-dimensional histogram, use hist() instead.
-Note that, when no variables are supplied, the returned histogram is of type
-I<long>, in contrast with hist().
-
-=back
-
-=head2 Usage examples
+=head1 USAGE EXAMPLES
 
 A one-dimensional histogram of height of individuals, binned between 0 and 2
 metres, with the step size determined automatically:
 
 	my $histogram = ndbin(
-		axes => [ { pdl => $height, min => 0, max => 2 } ]
+		axes => [ [ $height, min => 0, max => 2 ] ]
 	);
 
-This example can be expressed concisely using the abbreviated form:
+This example can be expressed concisely using the interface that is compatible
+with hist():
 
 	my $histogram = ndbin( $height, 0, 2 );
 
 If you wanted to specify the step size manually, you can do so by adding one
-key-value pair to the hash in the first example, or by just adding the step
+key-value pair to the first example, or by just adding the step
 size in second example:
 
 	my $histogram = ndbin(
-		axes => [ { pdl => $height,
-			    min => 0, max => 2, step => 0.1 } ]
+		axes => [ [ $height, min => 0, max => 2, step => 0.1 ] ]
 	);
 	my $histogram = ndbin( $height, 0, 2, 0.1 );
 
-Not all parameters can be specified in the abbreviated interface, however. To
+Not all parameters can be specified in the compatibility interface, however. To
 have your minimum and maximum rounded before binning requires using the full
 notation. For example, to get a one-dimensional histogram of particle size,
 with the sizes rounded to 0.01, the step size equal to 0.01, and minimum and
 maximum determined automatically, you must write:
 
 	my $histogram = ndbin(
-		axes => [ { pdl => $particle_size,
-			    round => 0.01, step => 0.01 } ]
+		axes => [ [ $particle_size, round => 0.01, step => 0.01 ] ]
 	);
 
 Two- or multidimensional histograms are specified by enumerating the axes one
-by one. The coordinates must be followed immediately by their parameters.
+by one.
 
 	my $histogram = ndbin(
-		axes => [ { pdl => $longitude },
-			  { pdl => $latitude } ]
+		axes => [ [ $longitude ],
+			  [ $latitude  ] ]
 	);
 
-$histogram will be a two-dimensional piddle! Using the abbreviated interface,
+$histogram will be a two-dimensional piddle! Using the compatibility interface,
 this can be written as:
 
 	my $histogram = ndbin( $longitude, $latitude );
@@ -782,40 +876,61 @@ Extra parameters for the axes are specified as follows:
 
 A rather complete example of the interface:
 
-	ndbin( axes => [ { pdl => $longitude, min => -70, max => 70, step => 20 },
-			 { pdl => $latitude,  min => -70, max => 70, step => 20 } ],
-	       vars => [ { pdl => $ceres_flux, action => \&do_ceres_flux },
-			 { pdl => $gl_flux,    action => \&do_gl_flux    },
-			 { pdl => $gerb_flux,  action => \&do_gerb_flux  } ],
+	ndbin( axes => [ [ $longitude, min => -70, max => 70, step => 20 ],
+			 [ $latitude,  min => -70, max => 70, step => 20 ] ],
+	       vars => [ [ $ceres_flux, \&do_ceres_flux ],
+			 [ $gl_flux,    \&do_gl_flux    ],
+			 [ $gerb_flux,  \&do_gerb_flux  ] ],
 	     );
 
 Note that there is no assignment of the return value (in fact, there is none).
 The actions are supposed to have meaningful side-effects. To achieve the same
-using the abbreviated interface, write:
+using the compatibility interface, write:
 
 	ndbin( $longitude, -70, 70, 20,
 	       $latitude,  -70, 70, 20,
-	       vars => [ $ceres_flux, \&do_ceres_flux,
-			 $gl_flux,    \&do_gl_flux,
-			 $gerb_flux,  \&do_gerb_flux ],
+	       vars => [ [ $ceres_flux, \&do_ceres_flux ],
+			 [ $gl_flux,    \&do_gl_flux    ],
+			 [ $gerb_flux,  \&do_gerb_flux  ] ],
 	     );
 
 More simple examples:
 
 	my $histogram = ndbin( $x );
 	my $histogram = ndbin( $x, $y );
-	my $histogram = ndbin( axes => [ { pdl => $x, min => 0, max => 10, n => 5 } ] );
+	my $histogram = ndbin( axes => [ [ $x, min => 0, max => 10, n => 5 ] ] );
 
 And an example where the result does not contain the count, but rather the
 averages of the binned fluxes:
 
 	my $result = ndbin(
-			axes => [ { pdl => $longitude, round => 10, step => 20 },
-				  { pdl => $latitude,  round => 10, step => 20 } ],
-			vars => [ $flux => sub { shift->selection->avg } ],
+			axes => [ [ $longitude, round => 10, step => 20 ],
+				  [ $latitude,  round => 10, step => 20 ] ],
+			vars => [ [ $flux => sub { shift->selection->avg } ] ],
 		     );
 
-=cut
+=head1 IMPLEMENTATION DETAILS
+
+=head2 Lowest and highest bin
+
+All data equal to or less than the minimum (either supplied or automatically
+determined) will be binned in the lowest bin. All data equal to or larger than
+the maximum (either supplied or automatically determined) will be binned in the
+highest bin. This is a slight asymmetry, as all other bins contain their lower
+bound but not their upper bound. However, it does the right thing when binning
+floating-point data.
+
+=head2 Flattening multidimensional bin numbers
+
+In PDL, the first dimension is the contiguous dimension, so we have to work
+back from the last axis to the first when building the flattened bin number.
+
+Here are some examples of flattening multidimensional bins into one dimension:
+
+	(i) = i
+	(i,j) = j*I + i
+	(i,j,k) = (k*J + j)*I + i = k*J*I + j*I + i
+	(i,j,k,l) = ((l*K + k)*J + j)*I + i = l*K*J*I + k*J*I + j*I + i
 
 =head2 Actions
 
@@ -895,14 +1010,14 @@ even if the bin is empty and not processed further.
 =head3 Range
 
 The range, when not given explicitly, is calculated from the data by calling
-min() and max(). ndbin() will throw an exception if the data range is zero.
+min() and max(). An exception will be thrown if the data range is zero.
 
 =head3 Number of bins
 
-The number of bins I<n>, when not given explicitly, is determined automatically
-by ndbin(). If the step size is not defined, ndbin() assumes the default
-behaviour of hist(). If the number of elements of data is 100 or less,
-the number of bins equals the number of elements. Otherwise, the number of bins
+The number of bins I<n>, when not given explicitly, is determined
+automatically. If the step size is not defined, PDL::NDBin assumes the default
+behaviour of hist(). If the number of elements of data is 100 or less, the
+number of bins equals the number of elements. Otherwise, the number of bins
 defaults to 100.
 
 If the step size is defined and positive, the number of bins is calculated from
@@ -919,7 +1034,7 @@ through 4.99...; to bin a list of data values with, say, I<min> = 3 and I<max>
 = 8, we must consider the range to be 9-3 = 6. A step size of 3 would yield 2
 bins, one containing the values (3, 4, 5), and another containing the values
 (6, 7, 8). However, I<n> calculated in this way may well be fractional. When
-I<n> is ultimately used in ndbinning(), it is converted to I<int> by
+I<n> is ultimately used in the binning, it is converted to I<int> by
 truncating. To have sufficient bins, I<n> must be rounded up to the next
 integer. The correct formula for calculating the number of bins is therefore
 
@@ -933,7 +1048,7 @@ following formula is how I<n> is calculated by the code:
 
 Using the following identity from
 L<http://en.wikipedia.org/wiki/Floor_and_ceiling_functions>, both formulas can
-be proved to be equivalent.
+be proved to be equivalent:
 
 	ceil( x/y ) = floor( (x+y-1)/y )
 
@@ -959,7 +1074,7 @@ than one, however. If this happens, there are more bins than there are distinct
 numbers in the data, and the function will abort.
 
 Note that when the number of I<n> is not given either, a default value is used
-by ndbin(), as described above.
+by PDL::NDBin, as described above.
 
 =head2 Probing PDL::NDBin's parameters
 
@@ -970,105 +1085,6 @@ by ndbin(), as described above.
 	my $N = List::Util::reduce { our $a * our $b } map { $_->{n} } $binner->axes;
 
 =cut
-
-# generate a random, hopefully unique name for a pdl
-sub _random_name { create_uuid( UUID_RANDOM ) }
-
-sub ndbinning
-{
-	#
-	my $binner = __PACKAGE__->new;
-
-	# leading arguments are axes and axis specifications
-	#
-	# PDL overloads the `eq' and `ne' operators; by checking for a PDL
-	# first, we avoid (invalid) comparisons between piddles and strings in
-	# the `grep'
-	my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_;
-
-	# consume and process axes
-	# axes require three numerical specifications following it
-	while( @leading > 3 && eval { $leading[0]->isa('PDL') } && ! grep ref, @leading[ 1 .. 3 ] ) {
-		my( $pdl, $step, $min, $n ) = splice @leading, 0, 4;
-		$binner->add_axis( name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n );
-	}
-	if( @leading ) { PDL::Core::barf( "error parsing arguments in `@leading'" ) }
-
-	# remaining arguments are key => value pairs
-	my $args = { @_ };
-	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
-	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
-
-	# axes
-	$args->{axes} ||= [];
-	my @axes = @{ $args->{axes} };
-	for my $axis ( @axes ) {
-		my $pdl = shift @$axis;
-		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
-	}
-
-	# variables
-	$args->{vars} ||= [];
-	for my $var ( @{ $args->{vars} } ) {
-		if( @$var == 2 ) {
-			my( $pdl, $action ) = @$var;
-			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
-		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
-	}
-
-	#
-	$binner->process;
-	my $output = $binner->output;
-	my @result = map $output->{ $_->{name} }, @{ $binner->vars };
-	return wantarray ? @result : $result[0];
-}
-
-sub ndbin
-{
-	#
-	my $binner = __PACKAGE__->new;
-
-	# leading arguments are axes and axis specifications
-	#
-	# PDL overloads the `eq' and `ne' operators; by checking for a PDL
-	# first, we avoid (invalid) comparisons between piddles and strings in
-	# the `grep'
-	if( my @leading = _consume { eval { $_->isa('PDL') } || ! $valid_key{ $_ } } @_ ) {
-		my @axes = expand_axes( @leading );
-		$binner->add_axis( name => _random_name, %$_ ) for @axes;
-	}
-
-	# remaining arguments are key => value pairs
-	my $args = { @_ };
-	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
-	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
-
-	# axes
-	$args->{axes} ||= [];
-	my @axes = @{ $args->{axes} };
-	for my $axis ( @axes ) {
-		my $pdl = shift @$axis;
-		$binner->add_axis( name => _random_name, pdl => $pdl, @$axis );
-	}
-
-	# variables
-	$args->{vars} ||= [];
-	for my $var ( @{ $args->{vars} } ) {
-		if( @$var == 2 ) {
-			my( $pdl, $action ) = @$var;
-			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
-		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
-	}
-
-	$binner->process;
-	my $output = $binner->output;
-	my @result = map $output->{ $_->{name} }, @{ $binner->vars };
-	return wantarray ? @result : $result[0];
-}
-
-1;
 
 =head1 USEFUL EXTRA'S
 
