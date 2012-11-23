@@ -249,7 +249,10 @@ if( $output ) {
 print "Norm of difference between output piddles:\n";
 my $table = Text::TabularDisplay->new( '', keys %output );
 for my $row ( keys %output ) {
-	$table->add( $row, map { my $diff = $output{ $row } - $output{ $_ }; $row eq $_ ? '-' : $diff->abs->max } keys %output );
+	my @elem = map { my $diff = eval { $output{ $row } - $output{ $_ } };
+		         if( $@ ) { '??' }
+			 else { $row eq $_ ? '-' : $diff->abs->max } } keys %output;
+	$table->add( $row, @elem );
 }
 print $table->render, "\n";
 my $nelem = eval { $nc->nelem };
