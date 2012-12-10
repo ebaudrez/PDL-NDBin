@@ -24,6 +24,7 @@ my( $opt, $usage ) = describe_options(
 	[ 'multi|m',        'engage multi-mode to process multiple files' ],
 	[ 'old-flattening', 'use the old (pure-Perl) way of flattening' ],
 	[ 'output|o',       'do output actual return value from functions' ],
+	[ 'preload|p=s',    'comma-separated list of data fields to preload before running the benchmark' ],
 	[],
 	[ 'help', 'show this help screen' ],
 );
@@ -57,6 +58,16 @@ if( $opt->old_flattening ) {
 		$binned->inplace->clip( 0, $n-1 );
 		$idx * $n + $binned
 	} 
+}
+
+#
+if( $opt->preload ) {
+	print "Trying to preload data...\n";
+	for my $preload ( split /,/ => $opt->preload ) {
+		$nc->$preload;
+		print "Loaded '$preload'.\n";
+	}
+	print "Preload done.\n";
 }
 
 #
