@@ -57,7 +57,8 @@ run -b10     -i50   -f coderef,class                                            
 run -b10     -i5    -f coderef,class                                              --preload lat,lon,flux                tools/lib/nosync/data_33M.nc
 
 # expose performance hit with old flattening with large bin numbers
-#run -b20     -i50   -f count,histogram --old-flattening                           --preload lat                         tools/lib/nosync/data_2M.nc
-#run -b40     -i50   -f count,histogram --old-flattening                           --preload lat                         tools/lib/nosync/data_2M.nc
+run -b10     -i50   -f count,histogram --old-flattening                           --preload lat                         tools/lib/nosync/data_2M.nc
+run -b50     -i50   -f count,histogram --old-flattening                           --preload lat                         tools/lib/nosync/data_2M.nc
+run -b100    -i50   -f count,histogram --old-flattening                           --preload lat                         tools/lib/nosync/data_2M.nc
 
 # vim:set filetype=sh:
