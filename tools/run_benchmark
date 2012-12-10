@@ -50,6 +50,7 @@ run -b10     -i5    -f count2d,histogram2d                                      
 
 # run on multiple files
 run -b50     -i5    -f count_multi,histogram_multi -m                                                                   tools/lib/nosync/multi/*.nc
+run -b50     -i5    -f count_multi2d,histogram_multi2d -m                                                               tools/lib/nosync/multi/*.nc
 
 # show the performance difference between coderefs and XS-optimized classes
 run -b10     -i1500 -f coderef,class                                              --preload lat,lon,flux                tools/lib/nosync/data_66k.nc
