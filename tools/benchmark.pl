@@ -9,47 +9,31 @@ use PDL;
 use PDL::NetCDF;
 use PDL::NDBin qw( ndbinning );
 use Path::Class;
-use Getopt::Long qw( :config bundling );
+use Getopt::Long::Descriptive;
 use Text::TabularDisplay;
 use Math::Histogram;
 use Math::SimpleHisto::XS;
 use Math::GSL::Histogram qw( :all );
 use Math::GSL::Histogram2D qw( :all );
 
-my @functions;
-my $iter = 1;
-my $multi;
-my $n = 25;
-my $old_flattening;
-my $output;
-my $usage = <<EOF;
-Usage:  $0  [ options ]  input_file
-        $0  --multi  [ options ]  input_file  [ input_file... ]
-
-Options:
-  --bins     | -b <n>     use <n> bins along every dimension (default: $n)
-  --function | -f <list>  select functions to benchmark from comma-separated <list>;
-                          option may be used more than once
-  --iters    | -i <n>     perform <n> iterations for better accuracy (default: $iter)
-  --multi    | -m         engage multi-mode to process multiple files
-  --old-flattening        use the old (pure-Perl) way of flattening
-  --output   | -o         do output actual return value from functions
-
-EOF
-GetOptions( 'bins|b=i'       => \$n,
-	    'function|f=s'   => \@functions,
-	    'iter|i=i'       => \$iter,
-	    'multi|m'        => \$multi,
-	    'old-flattening' => \$old_flattening,
-	    'output|o'       => \$output ) or die $usage;
-
-unless( @functions ) { @functions = qw( histogram want count ) }
-@functions = split /,/ => join ',' => @functions;
-my %selected = map { $_ => 1 } @functions;
+my( $opt, $usage ) = describe_options(
+	'%c %o input_file [ input_file... ]',
+	[ 'bins|b=i',       'how many bins to use along every dimension' ],
+	[ 'functions|f=s',  'comma-separated list of functions to benchmark' ],
+	[ 'iterations|i=i', 'how many iterations to perform (for better accuracy)' ],
+	[ 'multi|m',        'engage multi-mode to process multiple files' ],
+	[ 'old-flattening', 'use the old (pure-Perl) way of flattening' ],
+	[ 'output|o',       'do output actual return value from functions' ],
+	[],
+	[ 'help', 'show this help screen' ],
+);
+print( $usage->text ), exit if $opt->help;
+my $n = $opt->bins;
+my %selected = map { $_ => 1 } split /,/ => $opt->functions;
 
 #
 my $file;
-if( $multi ) {
+if( $opt->multi ) {
 	@ARGV or die $usage;
 }
 else {
@@ -65,7 +49,7 @@ my( $min, $max, $step ) = ( -70, 70, 140/$n );
 my $nc = OnDemand->new( $file );
 
 #
-if( $old_flattening ) {
+if( $opt->old_flattening ) {
 	no warnings 'redefine';
 	*PDL::_flatten_into = sub (;@) {
 		my( $pdl, $idx, $step, $min, $n ) = @_;
@@ -223,7 +207,7 @@ my %functions = (
 );
 
 my %output;
-my $results = timethese( $iter,
+my $results = timethese( $opt->iterations,
 			 { map  { my $f = $_; $_ => sub { $output{ $f } = $functions{ $f }->() } }
 			   grep { $selected{ $_ } }
 			   keys  %functions
@@ -240,7 +224,7 @@ for my $key ( keys %output ) {
 	if( ref $val eq 'ARRAY' ) { $output{ $key } = pdl( $val ) }
 }
 
-if( $output ) {
+if( $opt->output ) {
 	print "Actual output:\n";
 	while( my( $func, $out ) = each %output ) { printf "%20s: %s\n", $func, $out }
 	print "\n";
