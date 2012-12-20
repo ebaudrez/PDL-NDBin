@@ -88,7 +88,7 @@ my %functions = (
 					vars => [[ lat => sub { shift->selection->nelem } ]] );
 				$binner->process( lat => $nc->lat )->output->{lat}
 			},
-	count        => sub {
+	PND          => sub {
 				my $binner = PDL::NDBin->new(
 					axes => [[ lat => (step=>$step,min=>$min,n=>$n) ]],
 					vars => [[ lat => 'Count' ]] );
@@ -127,7 +127,7 @@ my %functions = (
 					vars => [[ lat => sub { shift->want->nelem } ]] );
 				$binner->process( lat => $nc->lat, lon => $nc->lon )->output->{lat}
 			},
-	count2d      => sub {
+	PND2d        => sub {
 				my $binner = PDL::NDBin->new(
 					axes => [[ lat => (step=>$step,min=>$min,n=>$n) ], [ lon => (step=>$step,min=>$min,n=>$n) ]],
 					vars => [[ lat => 'Count' ]] );
@@ -177,7 +177,7 @@ my %functions = (
 				}
 				$hist
 			},
-	'count_multi' =>
+	'PND_multi' =>
 			sub {
 				my $binner = PDL::NDBin->new(
 					axes => [[ lat => (step=>$step,min=>$min,n=>$n) ]],
@@ -202,7 +202,7 @@ my %functions = (
 				}
 				$hist
 			},
-	'count_multi2d' =>
+	'PND_multi2d' =>
 			sub {
 				my $binner = PDL::NDBin->new(
 					axes => [[ lat => (step=>$step,min=>$min,n=>$n) ], [ lon => (step=>$step,min=>$min,n=>$n) ]],
