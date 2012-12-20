@@ -1166,9 +1166,14 @@ Edward Baudrez, ebaudrez@cpan.org, 2011.
 
 L<PDL>, L<PDL::Basic>, L<PDL::Primitive>, the L<PDL::NDBin::Action::> namespace
 
-PDL::NDBin compared to alternative solutions on CPAN:
+Some of the most important features of PDL::NDBin aren't found in other modules
+on CPAN. But there are a few histogramming libraries on CPAN. This is how
+PDL::NDBin compares to alternative solutions on CPAN in terms of features.
 
 =head2 hist(), histogram(), histogram2d(), whist(), whistogram(), whistogram2d()
+
+These functions are provided by the PDL distribution. They obviously operate on
+piddles only, which could be considered both an advantage or a disadvantage.
 
 Pros:
 
@@ -1176,11 +1181,11 @@ Pros:
 
 =item Threading support
 
-=item Faster ?????? seems to be slower now ?!? (see L<Benchmarks>)
+=item Faster
 
 =item Support for weighted histograms
 
-=item Support for rebinning with rebin()
+=item Support for resampling/rebinning with rebin()
 
 =back
 
@@ -1197,13 +1202,21 @@ Cons:
 =back
 
 PDL::NDBin can handle an arbitrary number of dimensions and any type of
-calculation on the values in the bins that you can express in Perl or XS,
-not only counting the number of elements.
+calculation on the values in the bins that you can express in Perl or XS, not
+only counting the number of elements.
 
 =head2 L<Math::GSL::Histogram>
 
-Ignores out-of-range values (you could simulate that with PDL::NDBin by using
-overflow and underflow bins as described below).
+Math::GSL::Histogram is actually a wrapper around the GSL library, which is
+written in C. It does not operate on piddles. It does not seem to have a facility to
+accept multiple data points at once, XXX CHECK
+It accepts only ???
+but instead requires the user to input the data points one by one. Similarly, to produce the final histogram, the
+bins must be queried one by one.
+
+Math::GSL::Histogram ignores out-of-range values. To simulate this behaviour
+with PDL::NDBin, define two additional bins at either extreme of every
+dimension, and disregard the values in these additional bins.
 
 Pros:
 
@@ -1294,10 +1307,10 @@ the parameters you supply.
 
 =head2 One-dimensional histograms
 
-This section aims to give an idea of the performance of PDL::NDBin. Most of the
-features of PDL::NDBin aren't found in other modules on CPAN. But there are a
-few histogramming modules on CPAN, and it is interesting to examine how well
-PDL::NDBin does in comparison.
+This section aims to give an idea of the performance of PDL::NDBin. Some of the
+most important features of PDL::NDBin aren't found in other modules on CPAN.
+But there are a few histogramming modules on CPAN, and it is interesting to
+examine how well PDL::NDBin does in comparison.
 
 I've run a number of tests with PDL version 0.003 on a laptop with an Intel i3
 CPU running at 2.40 GHz, and on a desktop with an Intel i7 CPU running at 2.80
