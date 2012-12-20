@@ -1180,6 +1180,8 @@ Pros:
 
 =item Support for weighted histograms
 
+=item Support for rebinning with rebin()
+
 =back
 
 Cons:
