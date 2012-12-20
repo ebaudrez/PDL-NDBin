@@ -4,6 +4,15 @@ function run
 	perl tools/benchmark.pl $*
 }
 
+# collect version info
+module_info PDL
+# Note that PDL::NDBin version information is most likely not correct, because
+# it will be the version of the installed module.
+#module_info PDL::NDBin
+module_info Math::Histogram
+module_info Math::SimpleHisto::XS
+module_info Math::GSL
+
 # GOALS:
 # 1. compare the performance of PDL::NDBin with competing libraries for the
 #    construction of a one- and two-dimensional histogram
