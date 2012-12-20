@@ -32,15 +32,15 @@ run -b100    -i5    -f count,hist,histogram                                     
 # determination of the number of bins: due to round-off in the calculation of
 # the number of bins based on the step size, hist() uses only 999 bins, making
 # the comparisons fail
-run -b1000   -i1500 -f count,ndbinning,histogram,MH,MSHXS                         --preload lat,lat_array,lat_ref_array tools/lib/nosync/data_66k.nc
-run -b1000   -i50   -f count,histogram,MH,MSHXS                                   --preload lat,lat_array,lat_ref_array tools/lib/nosync/data_2M.nc
+run -b1000   -i1500 -f count,ndbinning,histogram,MH,MSHXS,MGH                     --preload lat,lat_array,lat_ref_array tools/lib/nosync/data_66k.nc
+run -b1000   -i50   -f count,histogram,MH,MSHXS,MGH                               --preload lat,lat_array,lat_ref_array tools/lib/nosync/data_2M.nc
 run -b1000   -i5    -f count,histogram                                            --preload lat                         tools/lib/nosync/data_33M.nc
 # MH doesn't like 10000 or more bins (segfaults), so it is excluded from the list
-run -b10000  -i1500 -f count,ndbinning,hist,histogram,MSHXS                       --preload lat,lat_array               tools/lib/nosync/data_66k.nc
-run -b10000  -i50   -f count,hist,histogram,MSHXS                                 --preload lat,lat_array               tools/lib/nosync/data_2M.nc
+run -b10000  -i1500 -f count,ndbinning,hist,histogram,MSHXS,MGH                   --preload lat,lat_array               tools/lib/nosync/data_66k.nc
+run -b10000  -i50   -f count,hist,histogram,MSHXS,MGH                             --preload lat,lat_array               tools/lib/nosync/data_2M.nc
 run -b10000  -i5    -f count,hist,histogram                                       --preload lat                         tools/lib/nosync/data_33M.nc
-run -b100000 -i1500 -f count,ndbinning,hist,histogram,MSHXS                       --preload lat,lat_array               tools/lib/nosync/data_66k.nc
-run -b100000 -i50   -f count,hist,histogram,MSHXS                                 --preload lat,lat_array               tools/lib/nosync/data_2M.nc
+run -b100000 -i1500 -f count,ndbinning,hist,histogram,MSHXS,MGH                   --preload lat,lat_array               tools/lib/nosync/data_66k.nc
+run -b100000 -i50   -f count,hist,histogram,MSHXS,MGH                             --preload lat,lat_array               tools/lib/nosync/data_2M.nc
 run -b100000 -i5    -f count,hist,histogram                                       --preload lat                         tools/lib/nosync/data_33M.nc
 
 # basic two-dimensional histogram
