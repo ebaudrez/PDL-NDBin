@@ -1288,6 +1288,228 @@ the parameters you supply.
 
 =back
 
+=head1 PERFORMANCE
+
+=head2 One-dimensional histograms
+
+This section aims to give an idea of the performance of PDL::NDBin. Most of the
+features of PDL::NDBin aren't found in other modules on CPAN. But there are a
+few histogramming modules on CPAN, and it is interesting to examine how well
+PDL::NDBin does in comparison.
+
+I've run a number of tests with PDL version 0.003 on a laptop with an Intel i3
+CPU running at 2.40 GHz, and on a desktop with an Intel i7 CPU running at 2.80
+GHz and fast disks. The following table, obtained with 100 bins and a data file
+of 2 million data points, shows typical results on the laptop:
+
+	Benchmark: timing 50 iterations of MGH, MH, MSHXS, PND, hist, histogram...
+	       MGH: 40 wallclock secs (40.43 usr +  0.08 sys = 40.51 CPU) @  1.23/s (n=50)
+		MH:  6 wallclock secs ( 5.57 usr +  0.01 sys =  5.58 CPU) @  8.96/s (n=50)
+	     MSHXS:  2 wallclock secs ( 2.22 usr +  0.01 sys =  2.23 CPU) @ 22.42/s (n=50)
+	       PND:  2 wallclock secs ( 1.44 usr +  0.00 sys =  1.44 CPU) @ 34.72/s (n=50)
+	      hist:  1 wallclock secs ( 1.26 usr +  0.01 sys =  1.27 CPU) @ 39.37/s (n=50)
+	 histogram:  1 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 46.30/s (n=50)
+
+	Relative performance:
+	            Rate       MGH        MH     MSHXS       PND      hist histogram
+	MGH       1.23/s        --      -86%      -94%      -96%      -97%      -97%
+	MH        8.96/s      626%        --      -60%      -74%      -77%      -81%
+	MSHXS     22.4/s     1717%      150%        --      -35%      -43%      -52%
+	PND       34.7/s     2713%      288%       55%        --      -12%      -25%
+	hist      39.4/s     3090%      339%       76%       13%        --      -15%
+	histogram 46.3/s     3651%      417%      106%       33%       18%        --
+
+From this test and other tests, it can be concluded that PDL::NDBin (shown as
+'PND' in the table) is, roughly speaking,
+
+=over 4
+
+=item 1. faster than Math::GSL::Histogram (shown as MGH in the table)
+
+Although this module is actually a wrapper around the C library GSL, the
+performance is rather low. The process of getting a large number of data points
+into Math::GSL::Histogram's data structures is inefficient, as the data points
+have to be input one by one.
+
+=item 2. faster than Math::Histogram (shown as MH)
+
+This library wraps another multidimensional histogramming library written in C.
+It allows inputting multiple data points at once. It is quite a bit faster than
+Math::GSL::Histogram, but does not offer the raw performance of PDL or
+Math::Histogram's cousin Math::SimpleHisto::XS.
+
+=item 3. faster than Math::SimpleHisto::XS (shown as MSHXS)
+
+Math::SimpleHisto::XS, by the same author as Math::Histogram, is similar to the
+latter library, but implemented in XS for speed, and limited to one-dimensional
+histograms. It is generally somewhat slower than PDL::NDBin, but outperforms it
+for small files or large bin counts (10,000 bins or more).
+
+=item 4. slower than PDL
+
+Although PDL::NDBin outperforms hist() by 10 to 20% in some of the tests, PDL's
+built-in functions hist() and histogram() are, on average, the fastest
+functions. Given that the core of these routines runs in pure C, this is not
+very surprising. The PDL functions have very low overhead and are very
+memory-efficient.
+
+=back
+
+Note that, in the tests, various data conversions between piddles and ordinary
+Perl arrays were required. The timings exclude these conversions, and count
+only the time required to produce a histogram from the "natural" data
+structure, i.e. piddles for PDL-based modules, and ordinary Perl arrays for the
+other modules.
+
+Note also that the histograms produced by the different methods were verified
+to be equal.
+
+=head2 Two-dimensional histograms
+
+Similar conclusions are obtained for two-dimensional histograms. The following
+table shows results on the laptop for 2 million data points with 100 bins:
+
+	Benchmark: timing 50 iterations of MGH2d, PND2d, histogram2d...
+	      MGH2d: 59 wallclock secs (58.97 usr +  0.24 sys = 59.21 CPU) @  0.84/s (n=50)
+	      PND2d:  6 wallclock secs ( 5.92 usr +  0.00 sys =  5.92 CPU) @  8.45/s (n=50)
+	histogram2d:  2 wallclock secs ( 2.18 usr +  0.00 sys =  2.18 CPU) @ 22.94/s (n=50)
+
+	Relative performance:
+		       Rate       MGH2d       PND2d histogram2d
+	MGH2d       0.844/s          --        -90%        -96%
+	PND2d        8.45/s        900%          --        -63%
+	histogram2d  22.9/s       2616%        172%          --
+
+(It was not possible to run the test with Math::Histogram to completion.)
+
+=head2 Scaling w.r.t. number of data points
+
+Performance figures for a few tests on a particular machine don't say much. As
+PDL::NDBin is intended to handle large amounts of data, it is important to
+check how well PDL::NDBin's performance scales as the problem size increases.
+
+The first and most obvious way in which a problem may be 'large', is the number
+of data points. If a given method cannot process a large number of data points,
+or can only do so with increased effort, it is not suitable for large problems.
+How large that is, depends on the application, but in the field of satellite
+data retrieval (where I work), 33 million data points is not exceptional at all
+(but it is the largest size I could test). In this section, we examine how well
+PDL::NDBin's performance scales with the number of data points, and compare
+with alternative modules.
+
+The following table shows timing data on the laptop for 100 bins, but with a
+variable number of data points:
+
+	+-----------+------------+----------+------+------------+------------------+
+	| method    |   # points | CPU time |    n | time/iter. | time/iter./point |
+	|           |            |      (s) |      |       (ms) |             (ns) |
+	+-----------+------------+----------+------+------------+------------------+
+	| MGH       |     66,398 |    36.63 | 1500 |     24.420 |          367.782 |
+	| MGH       |  2,255,838 |    40.51 |   50 |    810.200 |          359.157 |
+	+-----------+------------+----------+------+------------+------------------+
+	| MH        |     66,398 |     5.17 | 1500 |      3.447 |           51.909 |
+	| MH        |  2,255,838 |     5.58 |   50 |    111.600 |           49.472 |
+	+-----------+------------+----------+------+------------+------------------+
+	| MSHXS     |     66,398 |     1.95 | 1500 |      1.300 |           19.579 |
+	| MSHXS     |  2,255,838 |     2.23 |   50 |     44.600 |           19.771 |
+	+-----------+------------+----------+------+------------+------------------+
+	| PND       |     66,398 |     2.85 | 1500 |      1.900 |           28.615 |
+	| PND       |  2,255,838 |     1.44 |   50 |     28.800 |           12.767 |
+	| PND       | 33,358,558 |     2.36 |    5 |    472.000 |           14.149 |
+	+-----------+------------+----------+------+------------+------------------+
+	| histogram |     66,398 |     0.96 | 1500 |      0.640 |            9.639 |
+	| histogram |  2,255,838 |     1.08 |   50 |     21.600 |            9.575 |
+	| histogram | 33,358,558 |     1.62 |    5 |    324.000 |            9.713 |
+	+-----------+------------+----------+------+------------+------------------+
+
+Note that the tests couldn't be run with Math::GSL::Histogram, Math::Histogram,
+and Math::SimpleHisto::XS on the largest data file (33 million points), due to
+insufficient memory.
+
+The methods show a linear increase in time per iteration with the number of
+data points, which translates to a fixed time per iteration per data point.
+This is the desired behaviour: it guarantees that the effort required to
+produce a histogram does not increase faster than the problem size. Every
+method examined here displays this behaviour.
+
+Quite notable is the high CPU time per iteration per data point of PDL::NDBin
+for small data files. For large data files, the time per iteration per data
+point is more or less constant. This effect is not fully understood, but may
+indicate high overhead or start-up cost.
+
+The results suggest that PDL::NDBin scales well with the number of data points,
+and that it is therefore well suited for large data. PDL::NDBin and histogram()
+(and hist()) are currently the only methods that allow processing very large
+data files.
+
+=head2 Scaling w.r.t. number of bins
+
+The number of data points may not be the only way in which a problem may be
+'large' or hard. The number of bins may also be high. In applications with
+satellite data, for instance, a latitude/longitude grid with a resolution of
+only 5 degrees already yields more than 2000 bins, and raising the resolution
+to 1 degree yields approximately 64,000 bins.
+
+Most of the methods depend in some way on the number of bins. If the execution
+time depends to a significant extent on the number of bins, the method is not
+suitable for large numbers of bins. In this section, we examine how well
+PDL::NDBin's performance scales with the number of bins, and compare with
+alternative modules.
+
+The following table shows timing data on the laptop for 2 million data points,
+with a variable number of bins:
+
+	+-----------+---------+----------+----+------------+
+	| method    |  # bins | CPU time |  n | time/iter. |
+	|           |         |      (s) |    |       (ms) |
+	+-----------+---------+----------+----+------------+
+	| MGH       |      10 |    40.72 | 50 |    814.400 |
+	| MGH       |      50 |    41.20 | 50 |    824.000 |
+	| MGH       |     100 |    40.51 | 50 |    810.200 |
+	+-----------+---------+----------+----+------------+
+	| MH        |      10 |     5.49 | 50 |    109.800 |
+	| MH        |      50 |     5.55 | 50 |    111.000 |
+	| MH        |     100 |     5.58 | 50 |    111.600 |
+	| MH        |   1,000 |     5.69 | 50 |    113.800 |
+	+-----------+---------+----------+----+------------+
+	| MSHXS     |      10 |     2.20 | 50 |     44.000 |
+	| MSHXS     |      50 |     2.22 | 50 |     44.400 |
+	| MSHXS     |     100 |     2.23 | 50 |     44.600 |
+	| MSHXS     |   1,000 |     2.26 | 50 |     45.200 |
+	| MSHXS     |  10,000 |     2.29 | 50 |     45.800 |
+	| MSHXS     | 100,000 |     2.64 | 50 |     52.800 |
+	+-----------+---------+----------+----+------------+
+	| PND       |      10 |     1.41 | 50 |     28.200 |
+	| PND       |      50 |     1.42 | 50 |     28.400 |
+	| PND       |     100 |     1.44 | 50 |     28.800 |
+	| PND       |   1,000 |     1.74 | 50 |     34.800 |
+	| PND       |  10,000 |     4.90 | 50 |     98.000 |
+	| PND       | 100,000 |    36.82 | 50 |    736.400 |
+	+-----------+---------+----------+----+------------+
+	| histogram |      10 |     1.09 | 50 |     21.800 |
+	| histogram |      50 |     1.34 | 50 |     26.800 |
+	| histogram |     100 |     1.08 | 50 |     21.600 |
+	| histogram |   1,000 |     1.13 | 50 |     22.600 |
+	| histogram |  10,000 |     1.12 | 50 |     22.400 |
+	| histogram | 100,000 |     1.20 | 50 |     24.000 |
+	+-----------+---------+----------+----+------------+
+
+Note that some data are missing because the associated test didn't run
+successfully (e.g., segmentation fault).
+
+The methods show more or less constant execution time per iteration,
+independent of the number of bins. This is the desired behaviour: the overhead
+of managing the bins does not dominate the execution time.
+
+Quite notable is the behaviour of PDL::NDBin at high bin counts: beyond 1,000
+bins, execution time rises significantly. The cause of this problem is not
+known.
+
+The results suggest that PDL::NDBin scales well with the number of bins up to
+1,000. Beyond 1,000 bins, the performance decreases significantly. Only
+Math::SimpleHisto::XS, PDL::NDBin, and histogram() are able to work with very
+high bin counts.
+
 =head1 COPYRIGHT and LICENSE
 
 =cut
