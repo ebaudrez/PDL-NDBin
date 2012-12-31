@@ -664,19 +664,34 @@ sub _random_name { create_uuid( UUID_RANDOM ) }
 
 =head1 WRAPPER FUNCTIONS
 
+PDL::NDBin provides the two functions ndbinning() and ndbin(), which are
+(almost) drop-in replacements for histogram() and hist(), except that they
+handle an arbitrary number of dimensions.
+
+ndbinning() and ndbin() are actually wrappers around the object-oriented
+interface of PDL::NDBin, and may be the most convenient way to work with
+PDL::NDBin for simple cases. For more advanced usage, the object-oriented
+interface may be required.
+
 =head2 ndbinning()
 
-Wraps all calls needed to get output out of PDL::NDBin in one function. May be
-the most convenient way to work with PDL::NDBin for simple cases.
-
-The arguments must be specified (almost) like in histogram() and histogram2d().
+Calculates an I<n>-dimensional histogram from one or more piddles. The
+arguments must be specified (almost) like in histogram() and histogram2d().
 That is, each axis must be followed by its three specifications I<step>, I<min>
 and I<n>, being the step size, the minimum value, and the number of bins,
 respectively. The difference with histogram2d() is that the axis specifications
 follow the piddle immediately, instead of coming at the end.
 
-	ndbinning( $pdl, $step, $min, $n, < $pdl, $step, $min, $n, ... >
-		  < vars => [ [ $variable, $action ], [ $variable, $action ], ... ] > )
+	my $hist = ndbinning( $pdl1, $step1, $min1, $n1,
+	                      $pdl2, $step2, $min2, $n2,
+	                      ... );
+
+Variables may be added using the same syntax as the constructor new():
+
+	my $hist = ndbinning( $pdl1, ...,
+	                      vars => [ [ $var1, $action1 ],
+	                                [ $var2, $action2 ],
+	                                ... ] );
 
 If no variables are supplied, the behaviour of histogram() and histogram2d() is
 emulated, i.e., an I<n>-dimensional histogram is produced. This function,
@@ -748,17 +763,23 @@ sub ndbinning
 
 =head2 ndbin()
 
-Wraps all calls needed to get output out of PDL::NDBin in one function. May be
-the most convenient way to work with PDL::NDBin for simple cases.
+Calculates an I<n>-dimensional histogram from one or more piddles. The
+arguments must be specified like in hist(). That is, each axis may be followed
+by at most three specifications I<min>, I<max>, and I<step>, being the the
+minimum value, maximum value, and the step size, respectively.
 
-The arguments must be specified like in hist(). That is, each axis may be
-followed by at most three specifications I<min>, I<max>, and I<step>, being the
-the minimum value, maximum value, and the step size, respectively.
+	my $hist = ndbin( $pdl1, $min1, $max1, $step1,
+	                  $pdl2, $min2, $max2, $step2,
+	                  ... );
 
-	ndbin(  $pdl [ , $min [ , $max [ , $step ] ] ]
-	       [ , $pdl [ , $min [ , $max [ , $step ] ] ] ]
-	       [ ... ]
-	       [ , vars => [ [ $variable, $action ], ... ] ]
+Note that $step, $min, and $n may be omitted, and will be calculated
+automatically from the data, as in hist(). Variables may be added using the
+same syntax as the constructor new():
+
+	my $hist = ndbin( $pdl1, ...,
+	                  vars => [ [ $var1, $action1 ],
+	                            [ $var2, $action2 ],
+	                            ... ] );
 
 If no variables are supplied, the behaviour of hist() is emulated, i.e., an
 I<n>-dimensional histogram is produced. This function, although more flexible
