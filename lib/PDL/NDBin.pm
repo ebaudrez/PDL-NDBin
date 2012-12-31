@@ -1157,27 +1157,26 @@ performance of PDL::NDBin and related distributions on CPAN.
 The following table gives an overview of the features and limitations of
 PDL::NDBin and related distributions on CPAN:
 
-	+------------------------------------------------------+---------+--------+--------+-----------+----------+
-	| Feature                                              | MGH     | MH     | MSHXS  | PDL       | PND      |
-	+------------------------------------------------------+---------+--------+--------+-----------+----------+
-	| Allows piecewise data processing                     | -       | -      | -      | -         | X        |
-	| Allows resampling the histogram                      | -       | -      | X      | X         | -        |
-	| Automatic parameter calculation based on the data    | -       | -      | -      | X         | X        |
-	| Bad value support                                    | -       | -      | -      | X         | X        |
-	| Can bin multiple variables at once                   | -       | -      | -      | -         | X        |
-	| Core implementation                                  | C       | C      | C      | C         | C/Perl   |
-	| Define and use callbacks to apply to the bins        | -       | -      | -      | -         | Perl+C   |
-	| Facilities for data structure serialization          | X       | X      | X      | X         | -        |
-	| Has overflow and underflow bins by default           | -       | X      | X      | -         | -        |
-	| Interface style                                      | Proc.   | OO     | OO     | Proc.     | OO+Proc. |
-	| Maximum number of dimensions                         | 2       | N      | 1      | 2         | N        |
-	| Native data type                                     | Scalars | Arrays | Arrays | Piddles   | Piddles  |
-	| Performance                                          | Low     | Medium | High   | Very high | High     |
-	| Support for weighted histograms                      | X       | X      | X      | X         | -        |
-	| Treats integral data differently from floating-point | -       | -      | -      | -         | X        |
-	| Uses PDL threading                                   | -       | -      | -      | X         | -        |
-	| Variable-width bins                                  | X       | X      | X      | -         | -        |
-	+------------------------------------------------------+---------+--------+--------+-----------+----------+
+	+---------------------------------------------------+---------+--------+--------+-----------+----------+
+	| Feature                                           | MGH     | MH     | MSHXS  | PDL       | PND      |
+	+---------------------------------------------------+---------+--------+--------+-----------+----------+
+	| Allows piecewise data processing                  | -       | -      | -      | -         | X        |
+	| Allows resampling the histogram                   | -       | -      | X      | X         | -        |
+	| Automatic parameter calculation based on the data | -       | -      | -      | X         | X        |
+	| Bad value support                                 | -       | -      | -      | X         | X        |
+	| Can bin multiple variables at once                | -       | -      | -      | -         | X        |
+	| Core implementation                               | C       | C      | C      | C         | C/Perl   |
+	| Define and use callbacks to apply to the bins     | -       | -      | -      | -         | Perl+C   |
+	| Facilities for data structure serialization       | X       | X      | X      | X         | -        |
+	| Has overflow and underflow bins by default        | -       | X      | X      | -         | -        |
+	| Interface style                                   | Proc.   | OO     | OO     | Proc.     | OO+Proc. |
+	| Maximum number of dimensions                      | 2       | N      | 1      | 2         | N        |
+	| Native data type                                  | Scalars | Arrays | Arrays | Piddles   | Piddles  |
+	| Performance                                       | Low     | Medium | High   | Very high | High     |
+	| Support for weighted histograms                   | X       | X      | X      | X         | -        |
+	| Uses PDL threading                                | -       | -      | -      | X         | -        |
+	| Variable-width bins                               | X       | X      | X      | -         | -        |
+	+---------------------------------------------------+---------+--------+--------+-----------+----------+
 
 	  MGH   = Math::GSL 0.26 (Math::GSL::Histogram and Math::GSL::Histogram2D)
 	  MH    = Math::Histogram 1.03
@@ -1363,10 +1362,6 @@ examined in detail.
 In a weighted histogram, data points contribute by a fractional amount (or
 weight) between 0 and 1. All libraries, except PDL::NDBin, support weighted
 histograms. In PDL::NDBin, the weight of all data points is fixed at 1.
-
-=item Treats integral data differently from floating-point
-
-TODO FIXME XXX
 
 =item Uses PDL threading
 

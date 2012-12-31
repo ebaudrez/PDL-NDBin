@@ -34,7 +34,6 @@ __[config]__
 	data           Native data type
 	dims           Maximum number of dimensions
 	implementation Core implementation
-	integral       Treats integral data differently from floating-point
 	interface      Interface style
 	multiple       Can bin multiple variables at once
 	overflow       Has overflow and underflow bins by default
@@ -56,7 +55,6 @@ __[config]__
 	data           Scalars
 	dims           2
 	implementation C
-	integral       -
 	interface      Proc.
 	multiple       -
 	overflow       -
@@ -78,7 +76,6 @@ __[config]__
 	data           Arrays
 	dims           N
 	implementation C
-	integral       -
 	interface      OO
 	multiple       -
 	overflow       X
@@ -100,7 +97,6 @@ __[config]__
 	data           Arrays
 	dims           1
 	implementation C
-	integral       -
 	interface      OO
 	multiple       -
 	overflow       X
@@ -122,7 +118,6 @@ __[config]__
 	data           Piddles
 	dims           2
 	implementation C
-	integral       -
 	interface      Proc.
 	multiple       -
 	overflow       -
@@ -144,7 +139,6 @@ __[config]__
 	data           Piddles
 	dims           N
 	implementation C/Perl
-	integral       X
 	interface      OO+Proc.
 	multiple       X
 	overflow       -
