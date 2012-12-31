@@ -1108,198 +1108,286 @@ return values of the progress bar updater. You probably do not want this
 either. By putting the progress bar updater last, you can simply ignore that
 piddle.
 
-=head1 FEATURES
+=head1 SEE ALSO
 
 =over 4
 
-=item Unlimited dimensions
+=item *
 
-=item Arbitrary functions to apply to the bins
+The PDL::NDBin::Action:: namespace
 
-=item Accepts data piecewise
+=item *
 
-Necessary to process data that won't fit in memory at once.
+The L<PDL> documentation
 
-=item Handles integral data as well as floating-point data
+=back
+
+There are a few histogramming modules on CPAN:
+
+=over 4
+
+=item *
+
+L<PDL::Basic> offers the histogramming functions hist(), whist()
+
+=item *
+
+L<PDL::Primitive> offers the histogramming functions histogram(),
+histogram2d(), whistogram(), whistogram2d()
+
+=item *
+
+L<Math::GSL::Histogram> and L<Math::GSL::Histogram2D>
+
+=item *
+
+L<Math::Histogram>
+
+=item *
+
+L<Math::SimpleHisto::XS>
+
+=back
+
+The following sections give a detailed overview of features, limitations, and
+performance of PDL::NDBin and related distributions on CPAN.
+
+=head1 FEATURES AND LIMITATIONS
+
+The following table gives an overview of the features and limitations of
+PDL::NDBin and related distributions on CPAN:
+
+	+------------------------------------------------------+---------+--------+--------+-----------+----------+
+	| Feature                                              | MGH     | MH     | MSHXS  | PDL       | PND      |
+	+------------------------------------------------------+---------+--------+--------+-----------+----------+
+	| Allows piecewise data processing                     | -       | -      | -      | -         | X        |
+	| Allows resampling the histogram                      | -       | -      | X      | X         | -        |
+	| Automatic parameter calculation based on the data    | -       | -      | -      | X         | X        |
+	| Bad value support                                    | -       | -      | -      | X         | X        |
+	| Can bin multiple variables at once                   | -       | -      | -      | -         | X        |
+	| Core implementation                                  | C       | C      | C      | C         | C/Perl   |
+	| Define and use callbacks to apply to the bins        | -       | -      | -      | -         | Perl+C   |
+	| Facilities for data structure serialization          | X       | X      | X      | X         | -        |
+	| Has overflow and underflow bins by default           | -       | X      | X      | -         | -        |
+	| Interface style                                      | Proc.   | OO     | OO     | Proc.     | OO+Proc. |
+	| Maximum number of dimensions                         | 2       | N      | 1      | 2         | N        |
+	| Native data type                                     | Scalars | Arrays | Arrays | Piddles   | Piddles  |
+	| Performance                                          | Low     | Medium | High   | Very high | High     |
+	| Support for weighted histograms                      | X       | X      | X      | X         | -        |
+	| Treats integral data differently from floating-point | -       | -      | -      | -         | X        |
+	| Uses PDL threading                                   | -       | -      | -      | X         | -        |
+	| Variable-width bins                                  | X       | X      | X      | -         | -        |
+	+------------------------------------------------------+---------+--------+--------+-----------+----------+
+
+	  MGH   = Math::GSL 0.26 (Math::GSL::Histogram and Math::GSL::Histogram2D)
+	  MH    = Math::Histogram 1.03
+	  MSHXS = Math::SimpleHisto::XS 1.28
+	  PDL   = PDL 2.4.11
+	  PND   = PDL::NDBin 0.003
+
+An explanation and discussion of each of the futures is provided below.
+
+=over 4
+
+=item Allows piecewise data processing
+
+The ability to process data piecewise means that the input data (i.e., the data
+points) required to produce the output (e.g., a histogram) do not have to be
+fed all at once. Instead, the input data can be fed in chunks of any size. The
+resulting output is of course identical, whether the input data be fed
+piecewise or all at once. However, the input data do not have to fit in memory
+all at once, which is very useful when dealing with very large data sets.
+
+An example may help to understand this feature. Suppose you want to calculate
+the monthly mean cloud over over an area of the globe, in boxes of 1 by 1
+degree. The total amount of cloud cover data is too large to fit in memory, but
+fortunately, the data are spread of several files, one by day. With PDL::NDBin,
+you can do the following:
+
+	my $binner = PDL::NDBin->new(
+		axes => [[ 'latitude',    min => -60, max => 60, step => 1 ],
+			 [ 'longitude',   min => -60, max => 60, step => 1 ]],
+		vars => [[ 'cloud_cover', 'Avg' ]],
+	);
+	for my $file ( @all_files ) {
+		# suppose $file contains the geolocated cloud cover data for
+		# one day of the month
+		my $lat = $file->read( 'latitude' );
+		my $lon = $file->read( 'longitude' );
+		my $cc  = $file->read( 'cloud_cover' );
+		$binner->process( latitude    => $lat,
+				  longitude   => $lon,
+				  cloud_cover => $cc );
+	}
+	my $avg = $binner->output->{cloud_cover};
+
+In this example, only the data of a single day have to be kept in memory. The
+$binner object keeps a running average of the data, and retains the proper
+counts until the output $avg must be generated.
+
+Only PDL::NDBin offers this feature. It can be simulated with other libraries
+for histograms, as long as histograms can be added together. PDL::NDBin extends
+the feature of piecewise data processing to sums, averages, and standard
+deviations.
+
+=item Allows resampling the histogram
+
+To resample a histogram means to put in a histogram of I<N> bins, the data that
+were originally in a histogram of I<M> bins, where I<N> and I<M> are different.
+
+Only Math::SimpleHisto::XS and PDL support this feature. In PDL, the function
+is known as rebin() (to be found in L<PDL::ImageND>).
+
+=item Automatic parameter calculation based on the data
+
+If a minimum bin, maximum bin, or step size are not supplied, PDL and
+PDL::NDBin will calculate them from the data. Other libraries require the user
+to specify them manually.
+
+=item Bad value support
+
+Bad value support, when it is present, allows to distinguish missing or invalid
+data from valid data. The missing or invalid data are excluded from the
+processing. Only the PDL-based libraries PDL and PDL::NDBin support bad values.
 
 =item Can bin multiple variables at once
 
-=item High performance
+When data is co-located, e.g., cloud cover, cloud phase, and cloud optical
+thickness on a latitude-longitude grid, some time can be saved by binning the
+cloud variables together. Once the bin number has been determined for the given
+latitude and longitude, it can be reused for all cloud variables. This is
+marginally faster than binning the cloud variables separately. Only PDL::NDBin
+supports this feature.
 
-It can take advantage of actions coded in XS for speed.
+=item Core implementation
 
-=back
+Math::GSL::Histogram is a wrapper around the GSL library, which is written in
+C.
 
-=head1 LIMITATIONS
+Math::Histogram is a wrapper around an I<N>-dimensional histogramming library
+written in C.
 
-What it doesn't do (yet):
+Math::SimpleHisto::XS, by the same author as Math::Histogram, is implemented in
+C.
 
-=over 4
+The core histogramming functions of PDL are implemented in C.
 
-=item Variable-width bins
+The core loops of PDL::NDBin are implemented partly in Perl, partly in C.
 
-=item Weighted histograms
+=item Define and use callbacks to apply to the bins
 
-=item Collecting the actual values in a bin
+PDL::NDBin can handle any type of calculation on the values in the bins that
+you can express in Perl or C, not only counting the number of elements in order
+to produce a histogram. At the time of writing (version 0.003), PDL::NDBin
+supports counting, summing, averaging, and taking the standard deviation of the
+values in each bin. Additionally, Perl or C subroutines can be defined and used
+to perform any operation on the values in each bin.
 
-This would be very useful for plotting or output.
+This feature, arguably the most important feature of PDL::NDBin, is not found
+in other modules.
 
-=item Threading
+=item Facilities for data structure serialization
 
-=item Resampling a histogram
+Serialization is the process of storing a histogram to disk, or retrieving it
+from disk. Math::GSL::Histogram, Math::Histogram, Math::SimpleHisto::XS, and
+PDL all have built-in support for serialization. PDL::NDBin doesn't, but the
+serialization facilities of PDL can be used to store and retrieve data. (I
+usually store computed data in netCDF files with PDL::NetCDF.)
 
-=back
+=item Has overflow and underflow bins by default
 
-=head1 BUGS
+Data lower than the lowest range of the first bin, or higher than the highest
+range of the last bin, are treated differently in different modules.
 
-None reported.
+Math::GSL::Histogram ignores out-of-range values.
 
-=head1 TODO
+Math::Histogram and Math::SimpleHisto::XS have overflow bins, i.e., by default
+they create more bins than you define. These so-called overflow bins are
+situated at either end of every dimension. Out-of-range values end up in the
+overflow bins.
 
-This documentation is unfortunately quite incomplete, due to lack of time.
+The histogramming functions of PDL, and PDL::NDBin, store low out-of-range
+values in the first bin, and high out-of-range values in the last bin.
 
-=head1 AUTHOR
+To ignore out-of-range values with PDL::NDBin, define two additional bins at
+either end of every dimension, and disregard the values in these additional
+bins.
 
-Edward Baudrez, ebaudrez@cpan.org, 2011.
+To simulate overflow and underflow bins with PDL::NDBin, define two additional
+bins at either end of every dimension.
 
-=head1 SEE ALSO
+=item Interface style
 
-L<PDL>, L<PDL::Basic>, L<PDL::Primitive>, the L<PDL::NDBin::Action::> namespace
+I<Proc.> means that the module has a procedural interface. I<OO> means that the
+module has an object-oriented interface. PDL::NDBin has both. Which interface
+you should use is largely a matter of preference, unless you want to use
+advanced features such as piecewise data feeding, which require the
+object-oriented interface.
 
-Some of the most important features of PDL::NDBin aren't found in other modules
-on CPAN. But there are a few histogramming libraries on CPAN. This is how
-PDL::NDBin compares to alternative solutions on CPAN in terms of features.
+Math::GSL::Histogram has a somewhat awkward interface, requiring the user to
+explicitly deallocate the data structure after use.
 
-=head2 hist(), histogram(), histogram2d(), whist(), whistogram(), whistogram2d()
+=item Maximum number of dimensions
 
-These functions are provided by the PDL distribution. They obviously operate on
-piddles only, which could be considered both an advantage or a disadvantage.
+The maximum number of dimensions that can be processed. Math::Histogram and
+PDL::NDBin can handle an arbitrary number of dimensions.
 
-Pros:
+=item Native data type
 
-=over 4
+Obviously, deep down, all data values are just C scalars. By 'native data type'
+is meant the data type used to communicate with the library in the most
+efficient way.
 
-=item Threading support
+At the time of writing (Math::GSL version 0.27), Math::GSL::Histogram did not
+have a facility to enter multiple data points at once. It accepts only Perl
+scalars, and requires the user to input the data points one by one. Similarly,
+to produce the final histogram, the bins must be queried one by one.
 
-=item Faster
+Math::Histogram and Math::SimpleHisto::XS accept Perl arrays filled with values
+(although they also accept data points one by one as Perl scalars). Passing
+large amounts of data as arrays is generally more efficient than passing the
+data points one by one as scalars.
+
+PDL and PDL::NDBin operate on piddles only, which are memory-efficient, packed
+data arrays. This could be considered both an advantage and a disadvantage. The
+advantage is that the piddles can be operated on very efficiently in C. The
+disadvantage is that PDL is required!
+
+=item Performance
+
+In the next section (see L<PERFORMANCE>), the performance of all modules is
+examined in detail.
 
 =item Support for weighted histograms
 
-=item Support for resampling/rebinning with rebin()
+In a weighted histogram, data points contribute by a fractional amount (or
+weight) between 0 and 1. All libraries, except PDL::NDBin, support weighted
+histograms. In PDL::NDBin, the weight of all data points is fixed at 1.
 
-=back
+=item Treats integral data differently from floating-point
 
-Cons:
+TODO FIXME XXX
 
-=over 4
+=item Uses PDL threading
 
-=item No callback support
+In PDL, threading is a technique to automatically loop certain operations over
+an arbitrary number of dimensions. An example is the sumover() operation, which
+calculates the row sum. It is defined over the first dimension only (i.e., the
+rows in PDL), but it will be looped automatically over all remaining
+dimensions. If the piddle is three-dimensional, for instance, sumover() will
+calculate the sum in every row of every matrix.
 
-=item Limited to histograms
-
-=item Limited to two dimensions
-
-=back
-
-PDL::NDBin can handle an arbitrary number of dimensions and any type of
-calculation on the values in the bins that you can express in Perl or XS, not
-only counting the number of elements.
-
-=head2 L<Math::GSL::Histogram>
-
-Math::GSL::Histogram is actually a wrapper around the GSL library, which is
-written in C. It does not operate on piddles. It does not seem to have a facility to
-accept multiple data points at once, XXX CHECK
-It accepts only ???
-but instead requires the user to input the data points one by one. Similarly, to produce the final histogram, the
-bins must be queried one by one.
-
-Math::GSL::Histogram ignores out-of-range values. To simulate this behaviour
-with PDL::NDBin, define two additional bins at either extreme of every
-dimension, and disregard the values in these additional bins.
-
-Pros:
-
-=over 4
+Threading is supported by the PDL functions histogram(), whistogram(), and
+their two-dimensional counterparts, but not by hist() or whist(). At the time
+of writing, PDL::NDBin does not support threading.
 
 =item Variable-width bins
 
-=back
-
-Cons:
-
-=over 4
-
-=item Slow
-
-=item Arguably somewhat awkward interface
-
-=back
-
-=head2 L<Math::Histogram>
-
-Does not work with L<PDL>. Partially implemented in XS, partially Perl.
-
-Pros:
-
-=over 4
-
-=item Support for variable-width bins
-
-=item Overflow and underflow bins
-
-PDL::NDBin doesn't have those, although you could create extra bins at either
-end of every dimension to simulate overflow and underflow bins. Remember that
-PDL::NDBin puts data lower than the lowest bin in the lowest bin, and similarly
-for the highest bin.
-
-=back
-
-Cons:
-
-=over 4
-
-=item No bad value support
-
-=item Slower (see L<Benchmarks>)
-
-=item No callback support
-
-=back
-
-=head2 L<Math::SimpleHisto::XS>
-
-Does not work with L<PDL>. Implemented in XS for speed.
-
-Pros:
-
-=over 4
-
-=item Support for variable-width bins
-
-=item Support for resampling
-
-=item Serialization hooks
-
-=back
-
-Cons:
-
-=over 4
-
-=item No bad value support
-
-=item Slower (see L<Benchmarks>)
-
-=item Limited to one dimension
-
-=item No callback support
-
-=item No automatic parameter calculation based on the data
-
-With PDL::NDBin, no need to supply a predetermined minimum, maximum, or step
-size (although you can). PDL::NDBin will calculate those from the data, or from
-the parameters you supply.
+In a histogram with variable-width bins, the width of the bins needn't be
+equal. This feature can be useful, for example, to construct bins on a
+logarithmic scale. Math::GSL, Math::Histogram, and Math::SimpleHisto::XS
+support variable-width bins; PDL and PDL::NDBin do not and are limited to
+fixed-width bins.
 
 =back
 
@@ -1524,6 +1612,28 @@ The results suggest that PDL::NDBin scales well with the number of bins up to
 1,000. Beyond 1,000 bins, the performance decreases significantly. Only
 Math::SimpleHisto::XS, PDL::NDBin, and histogram() are able to work with very
 high bin counts.
+
+=head1 BUGS
+
+None reported.
+
+=head1 TODO
+
+This documentation is unfortunately quite incomplete, due to lack of time.
+
+What PDL::NDBin doesn't do (yet):
+
+=over 4
+
+=item Collecting the actual values in a bin
+
+This would be very useful for plotting or output.
+
+=back
+
+=head1 AUTHOR
+
+Edward Baudrez, ebaudrez@cpan.org, 2011, 2012.
 
 =head1 COPYRIGHT and LICENSE
 
