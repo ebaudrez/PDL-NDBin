@@ -162,6 +162,43 @@ mandatory.
 
 	$self->add_axis( name => 'longitude', min => -70, max => 70, n => 14 );
 
+The following axis specifications are available:
+
+=over 4
+
+=item name
+
+The name of this axis.
+
+=item min
+
+The lowest value of the first bin. Values below this minimum will be binned in
+the first bin. Optional; will be determined from the actual minimum value in
+the data if not supplied.
+
+=item max
+
+The highest value of the last bin. Values above this maximum will be binned in
+the last bin. Optional; will be determined from the actual maximum value in the
+data if not supplied.
+
+=item step
+
+The width of the bins. Currently only a fixed step size is allowed, which means
+that all the bins have equal width. Optional; will be determined from the data
+range and the number of bins if not supplied.
+
+=item n
+
+The number of bins. Optional; will be set to the number of data values, or to
+100, whichever is smaller, if not supplied.
+
+=item round
+
+Round the minimum and maximum to the nearest multiple of this value.
+
+=back
+
 =cut
 
 sub add_axis
@@ -180,6 +217,21 @@ Add a variable to the current object. The argument list must be a list of
 key-value pairs. The name of the variable is mandatory.
 
 	$self->add_var( name => 'flux', action => 'Avg' );
+
+The following variable specifications are available:
+
+=over 4
+
+=item name
+
+The name of this variable.
+
+=item action
+
+The action to perform on this variable. May be either a code reference (a
+reference to a named or anonymous subroutine) or a class name.
+
+=back
 
 =cut
 
@@ -219,7 +271,8 @@ containing anonymous arrays, one per axis, as follows:
 		]
 
 Only the name is required. All other specifications are optional and will be
-determined automatically as required. Note that you cannot specify all
+determined automatically as required. For a list of allowed axis
+specifications, consult add_axis(). Note that you cannot specify all
 specifications at the same time, because some may conflict.
 
 At least one axis will eventually be required, although it needn't be specified
@@ -321,8 +374,8 @@ sub _make_instance
 =head2 feed()
 
 Set the piddles that will eventually be used for the axes and variables.
-Arguments must be specified as key-value pairs, they keys being the name, and
-the values being the piddle for every piddle to is to be set.
+Arguments must be specified as key-value pairs, the keys being the name, and
+the values being the piddle for every piddle that is to be set.
 
 Note that not all piddles need be set in one call. This function can be called
 repeatedly to set all piddles. This can be very useful when data must be read
@@ -383,8 +436,25 @@ sub _check_pdl_length
 
 =head2 autoscale()
 
-Determine missing parameters for the axes automatically. It is not usually
-required to call this method, as it is called automatically by process().
+Determine the following parameters for the axes automatically, if they have not
+been supplied by the user: the step size, the lowest bin, and the number of
+bins. It will use whatever combination of specifications that have been
+supplied by the user, and the data itself. Obviously, the piddles containing
+the data must have been set before calling this subroutine.
+
+If neither the number of bins, nor the step size have been supplied by the
+user, the default behaviour of hist() is adopted: take the number of bins equal
+to the number of data values, or equal to 100, whichever is smaller.
+autoscale() honours the I<round> key to round bin boundaries to the nearest
+multiple of I<round>.
+
+autoscale() accepts, but does not require, arguments. They must be key-value
+pairs as for feed(), and indicate piddle data that must be fed into the object
+prior to autoscaling. Note that the autoscaling applies to all axes, and not
+only supplied as arguments.
+
+It is not usually required to call this method, as it is called automatically
+by process().
 
 =cut
 
@@ -426,9 +496,9 @@ sub labels
 =head2 process()
 
 The core method. The actual piddles to be used for the axes and variables can
-be supplied to this function, although if all piddles have already been
-supplied, the argument list can be empty. The argument list is the same as the
-one of feed(), i.e., a list of key-value pairs specifying name and piddle.
+be supplied to this function, although the argument list can be empty if all
+piddles have already been supplied. The argument list is the same as the one of
+feed(), i.e., a list of key-value pairs specifying name and piddle.
 
 process() returns $self for chained method calls.
 
@@ -482,17 +552,26 @@ sub process
 
 =head2 output()
 
-Return the output computed by the previous steps. Each output variable is
-reshaped to make the number of dimensions equal to the number of axes, and the
-extent of each dimension equal to the number of bins along the axis.
+Return the output computed by the previous call(s) to process(). Each output
+variable is reshaped to make the number of dimensions equal to the number of
+axes, and the extent of each dimension equal to the number of bins along the
+axis.
+
+The return value in list context is a hash, the keys and values of which
+correspond to the names and data of the variables. The return value in scalar
+context is a reference to this hash. When no variables have been supplied, a
+hash with a single key called I<histogram> is returned.
+
+Note that it is not possible to call process() after having called output(),
+because the piddle data may have been reshaped.
 
 =cut
 
 sub output
 {
 	my $self = shift;
-	# reshape output
 	return unless defined wantarray;
+	# reshape output
 	my $n = $self->{n};
 	my @output = map { $_->result } @{ $self->{instances} };
 	for my $pdl ( @output ) { $pdl->reshape( @$n ) }
@@ -659,7 +738,12 @@ sub _auto_axis
 	}
 }
 
-# generate a random, hopefully unique name for a pdl
+=head2 _random_name()
+
+Generate a random, hopefully unique name for a pdl.
+
+=cut
+
 sub _random_name { create_uuid( UUID_RANDOM ) }
 
 =head1 WRAPPER FUNCTIONS
@@ -702,7 +786,7 @@ of type I<long>, in contrast with histogram() and histogram2d(). The
 histogramming is achieved by passing an action which simply counts the number
 of elements in the bin.
 
-Unlike the output of process(), the resulting piddles are output as an array
+Unlike the output of output(), the resulting piddles are output as an array
 reference, in the same order as the variables passed in. There are as many
 output piddles as variables, and exactly one output piddle if no variables have
 been supplied. The output piddles take the type of the variables. All values in
@@ -789,7 +873,7 @@ returned histogram is of type I<long>, in contrast with hist(). The
 histogramming is achieved by passing an action which simply counts the number
 of elements in the bin.
 
-Unlike the output of process(), the resulting piddles are output as an array
+Unlike the output of output(), the resulting piddles are output as an array
 reference, in the same order as the variables passed in. There are as many
 output piddles as variables, and exactly one output piddle if no variables have
 been supplied. The output piddles take the type of the variables. All values in
