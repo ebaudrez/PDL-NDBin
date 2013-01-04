@@ -45,10 +45,11 @@ run -b1000   -i1500 -f PND,ndbinning,histogram,MH,MSHXS,MGH                     
 run -b1000   -i50   -f PND,histogram,MH,MSHXS,MGH                               --preload lat,lat_array,lat_ref_array tools/lib/nosync/data_2M.nc
 run -b1000   -i5    -f PND,histogram                                            --preload lat                         tools/lib/nosync/data_33M.nc
 # MH doesn't like 10000 or more bins (segfaults), so it is excluded from the list
-run -b10000  -i1500 -f PND,ndbinning,hist,histogram,MSHXS,MGH                   --preload lat,lat_array               tools/lib/nosync/data_66k.nc
+# ndbinning at 66k points and 10,000 bins or more is very slow: exclude
+run -b10000  -i1500 -f PND,hist,histogram,MSHXS,MGH                             --preload lat,lat_array               tools/lib/nosync/data_66k.nc
 run -b10000  -i50   -f PND,hist,histogram,MSHXS,MGH                             --preload lat,lat_array               tools/lib/nosync/data_2M.nc
 run -b10000  -i5    -f PND,hist,histogram                                       --preload lat                         tools/lib/nosync/data_33M.nc
-run -b100000 -i1500 -f PND,ndbinning,hist,histogram,MSHXS,MGH                   --preload lat,lat_array               tools/lib/nosync/data_66k.nc
+run -b100000 -i1500 -f PND,hist,histogram,MSHXS,MGH                             --preload lat,lat_array               tools/lib/nosync/data_66k.nc
 run -b100000 -i50   -f PND,hist,histogram,MSHXS,MGH                             --preload lat,lat_array               tools/lib/nosync/data_2M.nc
 run -b100000 -i5    -f PND,hist,histogram                                       --preload lat                         tools/lib/nosync/data_33M.nc
 
@@ -56,12 +57,13 @@ run -b100000 -i5    -f PND,hist,histogram                                       
 run -b10     -i1500 -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
 run -b10     -i50   -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
 run -b10     -i5    -f PND2d,histogram2d                                        --preload lat,lon                     tools/lib/nosync/data_33M.nc
-run -b50     -i1500 -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
-run -b50     -i50   -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
+# want2d is very slow at 50 bins and more: exclude
+run -b50     -i1500 -f PND2d,ndbinning2d,histogram2d,MH2d,MGH2d                 --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
+run -b50     -i50   -f PND2d,ndbinning2d,histogram2d,MH2d,MGH2d                 --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
 run -b50     -i5    -f PND2d,histogram2d                                        --preload lat,lon                     tools/lib/nosync/data_33M.nc
 # MH2d segfaults at 100 bins: exclude
-run -b100    -i1500 -f PND2d,want2d,ndbinning2d,histogram2d,MGH2d               --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
-run -b100    -i50   -f PND2d,want2d,ndbinning2d,histogram2d,MGH2d               --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
+run -b100    -i1500 -f PND2d,ndbinning2d,histogram2d,MGH2d                      --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
+run -b100    -i50   -f PND2d,ndbinning2d,histogram2d,MGH2d                      --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
 run -b100    -i5    -f PND2d,histogram2d                                        --preload lat,lon                     tools/lib/nosync/data_33M.nc
 
 # run on multiple files
