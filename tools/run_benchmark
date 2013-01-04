@@ -59,8 +59,9 @@ run -b10     -i5    -f PND2d,histogram2d                                        
 run -b50     -i1500 -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
 run -b50     -i50   -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
 run -b50     -i5    -f PND2d,histogram2d                                        --preload lat,lon                     tools/lib/nosync/data_33M.nc
-run -b100    -i1500 -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
-run -b100    -i50   -f PND2d,want2d,ndbinning2d,histogram2d,MH2d,MGH2d          --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
+# MH2d segfaults at 100 bins: exclude
+run -b100    -i1500 -f PND2d,want2d,ndbinning2d,histogram2d,MGH2d               --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_66k.nc
+run -b100    -i50   -f PND2d,want2d,ndbinning2d,histogram2d,MGH2d               --preload lat,lon,lat_lon_ref_array   tools/lib/nosync/data_2M.nc
 run -b100    -i5    -f PND2d,histogram2d                                        --preload lat,lon                     tools/lib/nosync/data_33M.nc
 
 # run on multiple files
