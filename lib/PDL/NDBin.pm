@@ -42,7 +42,7 @@ $VERSION = eval $VERSION;
 	$y = pdl( 2,1,1,1,1 );
 	# along two dimensions, with 3 bins per dimension:
 	my $histogram = ndbinning( $x => (1,0,3),
-				   $y => (1,0,3) );
+	                           $y => (1,0,3) );
 	# returns the two-dimensional histogram
 	#    long( [0,0,0],
 	#	   [0,2,2],
@@ -129,8 +129,8 @@ data values without hitting memory constraints or running out of time.
 PDL::NDBin is there to handle the details for you, so you can write
 
 	my $average_flux = ndbin( $longitude, min => -70, max => 70, step => 20,
-				  $latitude,  min => -70, max => 70, step => 20,
-				  vars => [ [ $flux => 'Avg' ] ] );
+	                          $latitude,  min => -70, max => 70, step => 20,
+	                          vars => [ [ $flux => 'Avg' ] ] );
 
 to obtain the average of the flux, binned in boxes of 20x20 degrees latitude
 and longitude.
@@ -252,8 +252,8 @@ key-value pairs. No arguments are required, but you will want to add at least
 one axis eventually to do meaningful work.
 
 	my $obj = PDL::NDBin->new( axes => [ [ 'x', min => -1, max => 1, step => .1 ],
-					     [ 'y', min => -1, max => 1, step => .1 ] ],
-				   vars => [ [ 'F', 'Count' ] ] );
+	                                     [ 'y', min => -1, max => 1, step => .1 ] ],
+	                           vars => [ [ 'F', 'Count' ] ] );
 
 The accepted keys are the following:
 
@@ -265,10 +265,10 @@ Specifies the axes along which to bin. The axes are supplied as an arrayref
 containing anonymous arrays, one per axis, as follows:
 
 	axes => [
-		  [ $name1, $key11 => $value11, $key12 => $value12, ... ],
-		  [ $name2, $key21 => $value21, $key22 => $value22, ... ],
-		  ...
-		]
+	          [ $name1, $key11 => $value11, $key12 => $value12, ... ],
+	          [ $name2, $key21 => $value21, $key22 => $value22, ... ],
+	          ...
+	        ]
 
 Only the name is required. All other specifications are optional and will be
 determined automatically as required. For a list of allowed axis
@@ -284,10 +284,10 @@ Specifies the values to bin. The variables are supplied as an arrayref
 containing anonymous arrays, one per variable, as follows:
 
 	vars => [
-		  [ $name1 => $action1 ],
-		  [ $name2 => $action2 ],
-		  ...
-		]
+	          [ $name1 => $action1 ],
+	          [ $name2 => $action2 ],
+	          ...
+	        ]
 
 Here, both the name and the action are required. In order to produce a
 histogram, supply C<'Count'> as the action.
@@ -966,7 +966,7 @@ by one.
 
 	my $histogram = ndbin(
 		axes => [ [ $longitude ],
-			  [ $latitude  ] ]
+		          [ $latitude  ] ]
 	);
 
 $histogram will be a two-dimensional piddle! Using the compatibility interface,
@@ -977,15 +977,15 @@ this can be written as:
 Extra parameters for the axes are specified as follows:
 
 	my $histogram = ndbin( $longitude, -70, 70, 20,
-			       $latitude,  -70, 70, 20 );
+	                       $latitude,  -70, 70, 20 );
 
 A rather complete example of the interface:
 
 	ndbin( axes => [ [ $longitude, min => -70, max => 70, step => 20 ],
-			 [ $latitude,  min => -70, max => 70, step => 20 ] ],
+	                 [ $latitude,  min => -70, max => 70, step => 20 ] ],
 	       vars => [ [ $ceres_flux, \&do_ceres_flux ],
-			 [ $gl_flux,    \&do_gl_flux    ],
-			 [ $gerb_flux,  \&do_gerb_flux  ] ],
+	                 [ $gl_flux,    \&do_gl_flux    ],
+	                 [ $gerb_flux,  \&do_gerb_flux  ] ],
 	     );
 
 Note that there is no assignment of the return value (in fact, there is none).
@@ -995,8 +995,8 @@ using the compatibility interface, write:
 	ndbin( $longitude, -70, 70, 20,
 	       $latitude,  -70, 70, 20,
 	       vars => [ [ $ceres_flux, \&do_ceres_flux ],
-			 [ $gl_flux,    \&do_gl_flux    ],
-			 [ $gerb_flux,  \&do_gerb_flux  ] ],
+	                 [ $gl_flux,    \&do_gl_flux    ],
+	                 [ $gerb_flux,  \&do_gerb_flux  ] ],
 	     );
 
 More simple examples:
@@ -1010,9 +1010,9 @@ averages of the binned fluxes:
 
 	my $result = ndbin(
 			axes => [ [ $longitude, round => 10, step => 20 ],
-				  [ $latitude,  round => 10, step => 20 ] ],
+			          [ $latitude,  round => 10, step => 20 ] ],
 			vars => [ [ $flux => sub { shift->selection->avg } ] ],
-		     );
+	             );
 
 =head1 IMPLEMENTATION DETAILS
 
@@ -1199,7 +1199,7 @@ To hook a progress bar to ndbin():
 	my $binner = PDL::NDBin->new(
 		axes => \@axes,
 		vars => [ [ ... ],
-			  [ 'dummy' => sub { $progress++; return } ] ]
+		          [ 'dummy' => sub { $progress++; return } ] ]
 	);
 	$binner->autoscale( x => ... );
 	my $N = List::Util::reduce { $a * $b } map { $_->{n} } $binner->axes;
@@ -1310,7 +1310,7 @@ you can do the following:
 
 	my $binner = PDL::NDBin->new(
 		axes => [[ 'latitude',    min => -60, max => 60, step => 1 ],
-			 [ 'longitude',   min => -60, max => 60, step => 1 ]],
+		         [ 'longitude',   min => -60, max => 60, step => 1 ]],
 		vars => [[ 'cloud_cover', 'Avg' ]],
 	);
 	for my $file ( @all_files ) {
@@ -1320,8 +1320,8 @@ you can do the following:
 		my $lon = $file->read( 'longitude' );
 		my $cc  = $file->read( 'cloud_cover' );
 		$binner->process( latitude    => $lat,
-				  longitude   => $lon,
-				  cloud_cover => $cc );
+		                  longitude   => $lon,
+		                  cloud_cover => $cc );
 	}
 	my $avg = $binner->output->{cloud_cover};
 
