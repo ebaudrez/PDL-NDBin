@@ -417,7 +417,7 @@ sub _check_pdl_length
 {
 	my $self = shift;
 	# checking whether the lengths of all axes and variables are equal can
-	# only be done here (in a loop), and not in _auto_axis()
+	# only be done here (in a loop), and not in autoscale_axis()
 	my $length;
 	for my $v ( $self->axes, $self->vars ) {
 		$length = $v->{pdl}->nelem unless defined $length;
@@ -434,19 +434,189 @@ sub _check_pdl_length
 	}
 }
 
-=head2 autoscale()
+=head2 autoscale_axis()
 
-Determine the following parameters for the axes automatically, if they have not
+Determine the following parameters for one axis automatically, if they have not
 been supplied by the user: the step size, the lowest bin, and the number of
-bins. It will use whatever combination of specifications that have been
-supplied by the user, and the data itself. Obviously, the piddles containing
-the data must have been set before calling this subroutine.
+bins. It will use whatever combination is needed of the specifications that
+have been supplied by the user, and the data itself. Obviously, the piddles
+containing the data must have been set before calling this subroutine. Details
+of the automatic parameter calculation are given below.
+
+It is not usually required to call this method, as it is called automatically
+by autoscale().
+
+=head3 Range
+
+The range, when not given explicitly, is calculated from the data by calling
+min() and max(). An exception will be thrown if the data range is zero.
+autoscale_axis() honours the I<round> key to round bin boundaries to the
+nearest multiple of I<round>.
+
+=head3 Number of bins
+
+The number of bins I<n>, when not given explicitly, is determined
+automatically. If the step size is defined and positive, the number of bins is
+calculated from the range and the step size. The calculation is different for
+floating-point data and integral data.
 
 If neither the number of bins, nor the step size have been supplied by the
 user, the default behaviour of hist() is adopted: take the number of bins equal
 to the number of data values, or equal to 100, whichever is smaller.
-autoscale() honours the I<round> key to round bin boundaries to the nearest
-multiple of I<round>.
+
+For floating-point data, I<n> is calculated as follows:
+
+	n = range / step
+
+The calculation is slightly different for integral data. When binning an
+integral number, say 4, it really belongs in a bin that spans the range 4
+through 4.99...; to bin a list of data values with, say, I<min> = 3 and I<max>
+= 8, we must consider the range to be 9-3 = 6. A step size of 3 would yield 2
+bins, one containing the values (3, 4, 5), and another containing the values
+(6, 7, 8). However, I<n> calculated in this way may well be fractional. When
+I<n> is ultimately used in the binning, it is converted to I<int> by
+truncating. To have sufficient bins, I<n> must be rounded up to the next
+integer. The correct formula for calculating the number of bins is therefore
+
+	n = ceil( ( range + 1 ) / step )
+
+In the implementation, however, it is easier to calculate I<n> as it is done
+for floating-point data, and increment it by one, before it is truncated. The
+following formula is how I<n> is calculated by the code:
+
+	n = floor( range/step + 1 )
+
+Using the following identity from
+L<http://en.wikipedia.org/wiki/Floor_and_ceiling_functions>, both formulas can
+be proved to be equivalent:
+
+	ceil( x/y ) = floor( (x+y-1)/y )
+
+	XXX the docs are out of sync here: we truncate in autoscale_axis()
+	because we were having trouble with PDL doing conversion to double on
+	$idx = $idx * $n + $binned
+	when $n is fractional (i.e., PDL doesn't truncate); but this is
+	expected to go away when we reimplement the flattening in XS, since in
+	OtherPars we will specify `int'
+
+=head3 Step size
+
+The step size, when not given explicitly, is determined from the range and the
+number of bins I<n> as follows
+
+	step = range / n
+
+The step size may be fractional, even for integral data. Although this may seem
+strange, it yields more natural results. Consider the data (3, 4, 5, 6).
+Binning with I<n> = 2 yields the histogram (2, 2), which is what you expect,
+although the step size in this example is 1.5. The step size must not be less
+than one, however. If this happens, there are more bins than there are distinct
+numbers in the data, and the function will abort.
+
+Note that when the number of I<n> is not given either, a default value is
+substituted for it by PDL::NDBin, as described above.
+
+=cut
+
+sub autoscale_axis
+{
+	my $axis = shift;
+	# return early if step, min, and n have already been calculated
+	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
+		$log->tracef( 'step, min, n already calculated for %s; not recalculating', $axis );
+		return;
+	}
+	# first get & sanify the arguments
+	PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
+	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
+
+=for comment
+	# allow options the way histogram() and histogram2d() do, but
+	# warn if a maximum has been given, because it is not possible
+	# to honour four constraints
+	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
+		if( defined $axis->{max} ) {
+			my $warning = join '',
+				'step size, minimum value and number of bins are given; ',
+				'the given maximum value will be ignored';
+			if( $axis->{pdl}->type < PDL::float ) {
+				if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} - 1 ) {
+					carp $warning;
+				}
+			}
+			else {
+				if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} ) {
+					carp $warning;
+				}
+			}
+		}
+	}
+
+=cut
+
+	$axis->{max} = $axis->{pdl}->max unless defined $axis->{max};
+	if( defined $axis->{round} and $axis->{round} > 0 ) {
+		$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
+		$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
+	}
+	PDL::Core::barf( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
+	if( $axis->{pdl}->type >= PDL::float ) {
+		PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
+	}
+	# if step size has been supplied by user, check it
+	if( defined $axis->{step} ) {
+		PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
+		if( $axis->{pdl}->type < PDL::float && $axis->{step} < 1 ) {
+			PDL::Core::barf( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
+		}
+	}
+	# number of bins I<n>
+	if( defined $axis->{n} ) {
+		PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
+	}
+	else {
+		if( defined $axis->{step} ) {
+			# data range and step size were verified above,
+			# so the result of this calculation is
+			# guaranteed to be > 0
+			# XXX CORE:: is ugly -- but can be remedied
+			# later when we reimplement the flattening in XS
+			$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
+			if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
+		}
+		else {
+			# if neither number of bins nor step size is
+			# defined, take the default behaviour of hist()
+			# (see F<Basic.pm>)
+			$axis->{n} = $axis->{pdl}->nelem > 100 ? 100 : $axis->{pdl}->nelem;
+		}
+	}
+	# step size I<step>
+	# if we get here, the data range is certain to be larger than
+	# zero, and I<n> is sure to be defined and valid (either
+	# because it was supplied explicitly and verified to be valid,
+	# or because it was calculated automatically)
+	if( ! defined $axis->{step} ) {
+		if( $axis->{pdl}->type < PDL::float ) {
+			# result of this calculation is guaranteed to be >= 1
+			$axis->{step} = ( $axis->{max} - $axis->{min} + 1 ) / $axis->{n};
+			PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
+		}
+		else {
+			# result of this calculation is guaranteed to be > 0
+			$axis->{step} = ( $axis->{max} - $axis->{min} ) / $axis->{n};
+		}
+	}
+}
+
+=head2 autoscale()
+
+Determine the following parameters for all axes automatically, if they have not
+been supplied by the user: the step size, the lowest bin, and the number of
+bins. It will use whatever combination is needed of the specifications that
+have been supplied by the user, and the data itself. Obviously, the piddles
+containing the data must have been set before calling this subroutine. For more
+details on the autoscaling, consult autoscale_axis().
 
 autoscale() accepts, but does not require, arguments. They must be key-value
 pairs as for feed(), and indicate piddle data that must be fed into the object
@@ -464,7 +634,7 @@ sub autoscale
 	$self->feed( @_ );
 	$self->_check_all_pdls_present;
 	$self->_check_pdl_length;
-	_auto_axis( $_ ) for $self->axes;
+	autoscale_axis( $_ ) for $self->axes;
 }
 
 =head2 labels()
@@ -645,97 +815,6 @@ sub _expand_axes
 	}
 	push @out, $hash if $hash;
 	return @out;
-}
-
-sub _auto_axis
-{
-	my $axis = shift;
-	# return early if step, min, and n have already been calculated
-	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
-		$log->tracef( 'step, min, n already calculated for %s; not recalculating', $axis );
-		return;
-	}
-	# first get & sanify the arguments
-	PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
-	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
-
-=for comment
-	# allow options the way histogram() and histogram2d() do, but
-	# warn if a maximum has been given, because it is not possible
-	# to honour four constraints
-	if( defined $axis->{step} && defined $axis->{min} && defined $axis->{n} ) {
-		if( defined $axis->{max} ) {
-			my $warning = join '',
-				'step size, minimum value and number of bins are given; ',
-				'the given maximum value will be ignored';
-			if( $axis->{pdl}->type < PDL::float ) {
-				if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} - 1 ) {
-					carp $warning;
-				}
-			}
-			else {
-				if( $axis->{max} != $axis->{min} + $axis->{n} * $axis->{step} ) {
-					carp $warning;
-				}
-			}
-		}
-	}
-
-=cut
-
-	$axis->{max} = $axis->{pdl}->max unless defined $axis->{max};
-	if( defined $axis->{round} and $axis->{round} > 0 ) {
-		$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
-		$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
-	}
-	PDL::Core::barf( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
-	if( $axis->{pdl}->type >= PDL::float ) {
-		PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
-	}
-	# if step size has been supplied by user, check it
-	if( defined $axis->{step} ) {
-		PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
-		if( $axis->{pdl}->type < PDL::float && $axis->{step} < 1 ) {
-			PDL::Core::barf( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
-		}
-	}
-	# number of bins I<n>
-	if( defined $axis->{n} ) {
-		PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
-	}
-	else {
-		if( defined $axis->{step} ) {
-			# data range and step size were verified above,
-			# so the result of this calculation is
-			# guaranteed to be > 0
-			# XXX CORE:: is ugly -- but can be remedied
-			# later when we reimplement the flattening in XS
-			$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
-			if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
-		}
-		else {
-			# if neither number of bins nor step size is
-			# defined, take the default behaviour of hist()
-			# (see F<Basic.pm>)
-			$axis->{n} = $axis->{pdl}->nelem > 100 ? 100 : $axis->{pdl}->nelem;
-		}
-	}
-	# step size I<step>
-	# if we get here, the data range is certain to be larger than
-	# zero, and I<n> is sure to be defined and valid (either
-	# because it was supplied explicitly and verified to be valid,
-	# or because it was calculated automatically)
-	if( ! defined $axis->{step} ) {
-		if( $axis->{pdl}->type < PDL::float ) {
-			# result of this calculation is guaranteed to be >= 1
-			$axis->{step} = ( $axis->{max} - $axis->{min} + 1 ) / $axis->{n};
-			PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
-		}
-		else {
-			# result of this calculation is guaranteed to be > 0
-			$axis->{step} = ( $axis->{max} - $axis->{min} ) / $axis->{n};
-		}
-	}
 }
 
 =head2 _random_name()
@@ -1109,77 +1188,6 @@ handle empty piddles, you can wrap the action as follows to skip empty bins:
 Remember that return I<undef> from the action will not fill the current bin.
 Note that the evaluation of C<<$iter->want>> entails a performance penalty,
 even if the bin is empty and not processed further.
-
-=head2 Automatic parameter calculation
-
-=head3 Range
-
-The range, when not given explicitly, is calculated from the data by calling
-min() and max(). An exception will be thrown if the data range is zero.
-
-=head3 Number of bins
-
-The number of bins I<n>, when not given explicitly, is determined
-automatically. If the step size is not defined, PDL::NDBin assumes the default
-behaviour of hist(). If the number of elements of data is 100 or less, the
-number of bins equals the number of elements. Otherwise, the number of bins
-defaults to 100.
-
-If the step size is defined and positive, the number of bins is calculated from
-the range and the step size. The calculation is different for floating-point
-data and integral data.
-
-For floating-point data, I<n> is calculated as follows:
-
-	n = range / step
-
-The calculation is slightly different for integral data. When binning an
-integral number, say 4, it really belongs in a bin that spans the range 4
-through 4.99...; to bin a list of data values with, say, I<min> = 3 and I<max>
-= 8, we must consider the range to be 9-3 = 6. A step size of 3 would yield 2
-bins, one containing the values (3, 4, 5), and another containing the values
-(6, 7, 8). However, I<n> calculated in this way may well be fractional. When
-I<n> is ultimately used in the binning, it is converted to I<int> by
-truncating. To have sufficient bins, I<n> must be rounded up to the next
-integer. The correct formula for calculating the number of bins is therefore
-
-	n = ceil( ( range + 1 ) / step )
-
-In the implementation, however, it is easier to calculate I<n> as it is done
-for floating-point data, and increment it by one, before it is truncated. The
-following formula is how I<n> is calculated by the code:
-
-	n = floor( range/step + 1 )
-
-Using the following identity from
-L<http://en.wikipedia.org/wiki/Floor_and_ceiling_functions>, both formulas can
-be proved to be equivalent:
-
-	ceil( x/y ) = floor( (x+y-1)/y )
-
-	XXX the docs are out of sync here: we truncate in _auto_axis()
-	because we were having trouble with PDL doing conversion to double on
-	$idx = $idx * $n + $binned
-	when $n is fractional (i.e., PDL doesn't truncate); but this is
-	expected to go away when we reimplement the flattening in XS, since in
-	OtherPars we will specify `int'
-
-=head3 Step size
-
-The step size, when not given explicitly, is determined from the range and the
-number of bins I<n> as follows
-
-	step = range / n
-
-The step size may be fractional, even for integral data. Although this may seem
-strange, it yields more natural results. Consider the data (3, 4, 5, 6).
-Binning with I<n> = 2 yields the histogram (2, 2), which is what you expect,
-although the step size in this example is 1.5. The step size must not be less
-than one, however. If this happens, there are more bins than there are distinct
-numbers in the data, and the function will abort.
-
-Note that when the number of I<n> is not given either, a default value is used
-by PDL::NDBin, as described above.
 
 =head2 Probing PDL::NDBin's parameters
 
