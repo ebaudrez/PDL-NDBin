@@ -1506,21 +1506,21 @@ GHz and fast disks. The following table, obtained with 100 bins and a data file
 of 2 million data points, shows typical results on the laptop:
 
 	Benchmark: timing 50 iterations of MGH, MH, MSHXS, PND, hist, histogram...
-	       MGH: 40 wallclock secs (40.43 usr +  0.08 sys = 40.51 CPU) @  1.23/s (n=50)
-		MH:  6 wallclock secs ( 5.57 usr +  0.01 sys =  5.58 CPU) @  8.96/s (n=50)
-	     MSHXS:  2 wallclock secs ( 2.22 usr +  0.01 sys =  2.23 CPU) @ 22.42/s (n=50)
-	       PND:  2 wallclock secs ( 1.44 usr +  0.00 sys =  1.44 CPU) @ 34.72/s (n=50)
-	      hist:  1 wallclock secs ( 1.26 usr +  0.01 sys =  1.27 CPU) @ 39.37/s (n=50)
+	       MGH: 41 wallclock secs (40.83 usr +  0.00 sys = 40.83 CPU) @  1.22/s (n=50)
+		MH:  6 wallclock secs ( 5.60 usr +  0.00 sys =  5.60 CPU) @  8.93/s (n=50)
+	     MSHXS:  2 wallclock secs ( 2.22 usr +  0.00 sys =  2.22 CPU) @ 22.52/s (n=50)
+	       PND:  1 wallclock secs ( 1.43 usr +  0.00 sys =  1.43 CPU) @ 34.97/s (n=50)
+	      hist:  2 wallclock secs ( 1.09 usr +  0.00 sys =  1.09 CPU) @ 45.87/s (n=50)
 	 histogram:  1 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 46.30/s (n=50)
 
 	Relative performance:
-	            Rate       MGH        MH     MSHXS       PND      hist histogram
-	MGH       1.23/s        --      -86%      -94%      -96%      -97%      -97%
-	MH        8.96/s      626%        --      -60%      -74%      -77%      -81%
-	MSHXS     22.4/s     1717%      150%        --      -35%      -43%      -52%
-	PND       34.7/s     2713%      288%       55%        --      -12%      -25%
-	hist      39.4/s     3090%      339%       76%       13%        --      -15%
-	histogram 46.3/s     3651%      417%      106%       33%       18%        --
+		    Rate       MGH        MH     MSHXS       PND      hist histogram
+	MGH       1.22/s        --      -86%      -95%      -96%      -97%      -97%
+	MH        8.93/s      629%        --      -60%      -74%      -81%      -81%
+	MSHXS     22.5/s     1739%      152%        --      -36%      -51%      -51%
+	PND       35.0/s     2755%      292%       55%        --      -24%      -24%
+	hist      45.9/s     3646%      414%      104%       31%        --       -1%
+	histogram 46.3/s     3681%      419%      106%       32%        1%        --
 
 From this test and other tests, it can be concluded that PDL::NDBin (shown as
 'PND' in the table) is, roughly speaking,
@@ -1572,16 +1572,16 @@ to be equal.
 Similar conclusions are obtained for two-dimensional histograms. The following
 table shows results on the laptop for 2 million data points with 100 bins:
 
-	Benchmark: timing 50 iterations of MGH2d, PND2d, histogram2d...
-	      MGH2d: 59 wallclock secs (58.97 usr +  0.24 sys = 59.21 CPU) @  0.84/s (n=50)
-	      PND2d:  6 wallclock secs ( 5.92 usr +  0.00 sys =  5.92 CPU) @  8.45/s (n=50)
-	histogram2d:  2 wallclock secs ( 2.18 usr +  0.00 sys =  2.18 CPU) @ 22.94/s (n=50)
+	Benchmark: timing 50 iterations of MGH2d, PND2d, histogram2d, ndbinning2d...
+	      MGH2d: 65 wallclock secs (64.38 usr +  0.09 sys = 64.47 CPU) @  0.78/s (n=50)
+	      PND2d:  6 wallclock secs ( 5.96 usr +  0.00 sys =  5.96 CPU) @  8.39/s (n=50)
+	histogram2d:  2 wallclock secs ( 2.16 usr +  0.01 sys =  2.17 CPU) @ 23.04/s (n=50)
 
 	Relative performance:
-		       Rate       MGH2d       PND2d histogram2d
-	MGH2d       0.844/s          --        -90%        -96%
-	PND2d        8.45/s        900%          --        -63%
-	histogram2d  22.9/s       2616%        172%          --
+		       Rate       MGH2d ndbinning2d       PND2d histogram2d
+	MGH2d       0.776/s          --        -91%        -91%        -97%
+	PND2d        8.39/s        982%          0%          --        -64%
+	histogram2d  23.0/s       2871%        175%        175%          --
 
 (It was not possible to run the test with Math::Histogram to completion.)
 
@@ -1607,22 +1607,22 @@ variable number of data points:
 	| method    |   # points | CPU time |    n | time/iter. | time/iter./point |
 	|           |            |      (s) |      |       (ms) |             (ns) |
 	+-----------+------------+----------+------+------------+------------------+
-	| MGH       |     66,398 |    36.63 | 1500 |     24.420 |          367.782 |
-	| MGH       |  2,255,838 |    40.51 |   50 |    810.200 |          359.157 |
+	| MGH       |     66,398 |    35.26 | 1500 |     23.507 |          354.027 |
+	| MGH       |  2,255,838 |    40.83 |   50 |    816.600 |          361.994 |
 	+-----------+------------+----------+------+------------+------------------+
-	| MH        |     66,398 |     5.17 | 1500 |      3.447 |           51.909 |
-	| MH        |  2,255,838 |     5.58 |   50 |    111.600 |           49.472 |
+	| MH        |     66,398 |     5.21 | 1500 |      3.473 |           52.311 |
+	| MH        |  2,255,838 |     5.60 |   50 |    112.000 |           49.649 |
 	+-----------+------------+----------+------+------------+------------------+
-	| MSHXS     |     66,398 |     1.95 | 1500 |      1.300 |           19.579 |
-	| MSHXS     |  2,255,838 |     2.23 |   50 |     44.600 |           19.771 |
+	| MSHXS     |     66,398 |     2.00 | 1500 |      1.333 |           20.081 |
+	| MSHXS     |  2,255,838 |     2.22 |   50 |     44.400 |           19.682 |
 	+-----------+------------+----------+------+------------+------------------+
-	| PND       |     66,398 |     2.85 | 1500 |      1.900 |           28.615 |
-	| PND       |  2,255,838 |     1.44 |   50 |     28.800 |           12.767 |
-	| PND       | 33,358,558 |     2.36 |    5 |    472.000 |           14.149 |
+	| PND       |     66,398 |     2.87 | 1500 |      1.913 |           28.816 |
+	| PND       |  2,255,838 |     1.43 |   50 |     28.600 |           12.678 |
+	| PND       | 33,358,558 |     2.28 |    5 |    456.000 |           13.670 |
 	+-----------+------------+----------+------+------------+------------------+
 	| histogram |     66,398 |     0.96 | 1500 |      0.640 |            9.639 |
 	| histogram |  2,255,838 |     1.08 |   50 |     21.600 |            9.575 |
-	| histogram | 33,358,558 |     1.62 |    5 |    324.000 |            9.713 |
+	| histogram | 33,358,558 |     1.60 |    5 |    320.000 |            9.593 |
 	+-----------+------------+----------+------+------------+------------------+
 
 Note that the tests couldn't be run with Math::GSL::Histogram, Math::Histogram,
@@ -1666,35 +1666,38 @@ with a variable number of bins:
 	| method    |  # bins | CPU time |  n | time/iter. |
 	|           |         |      (s) |    |       (ms) |
 	+-----------+---------+----------+----+------------+
-	| MGH       |      10 |    40.72 | 50 |    814.400 |
-	| MGH       |      50 |    41.20 | 50 |    824.000 |
-	| MGH       |     100 |    40.51 | 50 |    810.200 |
+	| MGH       |      10 |    39.26 | 50 |    785.200 |
+	| MGH       |      50 |    42.54 | 50 |    850.800 |
+	| MGH       |     100 |    40.83 | 50 |    816.600 |
+	| MGH       |   1,000 |    40.87 | 50 |    817.400 |
+	| MGH       |  10,000 |    40.65 | 50 |    813.000 |
+	| MGH       | 100,000 |    43.63 | 50 |    872.600 |
 	+-----------+---------+----------+----+------------+
-	| MH        |      10 |     5.49 | 50 |    109.800 |
-	| MH        |      50 |     5.55 | 50 |    111.000 |
-	| MH        |     100 |     5.58 | 50 |    111.600 |
-	| MH        |   1,000 |     5.69 | 50 |    113.800 |
+	| MH        |      10 |     5.57 | 50 |    111.400 |
+	| MH        |      50 |     5.64 | 50 |    112.800 |
+	| MH        |     100 |     5.60 | 50 |    112.000 |
+	| MH        |   1,000 |     5.66 | 50 |    113.200 |
 	+-----------+---------+----------+----+------------+
-	| MSHXS     |      10 |     2.20 | 50 |     44.000 |
+	| MSHXS     |      10 |     2.25 | 50 |     45.000 |
 	| MSHXS     |      50 |     2.22 | 50 |     44.400 |
-	| MSHXS     |     100 |     2.23 | 50 |     44.600 |
-	| MSHXS     |   1,000 |     2.26 | 50 |     45.200 |
+	| MSHXS     |     100 |     2.22 | 50 |     44.400 |
+	| MSHXS     |   1,000 |     2.24 | 50 |     44.800 |
 	| MSHXS     |  10,000 |     2.29 | 50 |     45.800 |
-	| MSHXS     | 100,000 |     2.64 | 50 |     52.800 |
+	| MSHXS     | 100,000 |     2.65 | 50 |     53.000 |
 	+-----------+---------+----------+----+------------+
-	| PND       |      10 |     1.41 | 50 |     28.200 |
+	| PND       |      10 |     1.43 | 50 |     28.600 |
 	| PND       |      50 |     1.42 | 50 |     28.400 |
-	| PND       |     100 |     1.44 | 50 |     28.800 |
-	| PND       |   1,000 |     1.74 | 50 |     34.800 |
-	| PND       |  10,000 |     4.90 | 50 |     98.000 |
-	| PND       | 100,000 |    36.82 | 50 |    736.400 |
+	| PND       |     100 |     1.43 | 50 |     28.600 |
+	| PND       |   1,000 |     1.75 | 50 |     35.000 |
+	| PND       |  10,000 |     4.99 | 50 |     99.800 |
+	| PND       | 100,000 |    37.16 | 50 |    743.200 |
 	+-----------+---------+----------+----+------------+
 	| histogram |      10 |     1.09 | 50 |     21.800 |
-	| histogram |      50 |     1.34 | 50 |     26.800 |
+	| histogram |      50 |     1.09 | 50 |     21.800 |
 	| histogram |     100 |     1.08 | 50 |     21.600 |
-	| histogram |   1,000 |     1.13 | 50 |     22.600 |
+	| histogram |   1,000 |     1.08 | 50 |     21.600 |
 	| histogram |  10,000 |     1.12 | 50 |     22.400 |
-	| histogram | 100,000 |     1.20 | 50 |     24.000 |
+	| histogram | 100,000 |     1.21 | 50 |     24.200 |
 	+-----------+---------+----------+----+------------+
 
 Note that some data are missing because the associated test didn't run
@@ -1709,9 +1712,7 @@ bins, execution time rises significantly. The cause of this problem is not
 known.
 
 The results suggest that PDL::NDBin scales well with the number of bins up to
-1,000. Beyond 1,000 bins, the performance decreases significantly. Only
-Math::SimpleHisto::XS, PDL::NDBin, and histogram() are able to work with very
-high bin counts.
+1,000. Beyond 1,000 bins, the performance decreases significantly.
 
 =head1 BUGS
 
