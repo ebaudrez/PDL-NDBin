@@ -1150,12 +1150,15 @@ the following data:
 The data are actual satellite data obtained with the GERB instrument
 (L<http://gerb.oma.be>). The data are located by longitude, latitude, and the
 task at hand is to assign each sample to boxes of I<m> degrees longitude by
-I<n> degrees latitude, and then to average all samples belonging to every box,
-as well as computing the standard deviation. For the purpose of this example,
-the data sets have been stripped down very much, and the number of lat/lon
-boxes has been reduced greatly. A variant of this script is used to bin and
-average the samples for a complete month of data, totalling around 4GB of input
-data and more than 60 million samples.
+I<n> degrees latitude, and then to average all samples belonging to any given
+box, as well as computing the standard deviation. Another example of this kind
+of binning in Python is shown
+L<here|http://www.scipy.org/Cookbook/Matplotlib/Gridding_irregularly_spaced_data>.
+
+For the purpose of this example, the data sets have been stripped down very
+much, and the number of lat/lon boxes has been reduced greatly. A variant of
+this script is used to bin and average the samples for a complete month of
+data, totalling around 4GB of input data and more than 60 million samples.
 
 The constructor call is
 
