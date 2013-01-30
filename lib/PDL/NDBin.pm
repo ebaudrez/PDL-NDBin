@@ -1007,7 +1007,231 @@ sub ndbin
 
 1;
 
-=head1 USAGE EXAMPLES
+=head1 EXAMPLES
+
+A few examples are included with this distribution, in the directory
+F<examples/>.
+
+=head2 Histogram and stem-and-leaf plot
+
+The basic usage of PDL::NDBin is illustrated below by constructing a histogram.
+Suppose we have a data table as follows (only the first 8 lines of data are
+shown):
+
+	# Prestige  Income  Education  Occupation
+	97          76      97         Physician
+	93          64      93         Professor
+	92          78      82         Banker
+	90          75      92         Architect
+	90          64      86         Chemist
+	90          80      100        Dentist
+	89          76      98         Lawyer
+	88          72      86         Civil engineer
+	...
+
+(The table is also included in the example files, and is taken from John Fox,
+Applied Regression Analysis, Linear Models, and Related Methods, SAGE
+Publications, Inc., 1997). We will now write a script to compute the histogram
+of the I<Income> field, in bins of 10 units wide.
+
+	use PDL;
+	use PDL::NDBin;
+
+Note that loading PDL::NBBin does not automatically export PDL to your
+namespace, so you need to load PDL explicitly.
+
+	my $binner = PDL::NDBin->new( axes => [ [ 'Income', min => 0, max => 100, step => 10 ] ],
+	                              vars => [ [ 'Income', 'Count' ] ] );
+
+First we build the object with a call to new(). Note that the same name can be
+used in both axes and variables (in this case, I<Income>). I<step> signifies
+the width of the bins. By associating the action I<Count> with I<Income>, we
+will produce a histogram of the elements in I<Income>. (The action name is
+actually the name of a class in the PDL::NDBin::Action namespace.)
+
+	my( $prestige, $income, $education ) = rcols 'table';
+
+Next, we read the data from the data file. The PDL function rcols() is very
+convenient to read tabular data of the kind shown above.
+
+	$binner->process( Income => $income );
+
+The data is then 'fed' into the binning object, with a call to process(). Note
+that you need to specify the name that was given in the constructor call in
+order to associate the numerical data with the axis and variable.
+
+	my %results = $binner->output;
+	my $histogram = $results{Income};
+
+We now recover the histogram with output(), which returns a hash with the
+results, keyed by name (again the same name as used in the constructor).
+
+Of course, for this very simple example, the histogram could as well be
+calculated with the following built-in function of PDL:
+
+	my $histogram = hist( $income, 0, 100, 10 );
+
+If you'd rather print a stem-and-leaf plot, you could modify the constructor
+call as follows:
+
+	my $binner = PDL::NDBin->new( axes => [ [ 'Income', min => 0, max => 100, step => 10 ] ],
+	                              vars => [ [ 'Income', \&stem_and_leaf_plot ] ] );
+
+Now the action associated with I<Income> is no longer I<Count> (which counts
+the elements in each bin), but rather a reference to a user-supplied subroutine
+stem_and_leaf_plot(). The latter could be implemented as shown below.
+
+	sub stem_and_leaf_plot
+	{
+		my $iter = shift;
+		my $bin  = $iter->bin;
+		my @list = map { $_ % 10 } sort $iter->selection->list;
+		printf "%d | %s\n", $bin, join '', @list;
+	}
+
+The only argument supplied to our callback stem_and_leaf_plot() is an object of
+the type L<PDL::NDBin::Iterator>. This object is used to iterate over the bins
+of the variable (I<Income> in this case). With the method bin(), we can recover
+the current bin number. With selection(), we recover those elements of
+I<Income> that fall in the current bin. Those elements are then printed in a
+neat list (retaining only the last digit).
+
+To actually produce the stem-and-leaf plot, we still need to call
+
+	$binner->process( Income => $income );
+
+Note that it is not necessary to call output(), as we are not interested in the
+return value of stem_and_leaf_plot().
+
+=head2 Local averaging of two-dimensional data
+
+This is a slightly more complicated example, where PDL::NDBin is used to
+average two-dimensional data in boxes of 1x1. Suppose you have elevation data
+of a particular area in the form of (x,y)-located samples:
+
+	# x       y    height
+	0.3	6.1	870.0
+	1.4	6.2	793.0
+	2.4	6.1	755.0
+	3.6	6.2	690.0
+	5.7	6.2	800.0
+	1.6	5.2	800.0
+	...
+
+(The data have been taken from Example 14 of the GMT Cookbook. You can find
+more information on GMT under L<SEE ALSO>.) Note that the samples are not
+distributed uniformly over the area. We want to compute the I<average>
+elevation in boxes of 1 by 1, replacing multiple samples in any given box by
+the mean of those samples (e.g., prior to computing a surface through these
+points). When using the Generic Mapping Tools, you'd do it as follows:
+
+	blockmean table -R0/7/0/7 -I1
+
+How to do this with PDL::NDBin is shown below.
+
+	use PDL;
+	use PDL::NDBin;
+	my( $x, $y, $z ) = rcols 'table';
+
+As in the first example.
+
+	my $binner = PDL::NDBin->new( axes => [ [ 'x', min=>-0.5, max=>7.5, step=>1 ],
+	                                        [ 'y', min=>-0.5, max=>7.5, step=>1 ] ],
+	                              vars => [ [ 'x', 'Avg' ],
+	                                        [ 'y', 'Avg' ],
+	                                        [ 'z', 'Avg' ] ] );
+
+The constructor call specifies two axes for two-dimensional binning, and will
+compute the average in each bin of three variables simultaneously: x- and
+y-coordinate, and elevation ($z). We need to average the coordinates, as we
+want to replace multiple points with a single, average point; that is why I<x>
+and I<y> appear in the axes as well as in the variables.
+
+To produce a table with averaged data, proceed (roughly) like in the first
+example:
+
+	$binner->process( x => $x, y => $y, z => $z );
+	my %results = $binner->output;
+	my @avg = map { $_->flat } @results{ qw/x y z/ };
+	wcols @avg;
+
+wcols() is the inverse of rcols() and will print out the data in tabular
+format.
+
+=head2 Average and standard deviation of sampled satellite data
+
+The next example shows how to deal with large data volumes. Suppose you have
+the following data:
+
+	#  longitude        latitude        albedo        flux     windspeed
+	-28.5789718628  -17.6553726196  0.0973502323031   84.5   7.1533331871
+	-12.5770769119  -20.5219345093  0.094131320715    81     6.69999980927
+	-16.9122467041    1.0953686237  0.0729057863355   87.25  6.04666662216
+	-16.2659015656  -11.5013151169  0.0838633701205   89     8.14666652679
+	  0.3412319422  -27.6491680145  0.151734098792    78.75  6.48000001907
+	-32.6132278442   39.7315559387  0.128813564777   104.5   6.19333314896
+	-33.4954719543   33.6763381958  0.0628560185432   80     5.28666687012
+	 11.4981594086   35.1409721375  0.0674269720912   84.25  5.2266664505
+	 ...
+
+The data are actual satellite data obtained with the GERB instrument
+(L<http://gerb.oma.be>). The data are located by longitude, latitude, and the
+task at hand is to assign each sample to boxes of I<m> degrees longitude by
+I<n> degrees latitude, and then to average all samples belonging to every box,
+as well as computing the standard deviation. For the purpose of this example,
+the data sets have been stripped down very much, and the number of lat/lon
+boxes has been reduced greatly. A variant of this script is used to bin and
+average the samples for a complete month of data, totalling around 4GB of input
+data and more than 60 million samples.
+
+The constructor call is
+
+	my $binner = PDL::NDBin->new( axes => [ [ longitude => min => -60, max => 60, step => 40 ],
+	                                        [ latitude  => min => -60, max => 60, step => 40 ] ],
+	                              vars => [ [ avg    => 'Avg'    ],
+	                                        [ stddev => 'StdDev' ],
+	                                        [ count  => 'Count'  ] ] );
+
+In an application, a large volume of data would likely be spread over multiple
+data files. Suppose that the data are distributed over a number of F<.txt>
+files (in a real application, a binary format would be preferred over plain
+text). The following loop then processes all files without loading the entire
+data volume into memory:
+
+	for my $file ( glob '??.txt' ) {
+		my( $longitude, $latitude, $albedo, $flux, $windspeed ) = rcols $file;
+		$binner->process( longitude => $longitude,
+		                  latitude  => $latitude,
+		                  avg       => $flux,
+		                  stddev    => $flux,
+		                  count     => $flux );
+	}
+
+Note how the data are read from disk and immediately processed. After the call
+to process(), the data are no longer required, and can be discarded! The
+actions I<Avg>, I<StdDev> and I<Count> (and also I<Sum> which is not shown in
+this example) keep an internal state which allows them to 'chain' multiple
+calls to process(). Note how the same variable $flux is fed three times to
+three different actions in order to obtain its average, standard deviation, and
+count, respectively.
+
+The results are recovered as usual with
+
+	my %results = $binner->output;
+	print "Average flux:\n", $results{avg}, "\n";
+	print "Standard deviation of flux:\n", $results{stddev}, "\n";
+	print "Number of observations per bin:\n", $results{count}, "\n";
+
+Another point to note in this example is that the optimized action classes
+I<Avg> (and similar) are required for performance when processing large volumes
+of data. The average could in principle also be computed with a coderef:
+
+	avg => sub { shift->selection->avg }
+
+Although the result will be the same, the computation will be much slower,
+since the call to selection() is very time-consuming.
+
+=head1 OBSOLETE EXAMPLES
 
 A one-dimensional histogram of height of individuals, binned between 0 and 2
 metres, with the step size determined automatically:
@@ -1261,6 +1485,10 @@ L<Math::Histogram>
 L<Math::SimpleHisto::XS>
 
 =back
+
+There's also the Generic Mapping Tools (written in C) at
+L<http://gmt.soest.hawaii.edu>. It is focused on creating high-quality graphics
+and provides a few tools to do tasks like regridding, local averaging, ...
 
 The following sections give a detailed overview of features, limitations, and
 performance of PDL::NDBin and related distributions on CPAN.
