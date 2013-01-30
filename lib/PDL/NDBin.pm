@@ -1947,15 +1947,29 @@ None reported.
 
 =head1 TODO
 
-This documentation is unfortunately quite incomplete, due to lack of time.
-
-What PDL::NDBin doesn't do (yet):
+As is probably obvious from this manual, there are quite a few areas where
+PDL::NDBin can be improved. In particular:
 
 =over 4
 
-=item Collecting the actual values in a bin
+=item *
 
-This would be very useful for plotting or output.
+PDL:NDBin does not currently have a way to collect and return the values in a
+bin as a list or piddle; this would be very useful for plotting or output
+
+=item *
+
+PDL::NDBin does not currently support variable-width bins and weighted
+histograms
+
+=item *
+
+PDL::NDBin has some performance issues with very small datasets or large bin
+counts; some profiling is in order
+
+=item *
+
+The documentation could be improved
 
 =back
 
