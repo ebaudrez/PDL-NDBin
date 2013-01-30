@@ -1060,6 +1060,19 @@ To actually produce the stem-and-leaf plot, we still need to call
 
 	$binner->process( Income => $income );
 
+The result is the following neat diagram:
+
+	0 | 77899
+	1 | 245667
+	2 | 1111299
+	3 | 46
+	4 | 12224788
+	5 | 355
+	6 | 02447
+	7 | 2256668
+	8 | 01
+	9 |
+
 Note that it is not necessary to call output(), as we are not interested in the
 return value of stem_and_leaf_plot().
 
