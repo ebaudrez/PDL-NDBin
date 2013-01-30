@@ -1024,7 +1024,12 @@ order to associate the numerical data with the axis and variable.
 	my $histogram = $results{Income};
 
 We now recover the histogram with output(), which returns a hash with the
-results, keyed by name (again the same name as used in the constructor).
+results, keyed by name (again the same name as used in the constructor). To
+find the number of elements in the bin with 40 <= income < 50, for instance,
+you could also use the following L<awk(1)> script:
+
+	$2 >= 40 && $2 < 50 { cnt++ }
+	END                 { print cnt }
 
 Of course, for this very simple example, the histogram could as well be
 calculated with the following built-in function of PDL:
@@ -1151,9 +1156,14 @@ The data are actual satellite data obtained with the GERB instrument
 (L<http://gerb.oma.be>). The data are located by longitude, latitude, and the
 task at hand is to assign each sample to boxes of I<m> degrees longitude by
 I<n> degrees latitude, and then to average all samples belonging to any given
-box, as well as computing the standard deviation. Another example of this kind
-of binning in Python is shown
+box, as well as computing the standard deviation. An example of this kind of
+binning in Python is shown
 L<here|http://www.scipy.org/Cookbook/Matplotlib/Gridding_irregularly_spaced_data>.
+In L<awk(1)>, you could compute the average flux in the box bounded by -60 <
+longitude < -20 and -60 < latitude < -20 as follows:
+
+	$1 > -60 && $1 < -20 && $2 > -60 && $2 < -20 { sum += $4; cnt++ }
+	END { print sum/cnt }
 
 For the purpose of this example, the data sets have been stripped down very
 much, and the number of lat/lon boxes has been reduced greatly. A variant of
@@ -1453,9 +1463,23 @@ L<Math::SimpleHisto::XS>
 
 =back
 
-There's also the Generic Mapping Tools (written in C) at
-L<http://gmt.soest.hawaii.edu>. It is focused on creating high-quality graphics
-and provides a few tools to do tasks like regridding, local averaging, ...
+Other tools:
+
+=over 4
+
+=item *
+
+L<awk(1)> is a fantastic tool that can be used to do many tasks like gridding
+or averaging with very concise scripts. Working with very large data volumes in
+plain text can be a bit slow, though.
+
+=item *
+
+The L<Generic Mapping Tools|http://gmt.soest.hawaii.edu> (written in C) are
+focused on creating high-quality graphics but can also be used for tasks like
+gridding, local averaging, and more.
+
+=back
 
 The following sections give a detailed overview of features, limitations, and
 performance of PDL::NDBin and related distributions on CPAN.
