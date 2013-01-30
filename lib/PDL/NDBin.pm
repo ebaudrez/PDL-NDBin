@@ -30,6 +30,38 @@ $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
+	# OBJECT-ORIENTED INTERFACE (PREFERRED INTERFACE)
+
+	# create object
+	# e.g, compute average elevation in boxes of 2x2
+	# no data required at this point
+	my $binner = PDL::NDBin->new(
+		axes => [ [ 'x', min => 0, max => 10, step => 2 ],
+		          [ 'y', min => 0, max => 10, step => 2 ] ],
+		vars => [ [ 'elevation', 'Avg' ] ],
+	);
+	# or any sort of computation:
+	#       vars => sub { (shift->selection->stats)[2] }   # median
+	#       vars => sub { shift->selection->min }          # minimum
+	#       vars => \&user_defined_function                # anything you can express in Perl
+
+	# feed and process data
+	my( $x, $y, $z ) = get_data();
+	$binner->feed( x => $x, y => $y, elevation => $z );
+	$binner->process;
+
+	# or feed and process in one go
+	$binner->process( x => $x, y => $y, elevation => $z );
+
+	# output
+	my $average_elevation = $binner->output->{ elevation };
+
+	# or as a hash
+	my %results = $binner->output;
+	print $results{ elevation }, "\n";
+
+	# WRAPPER FUNCTIONS
+
 	# bin the values
 	#    pdl( 1,1,2 )
 	# in 3 bins with a width of 1, starting at 0:
@@ -47,9 +79,6 @@ $VERSION = eval $VERSION;
 	#    long( [0,0,0],
 	#	   [0,2,2],
 	#	   [0,1,0] )
-
-These examples only illustrate how to make a one- and a two-dimensional
-histogram. For more advanced usage, read on.
 
 =head1 DESCRIPTION
 
