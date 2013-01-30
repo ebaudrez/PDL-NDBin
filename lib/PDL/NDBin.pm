@@ -470,80 +470,11 @@ been supplied by the user: the step size, the lowest bin, and the number of
 bins. It will use whatever combination is needed of the specifications that
 have been supplied by the user, and the data itself. Obviously, the piddles
 containing the data must have been set before calling this subroutine. Details
-of the automatic parameter calculation are given below.
+of the automatic parameter calculation are given in the section on
+L<IMPLEMENTATION> below.
 
 It is not usually required to call this method, as it is called automatically
 by autoscale().
-
-=head3 Range
-
-The range, when not given explicitly, is calculated from the data by calling
-min() and max(). An exception will be thrown if the data range is zero.
-autoscale_axis() honours the I<round> key to round bin boundaries to the
-nearest multiple of I<round>.
-
-=head3 Number of bins
-
-The number of bins I<n>, when not given explicitly, is determined
-automatically. If the step size is defined and positive, the number of bins is
-calculated from the range and the step size. The calculation is different for
-floating-point data and integral data.
-
-If neither the number of bins, nor the step size have been supplied by the
-user, the default behaviour of hist() is adopted: take the number of bins equal
-to the number of data values, or equal to 100, whichever is smaller.
-
-For floating-point data, I<n> is calculated as follows:
-
-	n = range / step
-
-The calculation is slightly different for integral data. When binning an
-integral number, say 4, it really belongs in a bin that spans the range 4
-through 4.99...; to bin a list of data values with, say, I<min> = 3 and I<max>
-= 8, we must consider the range to be 9-3 = 6. A step size of 3 would yield 2
-bins, one containing the values (3, 4, 5), and another containing the values
-(6, 7, 8). However, I<n> calculated in this way may well be fractional. When
-I<n> is ultimately used in the binning, it is converted to I<int> by
-truncating. To have sufficient bins, I<n> must be rounded up to the next
-integer. The correct formula for calculating the number of bins is therefore
-
-	n = ceil( ( range + 1 ) / step )
-
-In the implementation, however, it is easier to calculate I<n> as it is done
-for floating-point data, and increment it by one, before it is truncated. The
-following formula is how I<n> is calculated by the code:
-
-	n = floor( range/step + 1 )
-
-Using the following identity from
-L<http://en.wikipedia.org/wiki/Floor_and_ceiling_functions>, both formulas can
-be proved to be equivalent:
-
-	ceil( x/y ) = floor( (x+y-1)/y )
-
-	XXX the docs are out of sync here: we truncate in autoscale_axis()
-	because we were having trouble with PDL doing conversion to double on
-	$idx = $idx * $n + $binned
-	when $n is fractional (i.e., PDL doesn't truncate); but this is
-	expected to go away when we reimplement the flattening in XS, since in
-	OtherPars we will specify `int'
-
-=head3 Step size
-
-The step size, when not given explicitly, is determined from the range and the
-number of bins I<n> as follows
-
-	step = range / n
-
-The step size may be fractional, even for integral data. Although this may seem
-strange, it yields more natural results. Consider the data (3, 4, 5, 6).
-Binning with I<n> = 2 yields the histogram (2, 2), which is what you expect,
-although the step size in this example is 1.5. The step size must not be less
-than one, however. If this happens, there are more bins than there are distinct
-numbers in the data, and the function will abort.
-
-Note that when the number of I<n> is not given either, a default value is
-substituted for it by PDL::NDBin, as described above.
 
 =cut
 
@@ -1260,7 +1191,7 @@ of data. The average could in principle also be computed with a coderef:
 Although the result will be the same, the computation will be much slower,
 since the call to selection() is very time-consuming.
 
-=head1 IMPLEMENTATION DETAILS
+=head1 IMPLEMENTATION
 
 =head2 Lowest and highest bin
 
@@ -1356,37 +1287,114 @@ Remember that return I<undef> from the action will not fill the current bin.
 Note that the evaluation of C<<$iter->want>> entails a performance penalty,
 even if the bin is empty and not processed further.
 
-=head2 Probing PDL::NDBin's parameters
+=head2 Automatic axis parameter calculation
 
-=head3 Find the total number of bins
+=head3 Range
 
-	my $binner = PDL::NDBin->new( axes => [ [ 'x', step => 10, min => ... ], [ 'y', ... ] ] );
-	$binner->autoscale( x => $x, y => $y );
-	my $N = List::Util::reduce { our $a * our $b } map { $_->{n} } $binner->axes;
+The range, when not given explicitly, is calculated from the data by calling
+min() and max(). An exception will be thrown if the data range is zero.
+autoscale_axis() honours the I<round> key to round bin boundaries to the
+nearest multiple of I<round>.
+
+=head3 Number of bins
+
+The number of bins I<n>, when not given explicitly, is determined
+automatically. If the step size is defined and positive, the number of bins is
+calculated from the range and the step size. The calculation is different for
+floating-point data and integral data.
+
+If neither the number of bins, nor the step size have been supplied by the
+user, the default behaviour of hist() is adopted: take the number of bins equal
+to the number of data values, or equal to 100, whichever is smaller.
+
+For floating-point data, I<n> is calculated as follows:
+
+	n = range / step
+
+The calculation is slightly different for integral data. When binning an
+integral number, say 4, it really belongs in a bin that spans the range 4
+through 4.99...; to bin a list of data values with, say, I<min> = 3 and I<max>
+= 8, we must consider the range to be 9-3 = 6. A step size of 3 would yield 2
+bins, one containing the values (3, 4, 5), and another containing the values
+(6, 7, 8). However, I<n> calculated in this way may well be fractional. When
+I<n> is ultimately used in the binning, it is converted to I<int> by
+truncating. To have sufficient bins, I<n> must be rounded up to the next
+integer. The correct formula for calculating the number of bins is therefore
+
+	n = ceil( ( range + 1 ) / step )
+
+In the implementation, however, it is easier to calculate I<n> as it is done
+for floating-point data, and increment it by one, before it is truncated. The
+following formula is how I<n> is calculated by the code:
+
+	n = floor( range/step + 1 )
+
+Using the following identity from
+L<http://en.wikipedia.org/wiki/Floor_and_ceiling_functions>, both formulas can
+be proved to be equivalent:
+
+	ceil( x/y ) = floor( (x+y-1)/y )
+
+	XXX the docs are out of sync here: we truncate in autoscale_axis()
+	because we were having trouble with PDL doing conversion to double on
+	$idx = $idx * $n + $binned
+	when $n is fractional (i.e., PDL doesn't truncate); but this is
+	expected to go away when we reimplement the flattening in XS, since in
+	OtherPars we will specify `int'
+
+=head3 Step size
+
+The step size, when not given explicitly, is determined from the range and the
+number of bins I<n> as follows
+
+	step = range / n
+
+The step size may be fractional, even for integral data. Although this may seem
+strange, it yields more natural results. Consider the data (3, 4, 5, 6).
+Binning with I<n> = 2 yields the histogram (2, 2), which is what you expect,
+although the step size in this example is 1.5. The step size must not be less
+than one, however. If this happens, there are more bins than there are distinct
+numbers in the data, and the function will abort.
+
+Note that when the number of I<n> is not given either, a default value is
+substituted for it by PDL::NDBin, as described above.
 
 =cut
 
-=head1 USEFUL EXTRA'S
+=head1 TIPS & TRICKS
 
-To hook a progress bar to ndbin():
+=head2 Find the total number of bins
 
+	use List::Util 'reduce';
+	my $binner = PDL::NDBin->new( axes => [ [ 'x', ... ], [ 'y', ... ] ] );
+	$binner->autoscale( x => $x, y => $y );
+	my $N = reduce { our $a * our $b } map { $_->{n} } $binner->axes;
+
+=head2 Hook a progress bar to PDL::NDBin
+
+For long-running computations, you may want to hook a progress bar to
+PDL::NDBin. There is an example in the F<examples/> directory, but here is the
+gist:
+
+	use List::Util 'reduce';
 	use Term::ProgressBar::Simple;
+
+	my $progress;
 	my $binner = PDL::NDBin->new(
-		axes => \@axes,
-		vars => [ [ ... ],
+		axes => [ [ 'x', ... ], [ 'y', ... ] ],
+		vars => [ ...,
 		          [ 'dummy' => sub { $progress++; return } ] ]
 	);
-	$binner->autoscale( x => ... );
-	my $N = List::Util::reduce { $a * $b } map { $_->{n} } $binner->axes;
-	my $progress = Term::ProgressBar::Simple->new( $N );
+	$binner->autoscale( x     => $x,
+	                    y     => $y,
+	                    dummy => null );
+	my $N = reduce { our $a * our $b } map { $_->{n} } $binner->axes;
+	$progress = Term::ProgressBar::Simple->new( $N );
 	$binner->process();
 
-Note that the progress bar updater returns I<undef>. You
-probably do not want to return the result of C<$progress++>! If you were to
-capture the return value of ndbin(), a piddle would be returned that holds the
-return values of the progress bar updater. You probably do not want this
-either. By putting the progress bar updater last, you can simply ignore that
-piddle.
+Note that, although we don't care about the return value of the anonymous sub
+associated with I<dummy>, Term::ProgressBar::Simple doesn't like being returned
+from a function. (Hence the I<return>.)
 
 =head1 SEE ALSO
 
