@@ -1506,7 +1506,7 @@ piecewise or all at once. However, the input data do not have to fit in memory
 all at once, which is very useful when dealing with very large data sets.
 
 An example may help to understand this feature. Suppose you want to calculate
-the monthly mean cloud over over an area of the globe, in boxes of 1 by 1
+the monthly mean cloud cover over an area of the globe, in boxes of 1 by 1
 degree. The total amount of cloud cover data is too large to fit in memory, but
 fortunately, the data are spread of several files, one by day. With PDL::NDBin,
 you can do the following:
@@ -1599,7 +1599,7 @@ Serialization is the process of storing a histogram to disk, or retrieving it
 from disk. Math::GSL::Histogram, Math::Histogram, Math::SimpleHisto::XS, and
 PDL all have built-in support for serialization. PDL::NDBin doesn't, but the
 serialization facilities of PDL can be used to store and retrieve data. (I
-usually store computed data in netCDF files with PDL::NetCDF.)
+usually store computed data in netCDF files with L<PDL::NetCDF>.)
 
 =item Has overflow and underflow bins by default
 
