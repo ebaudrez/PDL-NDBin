@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 74;
+use Test::More tests => 114;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -448,5 +448,107 @@ note 'CONCATENATION';
 		# this somewhat dirty hack:
 		$expected->{u} = test_pdl( $expected->{u} );
 		cmp_deeply $got, $expected, "repeated invocation of process() equal to concatenation with action $class";
+	}
+}
+
+#
+# BAD VALUES
+#
+note 'BAD VALUES';
+{
+	my %matrix = (
+		allgood => {
+			axis   => short(0,0,0,1),
+			var    => float(5,4,3,2),
+			Avg    => double(4,2),
+			Count  => long(3,1),
+			StdDev => double(sqrt(2/3),0),
+			Sum    => float(12,2),
+		},
+		allaxisbad => {
+			axis   => short(-1,-1,-1,-1),
+			var    => float(5,4,3,2),
+			Avg    => double(-1,-1),
+			Count  => long(0,0),
+			StdDev => double(-1,-1),
+			Sum    => float(-1,-1),
+		},
+		axisbad1 => {
+			axis   => short(-1,0,0,0),
+			var    => float(5,4,3,2),
+			Avg    => double(3,-1),
+			Count  => long(3,0),
+			StdDev => double(sqrt(2/3),-1),
+			Sum    => float(9,-1),
+		},
+		axisbad1_var => {
+			axis   => short(-1,1,1,1),
+			var    => float(5,4,3,2),
+			Avg    => double(-1,3),
+			Count  => long(0,3),
+			StdDev => double(-1,sqrt(2/3)),
+			Sum    => float(-1,9),
+		},
+		axisbad2 => {
+			axis   => short(0,-1,0,0),
+			var    => float(5,4,3,2),
+			Avg    => double(10/3,-1),
+			Count  => long(3,0),
+			StdDev => double(sqrt((5-10/3)*(5-10/3) + (3-10/3)*(3-10/3) + (2-10/3)*(2-10/3))/sqrt(3),-1),
+			Sum    => float(10,-1),
+		},
+		axisbad23 => {
+			axis   => short(0,-1,-1,0),
+			var    => float(5,4,3,2),
+			Avg    => double(3.5,-1),
+			Count  => long(2,0),
+			StdDev => double(sqrt((5-3.5)*(5-3.5) + (2-3.5)*(2-3.5))/sqrt(2),-1),
+			Sum    => float(7,-1),
+		},
+		axisbad23_var => {
+			axis   => short(0,-1,-1,1),
+			var    => float(5,4,3,2),
+			Avg    => double(5,2),
+			Count  => long(1,1),
+			StdDev => double(0,0),
+			Sum    => float(5,2),
+		},
+		axisbad4 => {
+			axis   => short(1,0,1,-1),
+			var    => float(5,4,3,2),
+			Avg    => double(4,4),
+			Count  => long(1,2),
+			StdDev => double(0,1),
+			Sum    => float(4,8),
+		},
+		allvarbad => {
+			axis   => short(0,1,0,1),
+			var    => float(-1,-1,-1,-1),
+			Avg    => double(-1,-1),
+			Count  => long(0,0),
+			StdDev => double(-1,-1),
+			Sum    => float(-1,-1),
+		},
+		varbad4 => {
+			axis   => short(1,1,1,1),
+			var    => float(5,4,3,-1),
+			Avg    => double(-1,4),
+			Count  => long(0,3),
+			StdDev => double(-1,sqrt(2/3)),
+			Sum    => float(-1,12),
+		},
+	);
+	while( my($name,$hash) = each %matrix ) {
+		my $axis = $hash->{axis}->setvaltobad( -1 );
+		my $var  = $hash->{var}->setvaltobad( -1 );
+		for my $action ( qw/Avg Count StdDev Sum/ ) {
+			my $expected = $hash->{ $action }->setvaltobad( -1 );
+			my $binner = PDL::NDBin->new(
+				axes => [ [ 'axis', step => .5, min => 0, n => 2 ] ],
+				vars => [ [ 'var' => $action ] ],
+			);
+			$binner->process( axis => $axis, var => $var );
+			is_pdl $binner->output->{var}, $expected, "bad value test $name, action $action";
+		}
 	}
 }

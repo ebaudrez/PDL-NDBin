@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 106;
+use Test::More tests => 119;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -295,6 +295,65 @@ $iter = iter $x->double, $y, $N;
 while( $iter->next ) { $obj->process( $iter ) }
 $got = $obj->result;
 is_pdl $got, $expected, "PDL::NDBin::Action::CodeRef with bad values, input type double";
+
+#
+$N = 4;
+@u = ( 4,5, 6,7,8,9 );	# data values
+@v = ( 0,0,-1,1,3,0 );	# bin numbers
+$x = short( @u );
+$y = long( @v )->inplace->setvaltobad( -1 );
+
+# icount
+# note that in the next test, the count in the very first bin is one lower than
+# before due to the bad value (-1) in the third position
+$expected = long( 3,1,0,1 );
+$got = icount( iter $x, $y, $N );
+is_pdl $got, $expected, "icount with bad bin numbers, input type short";
+$got = icount( iter $x->float, $y, $N );
+is_pdl $got, $expected, "icount with bad bin numbers, input type float";
+
+# isum
+$expected = long( 18,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = isum( iter $x, $y, $N );
+is_pdl $got, $expected, "isum with bad bin numbers, input type short";
+$got = isum( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "isum with bad bin numbers, input type float";
+
+# iavg
+$expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = iavg( iter $x, $y, $N );
+is_pdl $got, $expected, "iavg with bad bin numbers, input type short";
+$got = iavg( iter $x->float, $y, $N );
+is_pdl $got, $expected, "iavg with bad bin numbers, input type float";
+$got = iavg( iter $x->double, $y, $N );
+is_pdl $got, $expected, "iavg with bad bin numbers, input type double";
+
+# istddev
+$expected = pdl( sqrt(14/3),0,-1,0 )->inplace->setvaltobad( -1 );
+$got = istddev( iter $x, $y, $N );
+is_pdl $got, $expected, "istddev with bad bin numbers, input type short";
+$got = istddev( iter $x->float, $y, $N );
+is_pdl $got, $expected, "istddev with bad bin numbers, input type float";
+$got = istddev( iter $x->double, $y, $N );
+is_pdl $got, $expected, "istddev with bad bin numbers, input type double";
+
+# PDL::NDBin::Action::CodeRef
+$expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x, $y, $N;
+while( $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl $got, $expected->short, "PDL::NDBin::Action::CodeRef with bad bin numbers, input type short";
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x->float, $y, $N;
+while( $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl $got, $expected->float, "PDL::NDBin::Action::CodeRef with bad bin numbers, input type float";
+$obj = PDL::NDBin::Action::CodeRef->new( $N, sub { $_[0]->want->nelem ? ($_[0]->selection->stats)[0] : undef } );
+$iter = iter $x->double, $y, $N;
+while( $iter->next ) { $obj->process( $iter ) }
+$got = $obj->result;
+is_pdl $got, $expected, "PDL::NDBin::Action::CodeRef with bad bin numbers, input type double";
 
 #
 #

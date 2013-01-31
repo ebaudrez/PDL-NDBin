@@ -166,13 +166,6 @@ and longitude.
 
 =cut
 
-#
-# TODO must check what happens for bad values and for bad coordinate values
-# e.g., what happens when you're taking means inside the bins, and some of the
-# values are bad? you want cdo behaviour, i.e., skip bad values so you can
-# calculate a meaningful statistic
-#
-
 our @ISA = qw( Exporter );
 our @EXPORT = qw( );
 our @EXPORT_OK = qw( ndbinning ndbin );

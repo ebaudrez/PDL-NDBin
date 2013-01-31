@@ -23,15 +23,14 @@ pp_def( '_flatten_into',
 		register int j;
 		register int maxj = $COMP( n ) - 1;
 		loop(m) %{
-			if( $ISGOOD( in() ) && $ISGOOD( b() ) ) {
-				j = (( $in() - min )/step);
-				if( j < 0 ) j = 0;
-				if( j > maxj ) j = maxj;
-				$idx() = j + $COMP( n ) * $b();
-			}
-			else {
+			if( ($ISBAD(in())) || ($ISBAD(b())) ) {
 				$SETBAD( idx() );
+				continue;
 			}
+			j = (( $in() - min )/step);
+			if( j < 0 ) j = 0;
+			if( j > maxj ) j = maxj;
+			$idx() = j + $COMP( n ) * $b();
 		%}
 	',
 );
@@ -76,8 +75,9 @@ values among the indices). It always returns a piddle of type I<int>.',
 	',
 	BadCode => '
 		loop(n) %{
+			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
 			register int j = $idx();
-			if( $ISGOOD( in() ) ) { ++( $out(m => j) ); }
+			++( $out(m => j) );
 		%}
 	',
 );
@@ -102,11 +102,10 @@ reduce the risk of overflow when collecting sums.',
 	',
 	BadCode => '
 		loop(n) %{
+			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
 			register int j = $idx();
-			if( $ISGOOD( in() ) ) {
-				$out(m => j) += $in();
-				++( $count(m => j) );
-			}
+			$out(m => j) += $in();
+			++( $count(m => j) );
 		%}
 	',
 );
@@ -162,10 +161,9 @@ also makes the implementation easier.],
 	',
 	BadCode => '
 		loop(n) %{
+			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
 			register int j = $idx();
-			if( $ISGOOD( in() ) ) {
-				$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
-			}
+			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
 		%}
 	',
 );
@@ -224,13 +222,11 @@ floating-point type in C, it also makes the implementation easier.],
 	',
 	BadCode => '
 		loop(n) %{
+			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
 			register int j = $idx();
-			double delta;
-			if( $ISGOOD( in() ) ) {
-				delta = $in() - $avg(m => j);
-				$avg(m => j) += delta / ++( $count(m => j) );
-				$out(m => j) += delta * ( $in() - $avg(m => j) );
-			}
+			double delta = $in() - $avg(m => j);
+			$avg(m => j) += delta / ++( $count(m => j) );
+			$out(m => j) += delta * ( $in() - $avg(m => j) );
 		%}
 	',
 );
