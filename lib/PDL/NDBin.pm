@@ -1350,6 +1350,18 @@ data is therefore
 
 	n = ceil( (range+1) / step )
 
+Determining the number of bins in a different way for integral data leads to
+more natural results for integral data, as the following example shows:
+
+	my $data = short( 1, 2, 3, 4 );
+	my( $min, $max, $step ) = ( 1, 4, 1 );
+
+	# prints [1 1 1 1], as expected
+	print ndbin( $data, $min, $max, $step );
+
+	# prints [1 1 2] at the time of writing (PDL v2.4.11)
+	print scalar hist( $data, $min, $max, $step );
+
 =head3 Step size
 
 The step size, when not given explicitly, is determined from the range and the
