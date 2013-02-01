@@ -18,6 +18,7 @@ use PDL::NDBin::Actions_PP;
 use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
+use POSIX qw( ceil );
 
 =head1 VERSION
 
@@ -516,6 +517,13 @@ sub autoscale_axis
 	if( $axis->{pdl}->type >= PDL::float ) {
 		PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
 	}
+	# calculate the range
+	# for floating-point data, we need to augment the range by 1 unit - see
+	# the discussion under IMPLEMENTATION for more details
+	my $range = $axis->{max} - $axis->{min};
+	if( $axis->{pdl}->type < PDL::float ) {
+		$range += 1;
+	}
 	# if step size has been supplied by user, check it
 	if( defined $axis->{step} ) {
 		PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
@@ -526,16 +534,14 @@ sub autoscale_axis
 	# number of bins I<n>
 	if( defined $axis->{n} ) {
 		PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
+		PDL::Core::barf( 'number of bins must be integral' ) if ceil( $axis->{n} ) - $axis->{n} > 0;
 	}
 	else {
 		if( defined $axis->{step} ) {
 			# data range and step size were verified above,
 			# so the result of this calculation is
 			# guaranteed to be > 0
-			# XXX CORE:: is ugly -- but can be remedied
-			# later when we reimplement the flattening in XS
-			$axis->{n} = CORE::int( ( $axis->{max} - $axis->{min} ) / $axis->{step} );
-			if( $axis->{pdl}->type < PDL::float ) { $axis->{n} += 1 }
+			$axis->{n} = ceil( $range / $axis->{step} );
 		}
 		else {
 			# if neither number of bins nor step size is
@@ -550,14 +556,10 @@ sub autoscale_axis
 	# because it was supplied explicitly and verified to be valid,
 	# or because it was calculated automatically)
 	if( ! defined $axis->{step} ) {
+		# result of this calculation is guaranteed to be > 0
+		$axis->{step} = $range / $axis->{n};
 		if( $axis->{pdl}->type < PDL::float ) {
-			# result of this calculation is guaranteed to be >= 1
-			$axis->{step} = ( $axis->{max} - $axis->{min} + 1 ) / $axis->{n};
 			PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
-		}
-		else {
-			# result of this calculation is guaranteed to be > 0
-			$axis->{step} = ( $axis->{max} - $axis->{min} ) / $axis->{n};
 		}
 	}
 }
@@ -1319,47 +1321,34 @@ nearest multiple of I<round>.
 
 The number of bins I<n>, when not given explicitly, is determined
 automatically. If the step size is defined and positive, the number of bins is
-calculated from the range and the step size. The calculation is different for
-floating-point data and integral data.
+calculated from the range and the step size. If neither the number of bins, nor
+the step size have been supplied by the user, the default behaviour of hist()
+is adopted: take the number of bins equal to the number of data values, or
+equal to 100, whichever is smaller.
 
-If neither the number of bins, nor the step size have been supplied by the
-user, the default behaviour of hist() is adopted: take the number of bins equal
-to the number of data values, or equal to 100, whichever is smaller.
+The calculation of the number of bins is based on the formula
+
+	n = range / step
+
+but needs to be modified. First, I<n> calculated in this way may well be
+fractional. When I<n> is ultimately used in the binning, it is converted to
+I<int> by truncating. To have sufficient bins, I<n> must be rounded up to the
+next integer. Second, the computation of I<n> is and should be different for
+floating-point data and integral data.
 
 For floating-point data, I<n> is calculated as follows:
 
-	n = range / step
+	n = ceil( range / step )
 
 The calculation is slightly different for integral data. When binning an
 integral number, say 4, it really belongs in a bin that spans the range 4
 through 4.99...; to bin a list of data values with, say, I<min> = 3 and I<max>
 = 8, we must consider the range to be 9-3 = 6. A step size of 3 would yield 2
 bins, one containing the values (3, 4, 5), and another containing the values
-(6, 7, 8). However, I<n> calculated in this way may well be fractional. When
-I<n> is ultimately used in the binning, it is converted to I<int> by
-truncating. To have sufficient bins, I<n> must be rounded up to the next
-integer. The correct formula for calculating the number of bins is therefore
+(6, 7, 8). The correct formula for calculating the number of bins for integral
+data is therefore
 
-	n = ceil( ( range + 1 ) / step )
-
-In the implementation, however, it is easier to calculate I<n> as it is done
-for floating-point data, and increment it by one, before it is truncated. The
-following formula is how I<n> is calculated by the code:
-
-	n = floor( range/step + 1 )
-
-Using the following identity from
-L<http://en.wikipedia.org/wiki/Floor_and_ceiling_functions>, both formulas can
-be proved to be equivalent:
-
-	ceil( x/y ) = floor( (x+y-1)/y )
-
-	XXX the docs are out of sync here: we truncate in autoscale_axis()
-	because we were having trouble with PDL doing conversion to double on
-	$idx = $idx * $n + $binned
-	when $n is fractional (i.e., PDL doesn't truncate); but this is
-	expected to go away when we reimplement the flattening in XS, since in
-	OtherPars we will specify `int'
+	n = ceil( (range+1) / step )
 
 =head3 Step size
 
@@ -1368,17 +1357,18 @@ number of bins I<n> as follows
 
 	step = range / n
 
-The step size may be fractional, even for integral data. Although this may seem
-strange, it yields more natural results. Consider the data (3, 4, 5, 6).
-Binning with I<n> = 2 yields the histogram (2, 2), which is what you expect,
-although the step size in this example is 1.5. The step size must not be less
-than one, however. If this happens, there are more bins than there are distinct
-numbers in the data, and the function will abort.
+for floating-point data, and
+
+	step = (range+1) / n
+
+for integral data.
+
+The step size may have a fractional part, even for integral data. The step size
+must not be less than one, however. If this happens, there are more bins than
+there are distinct numbers in the data, and the function will abort.
 
 Note that when the number of I<n> is not given either, a default value is
 substituted for it by PDL::NDBin, as described above.
-
-=cut
 
 =head1 TIPS & TRICKS
 

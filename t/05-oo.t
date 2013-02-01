@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 114;
+use Test::More tests => 126;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -343,6 +343,78 @@ cmp_deeply $got, [ { name => 'x',
 		     n    => 10 } ], 'returns early if step,min,n are known';
 $got = reduce { $a * $b } map { $_->{n} } $binner->axes;
 is $got, 10, 'number of bins';
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>1) ] ] );
+	$binner->process( data => short( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 1,1,1,1 ), '(short) 1..4 step=1';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>1) ] ] );
+	$binner->process( data => pdl( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 1,1,2 ), '(pdl  ) 1..4 step=1';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>2) ] ] );
+	$binner->process( data => short( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 2,2 ), '(short) 1..4 step=2';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>2) ] ] );
+	$binner->process( data => pdl( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 2,2 ), '(pdl  ) 1..4 step=2';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>3) ] ] );
+	$binner->process( data => short( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 3,1 ), '(short) 1..4 step=3';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>3) ] ] );
+	$binner->process( data => pdl( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( [4] ), '(pdl  ) 1..4 step=3';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>1) ] ] );
+	$binner->process( data => short( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( [4] ), '(short) 1..4 n=1';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>1) ] ] );
+	$binner->process( data => pdl( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( [4] ), '(pdl  ) 1..4 n=1';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>2) ] ] );
+	$binner->process( data => short( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 2,2 ), '(short) 1..4 n=2';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>2) ] ] );
+	$binner->process( data => pdl( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 2,2 ), '(pdl  ) 1..4 n=2';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>4) ] ] );
+	$binner->process( data => short( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 1,1,1,1 ), '(short) 1..4 n=4';
+}
+
+{
+	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>4) ] ] );
+	$binner->process( data => pdl( 1,2,3,4 ) );
+	is_pdl $binner->output->{histogram}, long( 1,1,1,1 ), '(pdl  ) 1..4 n=4';
+}
 
 #
 # MIXED CODEREFS/CLASSES
