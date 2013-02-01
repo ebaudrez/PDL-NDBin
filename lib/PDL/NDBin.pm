@@ -42,16 +42,16 @@ $VERSION = eval $VERSION;
 		vars => [ [ 'elevation', 'Avg' ] ],
 	);
 	# or any sort of computation:
-	#       vars => sub { (shift->selection->stats)[2] }   # median
-	#       vars => sub { shift->selection->min }          # minimum
-	#       vars => \&user_defined_function                # anything you can express in Perl
+	#   elevation => sub { (shift->selection->stats)[2] }   # median
+	#   elevation => sub { shift->selection->min }          # minimum
+	#   elevation => \&user_defined_function                # anything
 
 	# feed and process data
 	my( $x, $y, $z ) = get_data();
 	$binner->feed( x => $x, y => $y, elevation => $z );
 	$binner->process;
 
-	# or feed and process in one go
+	# or feed and process in one step
 	$binner->process( x => $x, y => $y, elevation => $z );
 
 	# output
@@ -78,8 +78,8 @@ $VERSION = eval $VERSION;
 	                           $y => (1,0,3) );
 	# returns the two-dimensional histogram
 	#    long( [0,0,0],
-	#	   [0,2,2],
-	#	   [0,1,0] )
+	#          [0,2,2],
+	#          [0,1,0] )
 
 =head1 DESCRIPTION
 
@@ -106,8 +106,9 @@ With fixed-size bins of 0.1 mm wide, that is accomplished with
 
 (Note that the formulation above does not take care of data beyond 10 mm, but
 PDL::NDBin does.) We now have two arrays of data: the actual particle sizes in
-$particles, and the bin number associated with every data value. The histogram
-could now be produced with the following loop:
+$particles, and the bin numbers associated with every data value in
+$bin_numbers. The histogram could now be produced with the following loop, $N
+being 100:
 
 	my $histogram = zeroes( long, $N );
 	for my $bin ( 0 .. $N-1 ) {
@@ -129,10 +130,10 @@ bin. A user-supplied subroutine can then be invoked on the values in every bin:
 
 (This is how early versions of PDL::NDBin were implemented.) The user
 subroutine could do anything with the values in the currently selected bin,
-$selection, including counting. But the subroutine could also output the data
-to disk, or to a plot. Or the data could be collected to perform a regression.
-Anything that can be expressed with a subroutine, can now easily be plugged
-into this core loop.
+$selection, including counting the number of elements. But the subroutine could
+also output the data to disk, or to a plot. Or the data could be collected to
+perform a regression. Anything that can be expressed with a subroutine, can now
+easily be plugged into this core loop.
 
 This basic idea can even be extended by noticing that it is also possible to do
 multidimensional binning with the same core loop. The solution is to 'flatten'
@@ -164,6 +165,8 @@ PDL::NDBin is there to handle the details for you, so you can write
 
 to obtain the average of the flux, binned in boxes of 20x20 degrees latitude
 and longitude.
+
+For examples of use, refer to L<EXAMPLES> below.
 
 =cut
 
@@ -213,14 +216,18 @@ range and the number of bins if not supplied.
 
 =item n
 
-The number of bins. Optional; will be set to the number of data values, or to
-100, whichever is smaller, if not supplied.
+The number of bins. Optional; will be determined from the data range and the
+step size if not supplied. If the step size is not supplied, I<n> will be set
+to the number of data values, or to 100, whichever is smaller.
 
 =item round
 
-Round the minimum and maximum to the nearest multiple of this value.
+Round I<min> and I<max> to the nearest multiple of this value.
 
 =back
+
+Note that you cannot specify all specifications at the same time, because some
+may conflict.
 
 =cut
 
@@ -237,7 +244,7 @@ sub add_axis
 =head2 add_var()
 
 Add a variable to the current object. The argument list must be a list of
-key-value pairs. The name of the variable is mandatory.
+key-value pairs. The name of the variable and the action are both mandatory.
 
 	$self->add_var( name => 'flux', action => 'Avg' );
 
@@ -256,6 +263,32 @@ reference to a named or anonymous subroutine) or a class name.
 
 =back
 
+The action classes that are available as of PDL::NDBin v0.003 are:
+
+=over 4
+
+=item *
+
+L<PDL::NDBin::Action::Avg>
+
+=item *
+
+L<PDL::NDBin::Action::Count>
+
+=item *
+
+L<PDL::NDBin::Action::StdDev>
+
+=item *
+
+L<PDL::NDBin::Action::Sum>
+
+=back
+
+They provide optimized implementations, coded in C, for the corresponding
+operations. The class names may be abbreviated to the part after the last
+C<::>.
+
 =cut
 
 sub add_var
@@ -270,9 +303,9 @@ sub add_var
 
 =head2 new()
 
-Constructor for a PDL::NDBin object. The argument list must be a list of
-key-value pairs. No arguments are required, but you will want to add at least
-one axis eventually to do meaningful work.
+Construct a PDL::NDBin object. The argument list must be a list of key-value
+pairs. No arguments are required, but you will want to add at least one axis
+eventually to do meaningful work.
 
 	my $obj = PDL::NDBin->new( axes => [ [ 'x', min => -1, max => 1, step => .1 ],
 	                                     [ 'y', min => -1, max => 1, step => .1 ] ],
@@ -351,13 +384,13 @@ sub new
 
 =head2 axes()
 
-Read-only accessor to retrieve the axes. It will return a list in list context,
-and an array reference in scalar context.
+Retrieve the axes. Returns a list in list context, and an array reference in
+scalar context.
 
 =head2 vars()
 
-Read-only accessor to retrieve the variables. It will return a list in list context,
-and an array reference in scalar context.
+Retrieve the variables. Returns a list in list context, and an array reference
+in scalar context.
 
 =cut
 
@@ -399,6 +432,8 @@ sub _make_instance
 Set the piddles that will eventually be used for the axes and variables.
 Arguments must be specified as key-value pairs, the keys being the name, and
 the values being the piddle for every piddle that is to be set.
+
+	$binner->feed( latitude => $latitude, longitude => $longitude );
 
 Note that not all piddles need be set in one call. This function can be called
 repeatedly to set all piddles. This can be very useful when data must be read
@@ -461,11 +496,11 @@ sub _check_pdl_length
 
 Determine the following parameters for one axis automatically, if they have not
 been supplied by the user: the step size, the lowest bin, and the number of
-bins. It will use whatever combination is needed of the specifications that
-have been supplied by the user, and the data itself. Obviously, the piddles
-containing the data must have been set before calling this subroutine. Details
-of the automatic parameter calculation are given in the section on
-L<IMPLEMENTATION> below.
+bins. Use whatever combination is needed of the specifications that have been
+supplied by the user, and the data itself. Obviously, the piddles containing
+the data must have been set before calling this subroutine. Details of the
+automatic parameter calculation are given in the section on L<IMPLEMENTATION
+NOTES> below.
 
 It is not usually required to call this method, as it is called automatically
 by autoscale().
@@ -519,7 +554,7 @@ sub autoscale_axis
 	}
 	# calculate the range
 	# for floating-point data, we need to augment the range by 1 unit - see
-	# the discussion under IMPLEMENTATION for more details
+	# the discussion under IMPLEMENTATION NOTES for more details
 	my $range = $axis->{max} - $axis->{min};
 	if( $axis->{pdl}->type < PDL::float ) {
 		$range += 1;
@@ -573,6 +608,8 @@ have been supplied by the user, and the data itself. Obviously, the piddles
 containing the data must have been set before calling this subroutine. For more
 details on the autoscaling, consult autoscale_axis().
 
+	$binner->autoscale( x => $x, y => $y, z => $z );
+
 autoscale() accepts, but does not require, arguments. They must be key-value
 pairs as for feed(), and indicate piddle data that must be fed into the object
 prior to autoscaling. Note that the autoscaling applies to all axes, and not
@@ -624,6 +661,9 @@ The core method. The actual piddles to be used for the axes and variables can
 be supplied to this function, although the argument list can be empty if all
 piddles have already been supplied. The argument list is the same as the one of
 feed(), i.e., a list of key-value pairs specifying name and piddle.
+
+	# if all piddles have already been set with feed()
+	$binner->process();
 
 process() returns $self for chained method calls.
 
@@ -686,6 +726,9 @@ The return value in list context is a hash, the keys and values of which
 correspond to the names and data of the variables. The return value in scalar
 context is a reference to this hash. When no variables have been supplied, a
 hash with a single key called I<histogram> is returned.
+
+	my $result = $binner->output;
+	print $result->{average};
 
 Note that it is not possible to call process() after having called output(),
 because the piddle data may have been reshaped.
@@ -776,6 +819,8 @@ sub _expand_axes
 
 Generate a random, hopefully unique name for a pdl.
 
+For internal use.
+
 =cut
 
 sub _random_name { create_uuid( UUID_RANDOM ) }
@@ -793,7 +838,7 @@ interface may be required.
 
 =head2 ndbinning()
 
-Calculates an I<n>-dimensional histogram from one or more piddles. The
+Calculate an I<n>-dimensional histogram from one or more piddles. The
 arguments must be specified (almost) like in histogram() and histogram2d().
 That is, each axis must be followed by its three specifications I<step>, I<min>
 and I<n>, being the step size, the minimum value, and the number of bins,
@@ -881,7 +926,7 @@ sub ndbinning
 
 =head2 ndbin()
 
-Calculates an I<n>-dimensional histogram from one or more piddles. The
+Calculate an I<n>-dimensional histogram from one or more piddles. The
 arguments must be specified like in hist(). That is, each axis may be followed
 by at most three specifications I<min>, I<max>, and I<step>, being the the
 minimum value, maximum value, and the step size, respectively.
@@ -890,7 +935,7 @@ minimum value, maximum value, and the step size, respectively.
 	                  $pdl2, $min2, $max2, $step2,
 	                  ... );
 
-Note that $step, $min, and $n may be omitted, and will be calculated
+Note that $min, $max, and $step may be omitted, and will be calculated
 automatically from the data, as in hist(). Variables may be added using the
 same syntax as the constructor new():
 
@@ -1037,8 +1082,8 @@ call as follows:
 	my $binner = PDL::NDBin->new( axes => [ [ 'Income', min => 0, max => 100, step => 10 ] ],
 	                              vars => [ [ 'Income', \&stem_and_leaf_plot ] ] );
 
-Now the action associated with I<Income> is no longer I<Count> (which counts
-the elements in each bin), but rather a reference to a user-supplied subroutine
+Now the action associated with $income is no longer I<Count> (which counts
+the elements in each bin), but a reference to the user-supplied subroutine
 stem_and_leaf_plot(). The latter could be implemented as shown below.
 
 	sub stem_and_leaf_plot
@@ -1051,10 +1096,10 @@ stem_and_leaf_plot(). The latter could be implemented as shown below.
 
 The only argument supplied to our callback stem_and_leaf_plot() is an object of
 the type L<PDL::NDBin::Iterator>. This object is used to iterate over the bins
-of the variable (I<Income> in this case). With the method bin(), we can recover
-the current bin number. With selection(), we recover those elements of
-I<Income> that fall in the current bin. Those elements are then printed in a
-neat list (retaining only the last digit).
+of the variable ($income). With the method bin(), we can recover the current
+bin number. With selection(), we recover those elements of $income that fall in
+the current bin. Those elements are then printed in a neat list (retaining only
+the last digit).
 
 To actually produce the stem-and-leaf plot, we still need to call
 
@@ -1082,13 +1127,13 @@ This is a slightly more complicated example, where PDL::NDBin is used to
 average two-dimensional data in boxes of 1x1. Suppose you have elevation data
 of a particular area in the form of (x,y)-located samples:
 
-	# x       y    height
-	0.3	6.1	870.0
-	1.4	6.2	793.0
-	2.4	6.1	755.0
-	3.6	6.2	690.0
-	5.7	6.2	800.0
-	1.6	5.2	800.0
+	# x     y  height
+	0.3   6.1   870.0
+	1.4   6.2   793.0
+	2.4   6.1   755.0
+	3.6   6.2   690.0
+	5.7   6.2   800.0
+	1.6   5.2   800.0
 	...
 
 (The data have been taken from Example 14 of the GMT Cookbook. You can find
@@ -1212,7 +1257,7 @@ of data. The average could in principle also be computed with a coderef:
 Although the result will be the same, the computation will be much slower,
 since the call to selection() is very time-consuming.
 
-=head1 IMPLEMENTATION
+=head1 IMPLEMENTATION NOTES
 
 =head2 Lowest and highest bin
 
@@ -1237,15 +1282,15 @@ Here are some examples of flattening multidimensional bins into one dimension:
 
 =head2 Actions
 
-You are required supply an action with every variable. An action can be either
-a code reference (i.e., a reference to a subroutine, or an anonymous
+You are required to supply an action with every variable. An action can be
+either a code reference (i.e., a reference to a subroutine, or an anonymous
 subroutine), or the name of a class that implements the methods new(),
 process() and result().
 
-It is important to note that the actions will be called in the order they are
-given for each bin, before proceeding to the next bin. You can depend on this
-behaviour, for instance, when you have an action that depends on the result of
-a previous action within the same bin.
+The actions will be called in the order they are given for each bin, before
+proceeding to the next bin. You can depend on this behaviour, for instance,
+when you have an action that depends on the result of a previous action within
+the same bin.
 
 =head3 Code reference
 
@@ -1286,6 +1331,27 @@ compute multiple bins at once in one call to process(). This can be much more
 efficient than calling the action for every bin, especially if the loop can be
 coded in XS.
 
+=head3 Exceptions in actions
+
+There is no protection from exceptions raised in actions, i.e., exceptions in
+actions will be propagated to the package that calls PDL::NDBin. This feature
+protects you from typos inside the action:
+
+	my $binner = PDL::NDBin->new(
+		axes => [ ... ],
+		vars => [ [ variable => sub { shift->selection->avearge } ] ]
+	);
+
+In this example, average() is misspelled. If the action were executed in an
+C<eval> block, the typo would go unnoticed, and all values of the output piddle
+would be undefined. If you want to trap exceptions in actions, use a wrapper
+action defined as follows:
+
+	variable => sub {
+		my $iter = shift;
+		eval { $your_action->( $iter ) };
+	}
+
 =head2 Iteration strategy
 
 By default, ndbin() will loop over all bins, and create a piddle per bin
@@ -1300,12 +1366,17 @@ PDL::NDBin::Action::Count, PDL::NDBin::Action::Sum, etc. They take the original
 data and the flattened bin numbers and produce an output piddle in one step.
 
 Note that empty bins are not skipped. If you want to use an action that cannot
-handle empty piddles, you can wrap the action as follows to skip empty bins:
+handle empty piddles (e.g., PDL method min()), you can wrap the action as
+follows to skip empty bins:
 
-	sub { my $iter = shift; return unless $iter->want->nelem; ... }
+	variable => sub {
+		my $iter = shift;
+		return unless $iter->want->nelem;
+		$your_action->( $iter );
+	}
 
-Remember that return I<undef> from the action will not fill the current bin.
-Note that the evaluation of C<<$iter->want>> entails a performance penalty,
+Remember that returning I<undef> from the action will not fill the current bin.
+Note that the evaluation of C<< $iter->want >> entails a performance penalty,
 even if the bin is empty and not processed further.
 
 =head2 Automatic axis parameter calculation
@@ -1313,18 +1384,18 @@ even if the bin is empty and not processed further.
 =head3 Range
 
 The range, when not given explicitly, is calculated from the data by calling
-min() and max(). An exception will be thrown if the data range is zero.
-autoscale_axis() honours the I<round> key to round bin boundaries to the
+min() and max() on the data. An exception will be thrown if the data range is
+zero. autoscale_axis() honours the I<round> key to round bin boundaries to the
 nearest multiple of I<round>.
 
 =head3 Number of bins
 
 The number of bins I<n>, when not given explicitly, is determined
 automatically. If the step size is defined and positive, the number of bins is
-calculated from the range and the step size. If neither the number of bins, nor
-the step size have been supplied by the user, the default behaviour of hist()
-is adopted: take the number of bins equal to the number of data values, or
-equal to 100, whichever is smaller.
+calculated from the range and the step size as discussed below. If neither the
+number of bins, nor the step size have been supplied by the user, the default
+behaviour of hist() is adopted: take the number of bins equal to the number of
+data values, or equal to 100, whichever is smaller.
 
 The calculation of the number of bins is based on the formula
 
@@ -1350,22 +1421,22 @@ data is therefore
 
 	n = ceil( (range+1) / step )
 
-Determining the number of bins in a different way for integral data leads to
-more natural results for integral data, as the following example shows:
+The modified formula for integral data values leads to more natural results, as
+the following example shows:
 
 	my $data = short( 1, 2, 3, 4 );
 	my( $min, $max, $step ) = ( 1, 4, 1 );
 
-	# prints [1 1 1 1], as expected
 	print ndbin( $data, $min, $max, $step );
+	# prints [1 1 1 1], as expected
 
-	# prints [1 1 2] at the time of writing (PDL v2.4.11)
 	print scalar hist( $data, $min, $max, $step );
+	# prints [1 1 2] at the time of writing (PDL v2.4.11)
 
 =head3 Step size
 
 The step size, when not given explicitly, is determined from the range and the
-number of bins I<n> as follows
+number of bins I<n> as follows:
 
 	step = range / n
 
@@ -1377,7 +1448,7 @@ for integral data.
 
 The step size may have a fractional part, even for integral data. The step size
 must not be less than one, however. If this happens, there are more bins than
-there are distinct numbers in the data, and the function will abort.
+distinct numbers in the data, and the function will abort.
 
 Note that when the number of I<n> is not given either, a default value is
 substituted for it by PDL::NDBin, as described above.
@@ -1511,7 +1582,7 @@ PDL::NDBin and related distributions on CPAN:
 	  PDL   = PDL 2.4.11
 	  PND   = PDL::NDBin 0.003
 
-An explanation and discussion of each of the futures is provided below.
+An explanation and discussion of each of the features is provided below.
 
 =over 4
 
@@ -1635,12 +1706,12 @@ overflow bins.
 The histogramming functions of PDL, and PDL::NDBin, store low out-of-range
 values in the first bin, and high out-of-range values in the last bin.
 
-To ignore out-of-range values with PDL::NDBin, define two additional bins at
+To ignore out-of-range values with PDL::NDBin, define an additional bin at
 either end of every dimension, and disregard the values in these additional
 bins.
 
-To simulate overflow and underflow bins with PDL::NDBin, define two additional
-bins at either end of every dimension.
+To simulate overflow and underflow bins with PDL::NDBin, define an additional
+bin at either end of every dimension.
 
 =item Interface style
 
@@ -1671,7 +1742,7 @@ to produce the final histogram, the bins must be queried one by one.
 
 Math::Histogram and Math::SimpleHisto::XS accept Perl arrays filled with values
 (although they also accept data points one by one as Perl scalars). Passing
-large amounts of data as arrays is generally more efficient than passing the
+large amounts of data in an array is generally more efficient than passing the
 data points one by one as scalars.
 
 PDL and PDL::NDBin operate on piddles only, which are memory-efficient, packed
@@ -1700,8 +1771,8 @@ dimensions. If the piddle is three-dimensional, for instance, sumover() will
 calculate the sum in every row of every matrix.
 
 Threading is supported by the PDL functions histogram(), whistogram(), and
-their two-dimensional counterparts, but not by hist() or whist(). At the time
-of writing, PDL::NDBin does not support threading.
+their two-dimensional counterparts, but not by hist() or whist(). PDL::NDBin
+does not (yet) support threading.
 
 =item Variable-width bins
 
@@ -1729,14 +1800,14 @@ of 2 million data points, shows typical results on the laptop:
 
 	Benchmark: timing 50 iterations of MGH, MH, MSHXS, PND, hist, histogram...
 	       MGH: 41 wallclock secs (40.83 usr +  0.00 sys = 40.83 CPU) @  1.22/s (n=50)
-		MH:  6 wallclock secs ( 5.60 usr +  0.00 sys =  5.60 CPU) @  8.93/s (n=50)
+	        MH:  6 wallclock secs ( 5.60 usr +  0.00 sys =  5.60 CPU) @  8.93/s (n=50)
 	     MSHXS:  2 wallclock secs ( 2.22 usr +  0.00 sys =  2.22 CPU) @ 22.52/s (n=50)
 	       PND:  1 wallclock secs ( 1.43 usr +  0.00 sys =  1.43 CPU) @ 34.97/s (n=50)
 	      hist:  2 wallclock secs ( 1.09 usr +  0.00 sys =  1.09 CPU) @ 45.87/s (n=50)
 	 histogram:  1 wallclock secs ( 1.08 usr +  0.00 sys =  1.08 CPU) @ 46.30/s (n=50)
 
 	Relative performance:
-		    Rate       MGH        MH     MSHXS       PND      hist histogram
+	            Rate       MGH        MH     MSHXS       PND      hist histogram
 	MGH       1.22/s        --      -86%      -95%      -96%      -97%      -97%
 	MH        8.93/s      629%        --      -60%      -74%      -81%      -81%
 	MSHXS     22.5/s     1739%      152%        --      -36%      -51%      -51%
@@ -1794,16 +1865,16 @@ to be equal.
 Similar conclusions are obtained for two-dimensional histograms. The following
 table shows results on the laptop for 2 million data points with 100 bins:
 
-	Benchmark: timing 50 iterations of MGH2d, PND2d, histogram2d, ndbinning2d...
+	Benchmark: timing 50 iterations of MGH2d, PND2d, histogram2d...
 	      MGH2d: 65 wallclock secs (64.38 usr +  0.09 sys = 64.47 CPU) @  0.78/s (n=50)
 	      PND2d:  6 wallclock secs ( 5.96 usr +  0.00 sys =  5.96 CPU) @  8.39/s (n=50)
 	histogram2d:  2 wallclock secs ( 2.16 usr +  0.01 sys =  2.17 CPU) @ 23.04/s (n=50)
 
 	Relative performance:
-		       Rate       MGH2d ndbinning2d       PND2d histogram2d
-	MGH2d       0.776/s          --        -91%        -91%        -97%
-	PND2d        8.39/s        982%          0%          --        -64%
-	histogram2d  23.0/s       2871%        175%        175%          --
+	               Rate       MGH2d       PND2d histogram2d
+	MGH2d       0.776/s          --        -91%        -97%
+	PND2d        8.39/s        982%          --        -64%
+	histogram2d  23.0/s       2871%        175%          --
 
 (It was not possible to run the test with Math::Histogram to completion.)
 
@@ -1825,27 +1896,27 @@ with alternative modules.
 The following table shows timing data on the laptop for 100 bins, but with a
 variable number of data points:
 
-	+-----------+------------+----------+------+------------+------------------+
-	| method    |   # points | CPU time |    n | time/iter. | time/iter./point |
-	|           |            |      (s) |      |       (ms) |             (ns) |
-	+-----------+------------+----------+------+------------+------------------+
-	| MGH       |     66,398 |    35.26 | 1500 |     23.507 |          354.027 |
-	| MGH       |  2,255,838 |    40.83 |   50 |    816.600 |          361.994 |
-	+-----------+------------+----------+------+------------+------------------+
-	| MH        |     66,398 |     5.21 | 1500 |      3.473 |           52.311 |
-	| MH        |  2,255,838 |     5.60 |   50 |    112.000 |           49.649 |
-	+-----------+------------+----------+------+------------+------------------+
-	| MSHXS     |     66,398 |     2.00 | 1500 |      1.333 |           20.081 |
-	| MSHXS     |  2,255,838 |     2.22 |   50 |     44.400 |           19.682 |
-	+-----------+------------+----------+------+------------+------------------+
-	| PND       |     66,398 |     2.87 | 1500 |      1.913 |           28.816 |
-	| PND       |  2,255,838 |     1.43 |   50 |     28.600 |           12.678 |
-	| PND       | 33,358,558 |     2.28 |    5 |    456.000 |           13.670 |
-	+-----------+------------+----------+------+------------+------------------+
-	| histogram |     66,398 |     0.96 | 1500 |      0.640 |            9.639 |
-	| histogram |  2,255,838 |     1.08 |   50 |     21.600 |            9.575 |
-	| histogram | 33,358,558 |     1.60 |    5 |    320.000 |            9.593 |
-	+-----------+------------+----------+------+------------+------------------+
+	+-----------+------------+----------+------+------------+-------------+
+	| method    |   # points | CPU time |    n | time/iter. | t/it./point |
+	|           |            |      (s) |      |       (ms) |        (ns) |
+	+-----------+------------+----------+------+------------+-------------+
+	| MGH       |     66,398 |    35.26 | 1500 |     23.507 |     354.027 |
+	| MGH       |  2,255,838 |    40.83 |   50 |    816.600 |     361.994 |
+	+-----------+------------+----------+------+------------+-------------+
+	| MH        |     66,398 |     5.21 | 1500 |      3.473 |      52.311 |
+	| MH        |  2,255,838 |     5.60 |   50 |    112.000 |      49.649 |
+	+-----------+------------+----------+------+------------+-------------+
+	| MSHXS     |     66,398 |     2.00 | 1500 |      1.333 |      20.081 |
+	| MSHXS     |  2,255,838 |     2.22 |   50 |     44.400 |      19.682 |
+	+-----------+------------+----------+------+------------+-------------+
+	| PND       |     66,398 |     2.87 | 1500 |      1.913 |      28.816 |
+	| PND       |  2,255,838 |     1.43 |   50 |     28.600 |      12.678 |
+	| PND       | 33,358,558 |     2.28 |    5 |    456.000 |      13.670 |
+	+-----------+------------+----------+------+------------+-------------+
+	| histogram |     66,398 |     0.96 | 1500 |      0.640 |       9.639 |
+	| histogram |  2,255,838 |     1.08 |   50 |     21.600 |       9.575 |
+	| histogram | 33,358,558 |     1.60 |    5 |    320.000 |       9.593 |
+	+-----------+------------+----------+------+------------+-------------+
 
 Note that the tests couldn't be run with Math::GSL::Histogram, Math::Histogram,
 and Math::SimpleHisto::XS on the largest data file (33 million points), due to
@@ -1950,21 +2021,30 @@ PDL::NDBin can be improved. In particular:
 =item *
 
 PDL:NDBin does not currently have a way to collect and return the values in a
-bin as a list or piddle; this would be very useful for plotting or output
+bin as a list or piddle; this would be very useful for plotting or output.
 
 =item *
 
 PDL::NDBin does not currently support variable-width bins and weighted
-histograms
+histograms.
 
 =item *
 
 PDL::NDBin has some performance issues with very small datasets or large bin
-counts; some profiling is in order
+counts; some profiling is in order.
 
 =item *
 
-The documentation could be improved
+The documentation can be expanded and improved in a few places.
+
+=item *
+
+The axes should be refactored into objects instead of bare hashrefs, with
+methods such as labels(), n(), step(), etc.
+
+=item *
+
+The action classes I<Min> and I<Max> would be useful and easy to add.
 
 =back
 
