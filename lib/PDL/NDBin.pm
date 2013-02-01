@@ -739,14 +739,16 @@ sub output
 {
 	my $self = shift;
 	return unless defined wantarray;
-	# reshape output
-	my $n = $self->{n};
-	my @output = map { $_->result } @{ $self->{instances} };
-	for my $pdl ( @output ) { $pdl->reshape( @$n ) }
-	if( $log->is_debug ) { $log->debug( 'output: output (' . $_->info . ') = ' . $_ ) for @output }
-	my %result = pairwise { $a->{name} => $b } @{ $self->vars }, @output;
-	if( $log->is_debug ) { $log->debug( 'output: result = ' . Dumper \%result ) }
-	return wantarray ? %result : \%result;
+	unless( defined $self->{result} ) {
+		# reshape output
+		my $n = $self->{n};
+		my @output = map { $_->result } @{ $self->{instances} };
+		for my $pdl ( @output ) { $pdl->reshape( @$n ) }
+		if( $log->is_debug ) { $log->debug( 'output: output (' . $_->info . ') = ' . $_ ) for @output }
+		$self->{result} = { pairwise { $a->{name} => $b } @{ $self->vars }, @output };
+		if( $log->is_debug ) { $log->debug( 'output: result = ' . Dumper $self->{result} ) }
+	}
+	return wantarray ? %{ $self->{result} } : $self->{result};
 }
 
 =head2 _consume()

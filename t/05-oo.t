@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 127;
+use Test::More tests => 131;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -297,6 +297,25 @@ cmp_deeply $got, $expected, 'example from PDL::hist';
 		}, 0 .. 4
 	];
 	cmp_deeply \@log, $expected, 'actions are called in the order they are given';
+}
+
+# check that calling output() twice doesn't break anything
+for my $class ( __PACKAGE__->actions ) {
+	# CodeRef does not compute anything by itself
+	next if $class eq 'PDL::NDBin::Action::CodeRef';
+	my( $action ) = $class =~ /:([^:]+)$/;
+	my $binner = PDL::NDBin->new(
+		axes => [ ['x', n=>5], ['y', n=>7] ],
+		vars => [ ['u', $action] ],
+	);
+	$binner->feed( x => random(100), y => random(100), u => random(100) );
+	$binner->process;
+	my $got1 = $binner->output;
+	# we need to convert the piddles in $got1 to 'expected piddles', hence
+	# this dirty hack
+	$got1->{u} = test_pdl $got1->{u};
+	my $got2 = $binner->output;
+	cmp_deeply $got2, $got1, "calling output() twice doesn't break anything, action class $class";
 }
 
 #
