@@ -613,14 +613,17 @@ note 'BAD VALUES';
 	while( my($name,$hash) = each %matrix ) {
 		my $axis = $hash->{axis}->setvaltobad( -1 );
 		my $var  = $hash->{var}->setvaltobad( -1 );
-		for my $action ( qw/Avg Count StdDev Sum/ ) {
+		for my $class ( __PACKAGE__->actions ) {
+			# CodeRef does not compute anything by itself
+			next if $class eq 'PDL::NDBin::Action::CodeRef';
+			my( $action ) = $class =~ /:([^:]+)$/;
 			my $expected = $hash->{ $action }->setvaltobad( -1 );
 			my $binner = PDL::NDBin->new(
 				axes => [ [ 'axis', step => .5, min => 0, n => 2 ] ],
-				vars => [ [ 'var' => $action ] ],
+				vars => [ [ 'var' => "+$class" ] ],
 			);
 			$binner->process( axis => $axis, var => $var );
-			is_pdl $binner->output->{var}, $expected, "bad value test $name, action $action";
+			is_pdl $binner->output->{var}, $expected, "bad value test $name, action class $class";
 		}
 	}
 }
