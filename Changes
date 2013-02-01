@@ -43,6 +43,10 @@ Revision history for PDL::NDBin
       $binner->process( x => $x, y => $y );
    This used to raise an error in previous versions. (Edward Baudrez)
 
+ [Other improvements]
+ - also greatly expanded the manual, test suite, and benchmark (Edward Baudrez)
+ - fixed a few bugs (Edward Baudrez)
+
 0.003 2012-08-10
 
  - never released on CPAN
