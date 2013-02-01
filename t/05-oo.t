@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 126;
+use Test::More tests => 127;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -271,6 +271,33 @@ $binner = PDL::NDBin->new( axes => [ [ x => min=>0, max=>20, step=>1 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 cmp_deeply $got, $expected, 'example from PDL::hist';
+
+# check that actions are being called in the order they appear in 'vars'
+{
+	my @log = ();
+	my $gensub = sub {
+		my $ident = shift;
+		return sub {
+			my $iter = shift;
+			push @log, sprintf "%s_%d", $ident, $iter->bin;
+		};
+	};
+	my @vars = map [ "f_$_" => $gensub->( $_ ) ], 'A' .. 'F';
+	my %data = map { ("f_$_" => sequence 5) } 'A' .. 'F';
+	my $binner = PDL::NDBin->new( axes => [['x', n=>5]], vars => \@vars );
+	$binner->process( x => sequence(5), %data );
+	# So what do we expect? we expect a list of 'codes' of the type 'A_1',
+	# with 'A' signifying the action, and '1' the bin. The actions vary
+	# fastest, and the bins slowest. This means we expect
+	#   A_0, B_0, C_0, ..., A_1, B_1, ...
+	my $expected = [
+		map do {
+			my $bin = $_;
+			map { sprintf "%s_%d", $_, $bin } 'A' .. 'F'
+		}, 0 .. 4
+	];
+	cmp_deeply \@log, $expected, 'actions are called in the order they are given';
+}
 
 #
 # DATA FEEDING & AUTOSCALING
