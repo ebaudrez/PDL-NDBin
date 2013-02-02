@@ -166,7 +166,13 @@ PDL::NDBin is there to handle the details for you, so you can write
 to obtain the average of the flux, binned in boxes of 20x20 degrees latitude
 and longitude.
 
-For examples of use, refer to L<EXAMPLES> below.
+The rest of the documentation goes into more detail on the methods and
+implementation. You may also want to check out the examples (see L<EXAMPLES>),
+or the comparison of PDL::NDBin with alternative solutions on CPAN (see L<SEE
+ALSO> and further).
+
+Please note that, although I do not anticipate major API changes, the interface
+and implementation are subject to change.
 
 =cut
 
