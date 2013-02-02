@@ -22,11 +22,11 @@ use POSIX qw( ceil );
 
 =head1 VERSION
 
-Version 0.003
+Version 0.004
 
 =cut
 
-our $VERSION = "0.003";
+our $VERSION = "0.004";
 $VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
@@ -269,7 +269,7 @@ reference to a named or anonymous subroutine) or a class name.
 
 =back
 
-The action classes that are available as of PDL::NDBin v0.003 are:
+The action classes that are available as of PDL::NDBin v0.004 are:
 
 =over 4
 
@@ -1588,7 +1588,7 @@ PDL::NDBin and related distributions on CPAN:
 	  MH    = Math::Histogram 1.03
 	  MSHXS = Math::SimpleHisto::XS 1.28
 	  PDL   = PDL 2.4.11
-	  PND   = PDL::NDBin 0.003
+	  PND   = PDL::NDBin 0.004
 
 An explanation and discussion of each of the features is provided below.
 
@@ -1683,7 +1683,7 @@ The core loops of PDL::NDBin are implemented partly in Perl, partly in C.
 
 PDL::NDBin can handle any type of calculation on the values in the bins that
 you can express in Perl or C, not only counting the number of elements in order
-to produce a histogram. At the time of writing (version 0.003), PDL::NDBin
+to produce a histogram. At the time of writing (version 0.004), PDL::NDBin
 supports counting, summing, averaging, and taking the standard deviation of the
 values in each bin. Additionally, Perl or C subroutines can be defined and used
 to perform any operation on the values in each bin.
@@ -1801,7 +1801,7 @@ most important features of PDL::NDBin aren't found in other modules on CPAN.
 But there are a few histogramming modules on CPAN, and it is interesting to
 examine how well PDL::NDBin does in comparison.
 
-I've run a number of tests with PDL version 0.003 on a laptop with an Intel i3
+I've run a number of tests with PDL version 0.004 on a laptop with an Intel i3
 CPU running at 2.40 GHz, and on a desktop with an Intel i7 CPU running at 2.80
 GHz and fast disks. The following table, obtained with 100 bins and a data file
 of 2 million data points, shows typical results on the laptop:

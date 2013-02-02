@@ -131,7 +131,7 @@ __[config]__
 </module>
 
 <module PND>
-	name           PDL::NDBin 0.003
+	name           PDL::NDBin 0.004
 
 	auto           X
 	bad            X
