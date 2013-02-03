@@ -260,4 +260,6 @@ pp_def( '_istddev_post',
 # indirect maximum
 # indirect minimum
 
+pp_done();
+
 # vim:set filetype=perl:
