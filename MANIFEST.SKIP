@@ -4,4 +4,3 @@
 \bpm_to_blib\b
 \bresults\b
 ^Makefile\.PL$
-^README$
