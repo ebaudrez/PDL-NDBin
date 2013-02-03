@@ -2,8 +2,10 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - never released on CPAN
  - started using Dist::Zilla for distribution management (Edward Baudrez)
- - added documentation for PDL::NDBin::Iterator (Edward Baudrez)
+ - added documentation for PDL::NDBin::Iterator and other classes (Edward
+   Baudrez)
 
 0.004 2013-02-02
 
