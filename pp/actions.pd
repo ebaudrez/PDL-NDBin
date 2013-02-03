@@ -2,7 +2,13 @@ pp_addpm( <<'EOD' );
 
 # ABSTRACT: XS actions for PDL::NDBin
 
+# silence Test::Pod::Coverage warning
+=for Pod::Coverage set_boundscheck set_debugging
+
 EOD
+
+# TODO use this to assign version number to Actions_PP.pm
+#pp_set_version();
 
 # _flatten_into
 #

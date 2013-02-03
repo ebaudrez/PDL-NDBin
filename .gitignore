@@ -1,7 +1,9 @@
+.build
 MYMETA.json
 MYMETA.yml
 Makefile
 Makefile.old
+PDL-NDBin-*.*
 blib
 cover_db
 pm_to_blib

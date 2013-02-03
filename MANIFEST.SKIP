@@ -1,0 +1,7 @@
+\b(MY)?META\b
+\bActions_PP\b
+\bMakefile(\.old)?$
+\bpm_to_blib\b
+\bresults\b
+^Makefile\.PL$
+^README$

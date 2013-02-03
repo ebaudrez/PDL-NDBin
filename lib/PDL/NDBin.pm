@@ -1,12 +1,6 @@
 package PDL::NDBin;
 # ABSTRACT: Multidimensional binning & histogramming
 
-=head1 NAME
-
-PDL::NDBin - multidimensional binning & histogramming
-
-=cut
-
 use strict;
 use warnings;
 use Exporter;
@@ -20,15 +14,6 @@ use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
 use POSIX qw( ceil );
-
-=head1 VERSION
-
-Version 0.004
-
-=cut
-
-our $VERSION = "0.004";
-$VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
@@ -2056,11 +2041,5 @@ methods such as labels(), n(), step(), etc.
 The action classes I<Min> and I<Max> would be useful and easy to add.
 
 =back
-
-=head1 AUTHOR
-
-Edward Baudrez, ebaudrez@cpan.org, 2011, 2012.
-
-=head1 COPYRIGHT and LICENSE
 
 =cut
