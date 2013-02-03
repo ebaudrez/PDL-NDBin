@@ -1,4 +1,6 @@
 package PDL::NDBin::Iterator;
+# ABSTRACT: Iterator object for PDL::NDBin
+
 use strict;
 use warnings;
 use Carp;

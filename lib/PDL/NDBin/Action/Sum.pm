@@ -1,4 +1,5 @@
 package PDL::NDBin::Action::Sum;
+# ABSTRACT: Action for PDL::NDBin that computes sum
 
 use strict;
 use warnings;

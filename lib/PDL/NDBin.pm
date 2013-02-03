@@ -1,4 +1,5 @@
 package PDL::NDBin;
+# ABSTRACT: Multidimensional binning & histogramming
 
 =head1 NAME
 

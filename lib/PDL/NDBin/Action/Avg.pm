@@ -1,4 +1,5 @@
 package PDL::NDBin::Action::Avg;
+# ABSTRACT: Action for PDL::NDBin that computes average
 
 use strict;
 use warnings;

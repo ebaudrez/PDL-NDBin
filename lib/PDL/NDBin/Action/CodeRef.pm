@@ -1,4 +1,5 @@
 package PDL::NDBin::Action::CodeRef;
+# ABSTRACT: Action for PDL::NDBin that calls user sub
 
 use strict;
 use warnings;

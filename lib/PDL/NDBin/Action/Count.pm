@@ -1,4 +1,5 @@
 package PDL::NDBin::Action::Count;
+# ABSTRACT: Action for PDL::NDBin that counts elements
 
 use strict;
 use warnings;

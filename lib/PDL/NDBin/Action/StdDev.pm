@@ -1,4 +1,5 @@
 package PDL::NDBin::Action::StdDev;
+# ABSTRACT: Action for PDL::NDBin that computes standard deviation
 
 use strict;
 use warnings;

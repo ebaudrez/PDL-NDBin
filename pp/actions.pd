@@ -1,3 +1,9 @@
+pp_addpm( <<'EOD' );
+
+# ABSTRACT: XS actions for PDL::NDBin
+
+EOD
+
 # _flatten_into
 #
 pp_def( '_flatten_into',
