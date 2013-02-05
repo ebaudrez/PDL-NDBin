@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 79;
+use Test::More tests => 85;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -292,6 +292,15 @@ is_pdl $got, $expected, 'do not skip empty bins, action coderef';
 $expected->inplace->setvaltobad( 0 );
 $got = ndbin( $x, vars => [ [ null->long => sub { my $n = shift->want->nelem; return unless $n; $n } ] ] );
 is_pdl $got, $expected, 'skip empty bins (cannot be achieved with action class)';
+
+# this is an attempt to catch a strange test failure ...
+# test whether the number of bins in the final histogram is chosen as
+# advertised
+for my $n ( 5,21,99,100,101,1000 ) {
+	my $x = random( $n );
+	my $histogram = ndbin( $x );
+	is $histogram->nelem, $n < 100 ? $n : 100, q{uses $n bins if 'n' not supplied, where $n = nelem} or diag $x;
+}
 
 # cross-check with hist and some random data
 $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,

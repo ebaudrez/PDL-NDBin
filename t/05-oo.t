@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 131;
+use Test::More tests => 137;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -322,6 +322,15 @@ for my $class ( __PACKAGE__->actions ) {
 # DATA FEEDING & AUTOSCALING
 #
 note 'DATA FEEDING & AUTOSCALING';
+
+#
+for my $n ( 5,21,99,100,101,1000 ) {
+	my $x = random( $n );
+	my $binner = PDL::NDBin->new( axes => [ [ 'x' ] ] );
+	$binner->process( x => $x );
+	my $got = $binner->output->{histogram};
+	is $got->nelem, $n < 100 ? $n : 100, q{uses $n bins if 'n' not supplied, where $n = nelem} or diag $x;
+}
 
 #
 $x = random( 30 );
