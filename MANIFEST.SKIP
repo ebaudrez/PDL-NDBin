@@ -1,6 +1,7 @@
 \b(MY)?META\b
 \bActions_PP\b
 \bMakefile(\.old)?$
+\bnosync\b
 \bpm_to_blib\b
 \bresults\b
 ^Makefile\.PL$
