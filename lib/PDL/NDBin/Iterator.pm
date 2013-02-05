@@ -63,62 +63,47 @@ sub new
 		active => [ (1) x @$array ],
 		bin    => 0,
 		var    => -1,
+		nbins  => (reduce { $a * $b } @$bins),
+		nvars  => (scalar @$array),
 	};
 	return bless $self, $class;
 }
 
-=head2 next1()
+=head2 advance()
 
-	my( $bin, $var ) = $iter->next1;
+	while( $iter->advance ) { ... }
 
-Return a list containing the next bin number and variable to process, or the
-empty list if all bins and variables have been visited.
+Advance the iterator to the next bin and/or I<active> variable. If no bins or
+active variables remain, return C<undef> to signal that the iteration is done.
+Otherwise, return 1.
 
 =cut
 
-sub next1
+sub advance
 {
 	my $self = shift;
-	return if $self->done;
-	$self->{var}++;
-	undef $self->{selection};		# we're switching to a new var!
-	if( $self->{var} >= $self->nvars ) {
-		$self->{var} = 0;
-		$self->{bin}++;
-		undef $self->{want};		# we're switching to a new bin!
-		undef $self->{unflattened};
-		return if $self->done;
+	return if $self->{bin} >= $self->{nbins};			# return if $self->done;
+	for( ;; ) {
+		undef $self->{selection};				# we're switching to a new var!
+		if( ++$self->{var} >= $self->{nvars} ) {
+			$self->{var} = 0;
+			return if ++$self->{bin} >= $self->{nbins};	# return if $self->done;
+			undef $self->{want};				# we're switching to a new bin!
+			undef $self->{unflattened};
+		}
+		last if $self->{active}->[ $self->{var} ];		# last if $self->var_active;
 	}
-	return $self->{bin}, $self->{var};
-}
-
-=head2 next()
-
-	# list context
-	my( $bin, $var ) = $iter->next;
-	# boolean context
-	while( $iter->next ) { ... }
-
-Return the next bin number and I<active> variable. If no bins or active
-variables remain, return the empty list in list context, or a false value in
-scalar context.
-
-=cut
-
-sub next
-{
-	my $self = shift;
-	my( $bin, $var );
-	do {
-		( $bin, $var ) = $self->next1;
-		return if $self->done;
-	} until $self->var_active;
-	return wantarray ? ($bin, $var) : !$self->done;
+	return 1;
 }
 
 =head2 bin()
 
 Return the current bin number.
+
+=head2 var()
+
+Return the current variable index, i.e., the index into $self->{array} that
+points to the current variable.
 
 =head2 done()
 
@@ -131,11 +116,11 @@ Return a reference to the @bins array passed to the constructor.
 
 =head2 nbins()
 
-Return the total number of bins (cached).
+Return the total number of bins.
 
 =head2 nvars()
 
-Return the number of variables (cached).
+Return the number of variables.
 
 =head2 data()
 
@@ -148,10 +133,11 @@ Return the piddle $idx passed to the constructor.
 =cut
 
 sub bin   { $_[0]->{bin} }
-sub done  { $_[0]->{bin} >= $_[0]->nbins }
+sub var   { $_[0]->{var} }
+sub done  { $_[0]->{bin} >= $_[0]->{nbins} }
 sub bins  { @{ $_[0]->{bins} } }
-sub nbins { $_[0]->{nbins} ||= reduce { $a * $b } $_[0]->bins }
-sub nvars { $_[0]->{nvars} ||= scalar @{ $_[0]->{array} } }
+sub nbins { $_[0]->{nbins} }
+sub nvars { $_[0]->{nvars} }
 sub data  { $_[0]->{array}->[ $_[0]->{var} ] }
 sub idx   { $_[0]->{idx} }
 

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 54;
+use Test::More tests => 48;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -25,22 +25,10 @@ isa_ok $iter, 'PDL::NDBin::Iterator', 'return value from constructor';
 $idx = null;
 $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
 $k = 4;
-while( my @return = $iter->next ) { last if $k-- == 0 }
-is $k, 0, 'next in list context';
+while( $iter->advance ) { last if $k-- == 0 }
+is $k, 0, 'advance() in boolean context';
 ok $iter->done, 'iteration complete';
-is_deeply [ $iter->next ], [], "doesn't reset";
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
-$k = 4;
-while( my $return = $iter->next ) { last if $k-- == 0 }
-is $k, 0, 'next in scalar context';
-ok $iter->done, 'iteration complete';
-is_deeply [ $iter->next ], [], "doesn't reset";
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
-$k = 4;
-while( $iter->next ) { last if $k-- == 0 }
-is $k, 0, 'next in boolean context';
-ok $iter->done, 'iteration complete';
-is_deeply [ $iter->next ], [], "doesn't reset";
+is_deeply [ $iter->advance ], [], "doesn't reset";
 
 #
 @bins = ( 4 );
@@ -65,7 +53,9 @@ is $iter->nvars, 3, 'number of variables';
 	[ 3, 2, 'three', $idx ],
 );
 $k = 12;
-while( ( $bin, $var ) = $iter->next ) {
+while( $iter->advance ) {
+	my $bin = $iter->bin;
+	my $var = $iter->var;
 	push @got, [ $bin, $var, $iter->data, $iter->idx ];
 	last if $k-- == 0; # prevent endless loops
 };
@@ -95,7 +85,9 @@ is $iter->nvars, 2, 'number of vars';
 	[ 5, 1, [ 2, 1 ] ],
 );
 $k = 12;
-while( ( $bin, $var ) = $iter->next ) {
+while( $iter->advance ) {
+	my $bin = $iter->bin;
+	my $var = $iter->var;
 	push @got, [ $bin, $var, [ $iter->unflatten ] ];
 	last if $k-- == 0; # prevent endless loops
 };
@@ -118,7 +110,7 @@ is $iter->nbins*$iter->nvars, 6, 'nbins() * nvars()';
 	long( 5,11,17 ),
 );
 $k = 6;
-while( ( $bin, $var ) = $iter->next ) {
+while( $iter->advance ) {
 	push @got, $iter->want;
 	last if $k-- == 0; # prevent endless loops
 };
@@ -157,7 +149,7 @@ is $iter->nbins*$iter->nvars, 16, 'nbins() * nvars()';
 	pdl( 13,5 ),
 );
 $k = 16;
-while( ( $bin, $var ) = $iter->next ) {
+while( $iter->advance ) {
 	push @got, $iter->selection;
 	last if $k-- == 0; # prevent endless loops
 };
@@ -175,7 +167,8 @@ $idx = 24*random( 20 )->long;
 	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
 	my @visited = (0) x @variables;
 	$k = 96;
-	while( ( $bin, $var ) = $iter->next ) {
+	while( $iter->advance ) {
+		my $var = $iter->var;
 		$visited[ $var ]++;
 		$iter->var_active( 1 );
 		last if $k-- == 0; # prevent endless loops
@@ -188,7 +181,8 @@ $idx = 24*random( 20 )->long;
 	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
 	my @visited = (0) x @variables;
 	$k = 4;
-	while( ( $bin, $var ) = $iter->next ) {
+	while( $iter->advance ) {
+		my $var = $iter->var;
 		$visited[ $var ]++;
 		$iter->var_active( 0 );
 		last if $k-- == 0; # prevent endless loops
@@ -214,7 +208,9 @@ $idx = 24*random( 20 )->long;
 		map [ 0,0,0 ], 1 .. $iter->nbins
 	];
 	my $k = 37;
-	while( ( $bin, $var ) = $iter->next ) {
+	while( $iter->advance ) {
+		my $bin = $iter->bin;
+		my $var = $iter->var;
 		$got->[ $bin ][ $var ]++;
 		if( $deactivates[ $var ] ) { $iter->var_active( 0 ) }
 		last if $k-- == 0; # prevent endless loops

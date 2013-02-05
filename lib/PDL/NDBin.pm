@@ -702,7 +702,10 @@ sub process
 	# now visit all the bins
 	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $idx );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) { $self->{instances}->[ $i ]->process( $iter ) }
+	while( $iter->advance ) {
+		my $i = $iter->var;
+		$self->{instances}->[ $i ]->process( $iter );
+	}
 
 	return $self;
 }
