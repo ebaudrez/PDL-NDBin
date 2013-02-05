@@ -2,6 +2,13 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.007     2013-02-05 23:42:23 Europe/Brussels
+
+ - simplified and optimized PDL::NDBin::Iterator somewhat, in an attempt to
+   address the poor performance with large numbers of bins (Edward Baudrez)
+ - added more tests in an attempt to catch a strange test failure that I cannot
+   reproduce (Edward Baudrez)
+
 0.006     2013-02-03 22:06:31 Europe/Brussels
 
  - first public release
