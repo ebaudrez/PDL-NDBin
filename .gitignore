@@ -13,3 +13,6 @@ pp/Actions_PP.c
 pp/Actions_PP.o
 pp/Actions_PP.pm
 pp/Actions_PP.xs
+xs/Iterator.bs
+xs/Iterator.c
+xs/Iterator.o

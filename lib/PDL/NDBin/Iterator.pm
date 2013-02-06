@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use Carp;
 use List::Util qw( reduce );
+use XSLoader;
 
 =head1 DESCRIPTION
 
@@ -79,22 +80,7 @@ Otherwise, return 1.
 
 =cut
 
-sub advance
-{
-	my $self = shift;
-	return if $self->{bin} >= $self->{nbins};			# return if $self->done;
-	for( ;; ) {
-		undef $self->{selection};				# we're switching to a new var!
-		if( ++$self->{var} >= $self->{nvars} ) {
-			$self->{var} = 0;
-			return if ++$self->{bin} >= $self->{nbins};	# return if $self->done;
-			undef $self->{want};				# we're switching to a new bin!
-			undef $self->{unflattened};
-		}
-		last if $self->{active}->[ $self->{var} ];		# last if $self->var_active;
-	}
-	return 1;
-}
+# advance() is implemented in XS
 
 =head2 bin()
 
@@ -256,5 +242,7 @@ sub unflatten
 	}
 	return @{ $self->{unflattened} };
 }
+
+XSLoader::load( __PACKAGE__ );
 
 1;

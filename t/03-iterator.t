@@ -28,7 +28,7 @@ $k = 4;
 while( $iter->advance ) { last if $k-- == 0 }
 is $k, 0, 'advance() in boolean context';
 ok $iter->done, 'iteration complete';
-is_deeply [ $iter->advance ], [], "doesn't reset";
+ok !$iter->advance, "doesn't reset";
 
 #
 @bins = ( 4 );
