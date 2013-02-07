@@ -4,5 +4,9 @@ use PDL::Core::Dev;
 use ExtUtils::MakeMaker;
 
 my $package = [ "actions.pd", 'Actions_PP', 'PDL::NDBin::Actions_PP' ];
-WriteMakefile( pdlpp_stdargs( $package ) );
+my %args = (
+	pdlpp_stdargs( $package ),
+	VERSION => '0.008',
+);
+WriteMakefile( %args );
 sub MY::postamble { pdlpp_postamble( $package ) }

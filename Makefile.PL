@@ -40,11 +40,12 @@ my %WriteMakefileArgs = (
     "PDL::Lite" => 0,
     "POSIX" => 0,
     "UUID::Tiny" => 0,
+    "XSLoader" => 0,
     "integer" => 0,
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.007",
+  "VERSION" => "0.008",
   "test" => {
     "TESTS" => "t/*.t"
   }

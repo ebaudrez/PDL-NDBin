@@ -22,8 +22,7 @@ called by the user.
 
 EOD
 
-# TODO use this to assign version number to Actions_PP.pm
-#pp_set_version();
+pp_setversion( '0.008' );
 
 # _flatten_into
 #
