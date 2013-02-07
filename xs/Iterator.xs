@@ -8,7 +8,7 @@ MODULE = PDL::NDBin::Iterator	PACKAGE = PDL::NDBin::Iterator
 SV *
 advance( HV *self )
   PREINIT:
-	AV  *active      = NULL;
+	AV  *av_active   = NULL;
 	SV  *bin         = NULL,
 	    *var         = NULL;
 	SV **svp         = NULL,
@@ -17,20 +17,22 @@ advance( HV *self )
 	   **want        = NULL;
 	int  nbins       = -1,
 	     nvars       = -1;
+	int *active      = NULL;
+	int  b, v, i;
   CODE:
+	RETVAL = &PL_sv_undef;
 	if( (svp = hv_fetch(self, "bin", 3, FALSE)) ) bin = *svp;
 	else croak( "advance: need bin" );
 	if( (svp = hv_fetch(self, "nbins", 5, FALSE)) ) nbins = SvIV( *svp );
 	else croak( "advance: need nbins" );
-	/* check if already done */
-	if( (int) SvIV(bin) >= nbins ) XSRETURN_UNDEF;
+	if( (int) SvIV(bin) >= nbins ) goto done;
 	if( (svp = hv_fetch(self, "var", 3, FALSE)) ) var = *svp;
 	else croak( "advance: need var" );
 	if( (svp = hv_fetch(self, "nvars", 5, FALSE)) ) nvars = SvIV( *svp );
 	else croak( "advance: need nvars" );
 	if( (svp = hv_fetch(self, "active", 6, FALSE)) ) {
 		if( SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV ) {
-			active = (AV *) SvRV( *svp );
+			av_active = (AV *) SvRV( *svp );
 		}
 		else croak( "advance: active is of wrong type" );
 	}
@@ -38,19 +40,26 @@ advance( HV *self )
 	selection = hv_fetch(self, "selection", 9, FALSE);
 	unflattened = hv_fetch(self, "unflattened", 11, FALSE);
 	want = hv_fetch(self, "want", 4, FALSE);
+	/* copy SVs to native data types */
+	b = SvIV( bin );
+	v = SvIV( var );
+	Newx( active, nvars, int );
+	for( i = 0; i < nvars; i++ ) {
+		if( (svp = av_fetch(av_active, (I32) i, FALSE)) ) {
+			active[i] = SvIV( *svp );
+		}
+		else croak( "advance: need state" );
+	}
 	for( ;; ) {
-		sv_inc( var );
 		/* invalidate cached data */
 		if( selection ) {
 			SvREFCNT_dec( *selection );
 			*selection = newSVsv( &PL_sv_undef );
 			selection = NULL;
 		}
-		if( (int) SvIV(var) >= nvars ) {
-			sv_setiv( var, 0 );
-			sv_inc( bin );
-			/* done? */
-			if( (int) SvIV(bin) >= nbins ) XSRETURN_UNDEF;
+		if( ++v >= nvars ) {
+			v = 0;
+			if( ++b >= nbins ) goto done;
 			/* invalidate cached data */
 			if( want ) {
 				SvREFCNT_dec( *want );
@@ -63,9 +72,13 @@ advance( HV *self )
 				unflattened = NULL;
 			}
 		}
-		if( (svp = av_fetch(active, (I32) SvIV(var), FALSE)) ) {
-			if( SvTRUE(*svp) ) break;
-		}
-		else croak( "advance: need state" );
+		if( active[v] ) break;
 	}
-	XSRETURN_YES;
+	RETVAL = &PL_sv_yes;
+    done:
+	/* copy native data types back to SVs */
+	sv_setiv( bin, b );
+	if( var ) sv_setiv( var, v );
+	if( active ) Safefree( active );
+  OUTPUT:
+	RETVAL
