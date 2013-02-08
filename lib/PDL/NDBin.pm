@@ -571,9 +571,10 @@ sub autoscale_axis
 			$axis->{n} = ceil( $range / $axis->{step} );
 		}
 		else {
-			# if neither number of bins nor step size is
-			# defined, take the default behaviour of hist()
-			# (see F<Basic.pm>)
+			# if neither number of bins nor step size is defined,
+			# use some reasonable default (which used to be the
+			# behaviour of hist() in versions of PDL inferior to
+			# 2.4.12) (see F<Basic.pm>)
 			$axis->{n} = $axis->{pdl}->nelem > 100 ? 100 : $axis->{pdl}->nelem;
 		}
 	}
@@ -1390,9 +1391,9 @@ nearest multiple of I<round>.
 The number of bins I<n>, when not given explicitly, is determined
 automatically. If the step size is defined and positive, the number of bins is
 calculated from the range and the step size as discussed below. If neither the
-number of bins, nor the step size have been supplied by the user, the default
-behaviour of hist() is adopted: take the number of bins equal to the number of
-data values, or equal to 100, whichever is smaller.
+number of bins, nor the step size have been supplied by the user, the number of
+bins is taken equal to the number of data values, or equal to 100, whichever is
+smaller.
 
 The calculation of the number of bins is based on the formula
 

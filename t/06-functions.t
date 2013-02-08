@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 85;
+use Test::More tests => 83;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -309,12 +309,16 @@ $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
 $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 	0.1480, 0.4297, 0.5000, 0.9637, 0.1148, 0.2922, 0.0846, 0.0954, 0.1379,
 	0.3187, 0.1655, 0.5777, 0.3047 );
-$expected = hist( $x )->long;		# reference values computed by PDL's built-in `hist'
-$got = ndbin( $x );
-is_pdl $got, $expected, 'cross-check $x with hist';
-$expected = hist( $y )->long;
-$got = ndbin( $y );
-is_pdl $got, $expected, 'cross-check $y with hist';
+# The following tests had to be disabled, as the computation for the default
+# number of bins in hist() has changed between 2.4.11 and 2.4.12. Anyway, it
+# was not even documented, so we shouldn't have relied on it in the first
+# place.
+#$expected = hist( $x )->long;		# reference values computed by PDL's built-in `hist'
+#$got = ndbin( $x );
+#is_pdl $got, $expected, 'cross-check $x with hist';
+#$expected = hist( $y )->long;
+#$got = ndbin( $y );
+#is_pdl $got, $expected, 'cross-check $y with hist';
 $expected = hist( $x, 0, 1, 0.1 )->long;
 $got = ndbin( $x, 0, 1, 0.1 );
 is_pdl $got, $expected, 'cross-check $x with hist, with (min,max,step) supplied';
