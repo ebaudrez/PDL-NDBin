@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.008     2013-02-12 17:29:45 Europe/Brussels
+
  - implemented the advance() method of PDL::NDBin::Iterator in XS. This
    improves the performance of PDL::NDBin for very large bin numbers greatly,
    and also reduces the overhead (for very small datafiles) somewhat. The user
