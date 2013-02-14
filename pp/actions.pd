@@ -22,7 +22,7 @@ called by the user.
 
 EOD
 
-pp_setversion( '0.008' );
+pp_setversion( '0.009' );
 
 # _flatten_into
 #
