@@ -14,6 +14,7 @@ use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
 use POSIX qw( ceil );
+use Params::Validate qw( validate validate_pos ARRAYREF SCALAR );
 
 =head1 SYNOPSIS
 
@@ -226,10 +227,16 @@ may conflict.
 sub add_axis
 {
 	my $self = shift;
-	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
-	my %params = @_;
+	my %params = validate( @_, {
+			max   => 0,
+			min   => 0,
+			n     => 0,
+			name  => 1,
+			pdl   => 0,
+			round => 0,
+			step  => 0,
+		} );
 	$log->tracef( 'adding axis with specs %s', \%params );
-	PDL::Core::barf( 'need at least a name for every axis' ) unless $params{name};
 	push @{ $self->{axes} }, \%params;
 }
 
@@ -286,10 +293,12 @@ C<::>.
 sub add_var
 {
 	my $self = shift;
-	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
-	my %params = @_;
+	my %params = validate( @_, {
+			action => 1,
+			name   => 1,
+			pdl    => 0,
+		} );
 	$log->tracef( 'adding variable with specs %s', \%params );
-	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
 	push @{ $self->{vars} }, \%params;
 }
 
@@ -351,25 +360,26 @@ later time with add_var() if desired.
 sub new
 {
 	my $class = shift;
-	my %args = @_;
-	$log->debug( 'new: arguments = ' . Dumper \%args ) if $log->is_debug;
+	my %params = validate( @_, {
+			axes => { optional => 1, type => ARRAYREF },
+			vars => { optional => 1, type => ARRAYREF },
+		} );
+	$log->debug( 'new: arguments = ' . Dumper \%params ) if $log->is_debug;
 	my $self = bless { axes => [], vars => [] }, $class;
 	# axes
-	$args{axes} ||= [];		# be sure we can dereference
-	my @axes = @{ $args{axes} };
+	$params{axes} ||= [];		# be sure we can dereference
+	my @axes = @{ $params{axes} };
 	for my $axis ( @axes ) {
-		my $name = shift @$axis;
+		my( $name ) = validate_pos( @$axis, 1, (0) x (@$axis - 1) );
+		shift @$axis; # remove name
 		$self->add_axis( name => $name, @$axis );
 	}
 	# vars
-	$args{vars} ||= [];		# be sure we can dereference
-	my @vars = @{ $args{vars} };
+	$params{vars} ||= [];		# be sure we can dereference
+	my @vars = @{ $params{vars} };
 	for my $var ( @vars ) {
-		if( @$var == 2 ) {
-			my( $name, $action ) = @$var;
-			$self->add_var( name => $name, action => $action );
-		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+		my( $name, $action ) = validate_pos( @$var, 1, 1 );
+		$self->add_var( name => $name, action => $action );
 	}
 	return $self;
 }
@@ -404,18 +414,21 @@ sub _require_dynamic
 
 sub _make_instance
 {
-	my( $N, $arg ) = @_;
-	if( ref $arg eq 'CODE' ) {
+	my %params = validate( @_, {
+			action => 1,
+			N      => 1,
+		} );
+	if( ref $params{action} eq 'CODE' ) {
 		my $class = "PDL::NDBin::Action::CodeRef";
 		_require_dynamic( $class );
-		return $class->new( $N, $arg );
+		return $class->new( N => $params{N}, coderef => $params{action} );
 	}
 	else {
-		my $class = substr( $arg, 0, 1 ) eq '+'
-			? substr( $arg, 1 )
-			: "PDL::NDBin::Action::$arg";
+		my $class = substr( $params{action}, 0, 1 ) eq '+'
+			? substr( $params{action}, 1 )
+			: "PDL::NDBin::Action::$params{action}";
 		_require_dynamic( $class );
-		return $class->new( $N );
+		return $class->new( N => $params{N} );
 	}
 }
 
@@ -692,7 +705,7 @@ sub process
 	my $N = reduce { $a * $b } @n; # total number of bins
 	PDL::Core::barf( 'I need at least one bin' ) unless $N;
 	my @vars = map $_->{pdl}, $self->vars;
-	$self->{instances} ||= [ map { _make_instance $N, $_->{action} } $self->vars ];
+	$self->{instances} ||= [ map { _make_instance( N => $N, action => $_->{action} ) } $self->vars ];
 
 	#
 	{
@@ -701,7 +714,7 @@ sub process
 	}
 
 	# now visit all the bins
-	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $idx );
+	my $iter = PDL::NDBin::Iterator->new( bins => \@n, array => \@vars, idx => $idx );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
 	while( $iter->advance ) {
 		my $i = $iter->var;

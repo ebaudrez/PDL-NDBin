@@ -14,22 +14,23 @@ just to implement an action).
 use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
+use Params::Validate qw( validate CODEREF SCALAR );
 
 =head1 METHODS
 
 =head2 new()
 
-	my $instance = PDL::NDBin::Action::CodeRef->new( $N, $coderef );
+	my $instance = PDL::NDBin::Action::CodeRef->new( N => $N, coderef => $coderef );
 
 Construct an instance for this action. Requires two parameters:
 
 =over 4
 
-=item $N
+=item I<N>
 
 The number of bins.
 
-=item $coderef
+=item I<coderef>
 
 A reference to an anonymous or named subroutine that implements the real action.
 
@@ -40,9 +41,11 @@ A reference to an anonymous or named subroutine that implements the real action.
 sub new
 {
 	my $class = shift;
-	my $m = shift;
-	my $coderef = shift;
-	return bless { m => $m, coderef => $coderef }, $class;
+	my $self = validate( @_, {
+			N       => { type => SCALAR, regex => qr/^\d+$/ },
+			coderef => { type => CODEREF },
+		} );
+	return bless $self, $class;
 }
 
 =head2 process()
@@ -63,7 +66,7 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $iter->data->type, $self->{m} )->setbadif( 1 ) unless defined $self->{out};
+	$self->{out} = PDL->zeroes( $iter->data->type, $self->{N} )->setbadif( 1 ) unless defined $self->{out};
 	my $value = $self->{coderef}->( $iter );
 	if( defined $value ) { $self->{out}->set( $iter->bin, $value ) }
 	return $self;

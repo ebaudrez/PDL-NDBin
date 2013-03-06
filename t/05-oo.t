@@ -50,7 +50,7 @@ lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 	ok $obj, 'no arguments';
 	isa_ok $obj, 'PDL::NDBin';
 }
-dies_ok { PDL::NDBin->new( axes => [ [ 0 ] ] ) } 'no axis name';
+dies_ok { PDL::NDBin->new( axes => [ [ ] ] ) } 'no axis name';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy' ] ] ) } 'no specs';
 dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0 ] ] ) } 'wrong specs';
 dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ] ] ) } 'oldstyle specs';
@@ -64,10 +64,7 @@ lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 				     [ 'dummy' ] ] ) } 'no full specs for second axis';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 				     [ 'dummy', step=>0 ] ] ) } 'no full specs for second axis';
-TODO: {
-	local $TODO = 'needs to wait until full Params::Validate validation';
-	dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', unknown=>3 ] ] ) } 'unknown key in axis spec';
-}
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', unknown=>3 ] ] ) } 'unknown key in axis spec';
 
 # return values
 $binner = PDL::NDBin->new( axes => [ [ u => (step=>1,min=>0,n=>10) ] ] );

@@ -5,7 +5,9 @@ use strict;
 use warnings;
 use Carp;
 use List::Util qw( reduce );
+use List::MoreUtils qw( all );
 use XSLoader;
+use Params::Validate qw( validate ARRAYREF );
 
 =head1 DESCRIPTION
 
@@ -21,26 +23,26 @@ variable, and other information.
 
 =head2 new()
 
-	my $iter = PDL::NDBin::Iterator->new( \@bins, \@array, $idx );
+	my $iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@array, idx => $idx );
 
 Construct a PDL::NDBin::Iterator object. Requires three arguments:
 
 =over 4
 
-=item \@bins
+=item I<bins>
 
 A reference to an array containing the number of bins per dimension. E.g.,
 C<[ 4, 7 ]> to indicate 4 bins in the first (contiguous) dimension, and 7 bins
 in the second dimension. There must be at least one bin in every dimension.
 
-=item \@array
+=item I<array>
 
 A reference to an array of piddles to operate on. The data values inside the
 piddles don't really matter, as far as the iterator object is concerned. The
 data inside the piddles will be made available to the actions in the order they
 appear, one by one. There must be at least one element in this array.
 
-=item $idx
+=item I<idx>
 
 A piddle containing the flattened bin numbers corresponding to the data values
 in the piddles in \@array. The length of this piddle must match the length of
@@ -53,19 +55,26 @@ the piddles in \@array.
 sub new
 {
 	my $class = shift;
-	my( $bins, $array, $idx ) = @_;
-	grep { ! ($_ > 0) } @$bins and croak 'new: need at least one bin along every dimension';
-	@$array or croak 'new: need at least one element in the array';
-	defined $idx or croak 'new: need a list of flattened bin numbers';
+	my %params = validate( @_, {
+			bins  => {
+				type      => ARRAYREF,
+				callbacks => { 'have at least one bin along every dimension' => sub { my $bins = shift; all { $_ > 0 } @$bins } },
+			},
+			array => {
+				type      => ARRAYREF,
+				callbacks => { 'have at least one element' => sub { my $array = shift; @$array } },
+			},
+			idx   => { can  => [ qw( eq which ) ] },
+		} );
 	my $self = {
-		bins   => $bins,
-		array  => $array,
-		idx    => $idx,
-		active => [ (1) x @$array ],
+		bins   => $params{bins},
+		array  => $params{array},
+		idx    => $params{idx},
+		active => [ (1) x @{ $params{array} } ],
 		bin    => 0,
 		var    => -1,
-		nbins  => (reduce { $a * $b } @$bins),
-		nvars  => (scalar @$array),
+		nbins  => (reduce { $a * $b } @{ $params{bins} }),
+		nvars  => (scalar @{ $params{array} }),
 	};
 	return bless $self, $class;
 }

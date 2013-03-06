@@ -11,12 +11,13 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
+use Params::Validate qw( validate SCALAR );
 
 =head1 METHODS
 
 =head2 new()
 
-	my $instance = PDL::NDBin::Action::StdDev->new( $N );
+	my $instance = PDL::NDBin::Action::StdDev->new( N => $N );
 
 Construct an instance for this action. Requires the number of bins $N as input.
 
@@ -25,8 +26,10 @@ Construct an instance for this action. Requires the number of bins $N as input.
 sub new
 {
 	my $class = shift;
-	my $m = shift;
-	return bless { m => $m }, $class;
+	my $self = validate( @_, {
+			N => { type => SCALAR, regex => qr/^\d+$/ },
+		} );
+	return bless $self, $class;
 }
 
 =head2 process()
@@ -42,10 +45,10 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{out};
-	$self->{count} = PDL->zeroes( PDL::long, $self->{m} ) unless defined $self->{count};
-	$self->{avg} = PDL->zeroes( PDL::double, $self->{m} ) unless defined $self->{avg};
-	PDL::NDBin::Actions_PP::_istddev_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{avg}, $self->{m} );
+	$self->{out} = PDL->zeroes( PDL::double, $self->{N} ) unless defined $self->{out};
+	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};
+	$self->{avg} = PDL->zeroes( PDL::double, $self->{N} ) unless defined $self->{avg};
+	PDL::NDBin::Actions_PP::_istddev_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{avg}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );

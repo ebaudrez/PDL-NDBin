@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use Test::More tests => 48;
-use Test::PDL;
+use Test::Deep;
+use Test::PDL qw( is_pdl test_pdl );
 use Test::Exception;
 use Test::NoWarnings;
 use PDL;
@@ -16,14 +17,14 @@ my( $iter, @bins, @variables, $idx, $bin, $var, @expected, @got, $k );
 @bins = ( 4 );
 @variables = ( null );
 $idx = null;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 isa_ok $iter, 'PDL::NDBin::Iterator', 'return value from constructor';
 
 # test iteration
 @bins = ( 4 );
 @variables = ( null );
 $idx = null;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 $k = 4;
 while( $iter->advance ) { last if $k-- == 0 }
 is $k, 0, 'advance() in boolean context';
@@ -33,24 +34,24 @@ ok !$iter->advance, "doesn't reset";
 #
 @bins = ( 4 );
 @variables = ( 'one', 'two', 'three' );
-$idx = 'this is my secret list';
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+$idx = null;
+$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 is $iter->nbins, 4, 'number of bins';
 is $iter->nvars, 3, 'number of variables';
 @got = ();
 @expected = (
-	[ 0, 0, 'one',   $idx ],
-	[ 0, 1, 'two',   $idx ],
-	[ 0, 2, 'three', $idx ],
-	[ 1, 0, 'one',   $idx ],
-	[ 1, 1, 'two',   $idx ],
-	[ 1, 2, 'three', $idx ],
-	[ 2, 0, 'one',   $idx ],
-	[ 2, 1, 'two',   $idx ],
-	[ 2, 2, 'three', $idx ],
-	[ 3, 0, 'one',   $idx ],
-	[ 3, 1, 'two',   $idx ],
-	[ 3, 2, 'three', $idx ],
+	[ 0, 0, 'one',   test_pdl( $idx ) ],
+	[ 0, 1, 'two',   test_pdl( $idx ) ],
+	[ 0, 2, 'three', test_pdl( $idx ) ],
+	[ 1, 0, 'one',   test_pdl( $idx ) ],
+	[ 1, 1, 'two',   test_pdl( $idx ) ],
+	[ 1, 2, 'three', test_pdl( $idx ) ],
+	[ 2, 0, 'one',   test_pdl( $idx ) ],
+	[ 2, 1, 'two',   test_pdl( $idx ) ],
+	[ 2, 2, 'three', test_pdl( $idx ) ],
+	[ 3, 0, 'one',   test_pdl( $idx ) ],
+	[ 3, 1, 'two',   test_pdl( $idx ) ],
+	[ 3, 2, 'three', test_pdl( $idx ) ],
 );
 $k = 12;
 while( $iter->advance ) {
@@ -60,13 +61,13 @@ while( $iter->advance ) {
 	last if $k-- == 0; # prevent endless loops
 };
 ok $k == 0 && $iter->done, 'number of iterations';
-is_deeply \@got, \@expected, 'data(), idx()';
+cmp_deeply \@got, \@expected, 'data(), idx()';
 
 #
 @bins = ( 3, 2 );
 @variables = ( sequence(20), 20-sequence(20) );
 $idx = 2*sequence( 20 )->long;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 is $iter->nbins, 6, 'number of bins';
 is $iter->nvars, 2, 'number of vars';
 @got = ();
@@ -98,7 +99,7 @@ is_deeply \@got, \@expected, 'unflatten()';
 @bins = ( 3, 2 );
 @variables = ( sequence(20) );
 $idx = sequence( 20 )->long % 6;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 is $iter->nbins*$iter->nvars, 6, 'nbins() * nvars()';
 @got = ();
 @expected = (
@@ -127,7 +128,7 @@ for( 0 .. $#got ) {
 # var1  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
 # var2 20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1
 $idx = sequence( 20 )->long % 8;
-$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 is $iter->nbins*$iter->nvars, 16, 'nbins() * nvars()';
 @got = ();
 @expected = (
@@ -163,7 +164,7 @@ for( 0 .. $#got ) {
 @variables = ( random(20), random(20), random(20), random(20) );
 $idx = 24*random( 20 )->long;
 {
-	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+	$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
 	my @visited = (0) x @variables;
 	$k = 96;
@@ -177,7 +178,7 @@ $idx = 24*random( 20 )->long;
 	is_deeply \@visited, [ ($iter->nbins) x @variables ], 'all variables visited n times, where n = number of bins';
 }
 {
-	$iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+	$iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 	is $iter->nbins*$iter->nvars, 96, 'nbins() * nvars()';
 	my @visited = (0) x @variables;
 	$k = 4;
@@ -198,7 +199,7 @@ $idx = 24*random( 20 )->long;
 	my @variables = ( random(30), random(30), random(30) );
 	my @deactivates = ( 0, 1, 0 );
 	my $idx = 18*random( 20 )->long;
-	my $iter = PDL::NDBin::Iterator->new( \@bins, \@variables, $idx );
+	my $iter = PDL::NDBin::Iterator->new( bins => \@bins, array => \@variables, idx => $idx );
 	is $iter->nbins*$iter->nvars, 54, 'nbins() * nvars()';
 	my $expected = [
 		    [ 1,1,1 ],
