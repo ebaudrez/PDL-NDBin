@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 137;
+use Test::More tests => 143;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -313,6 +313,58 @@ for my $class ( __PACKAGE__->actions ) {
 	$got1->{u} = test_pdl $got1->{u};
 	my $got2 = $binner->output;
 	cmp_deeply $got2, $got1, "calling output() twice doesn't break anything, action class $class";
+}
+
+#
+# MORE TESTS WITH ACTIONS
+#
+note 'MORE TESTS WITH ACTIONS';
+
+{
+	my $u = float( 0.785, 0.025, 0.385, 0.219, 0.133, 0.405, 0.761, 0.777,
+		0.704, 0.346, 0.267, 0.051, 0.129, 0.485, 0.227, 0.216, 0.673,
+		0.433, 0.581, 0.990 );
+	my $x = zeroes long, $u->nelem;
+	my $avg = $u->sum/$u->nelem;
+	my $coderef = sub { shift->selection->avg };
+	my %table = (
+		'action coderef' => {
+			vars     => [ [ 'u', $coderef ] ],
+			# type is 'float' since $u is float
+			expected => { u => test_float( [$avg] ) },
+		},
+		'action coderef, specified as hashref' => {
+			vars     => [ [ 'u', { class => 'CodeRef', coderef => $coderef } ] ],
+			expected => { u => test_float( [$avg] ) },
+		},
+		'action coderef, specified as hashref with type' => {
+			vars     => [ [ 'u', { class => 'CodeRef', coderef => $coderef, type => \&PDL::double } ] ],
+			expected => { u => test_double( [$avg] ) },
+		},
+		'action class' => {
+			vars     => [ [ 'u', 'Avg' ] ],
+			# type is 'double' since 'Avg' initializes to double
+			expected => { u => test_double( [$avg] ) },
+		},
+		'action class with hashref' => {
+			vars     => [ [ 'u', { class => 'Avg' } ] ],
+			expected => { u => test_double( [$avg] ) },
+		},
+		'action class with hashref and parameters' => {
+			vars     => [ [ 'u', { class => 'Avg', type => \&PDL::float } ] ],
+			expected => { u => test_float( [$avg] ) },
+		},
+	);
+	while( my($name,$data) = each %table ) {
+		my $binner = PDL::NDBin->new(
+			axes => [ [ 'x', n=>1 ] ],
+			vars => $data->{vars},
+		);
+		$binner->process( x => $x, u => $u );
+		my $got = $binner->output;
+		my $expected = $data->{expected};
+		cmp_deeply $got, $expected, "extended action tests: $name";
+	}
 }
 
 #

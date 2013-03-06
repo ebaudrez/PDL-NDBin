@@ -14,7 +14,7 @@ use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
 use POSIX qw( ceil );
-use Params::Validate qw( validate validate_pos ARRAYREF SCALAR );
+use Params::Validate qw( validate validate_pos validate_with ARRAYREF CODEREF HASHREF SCALAR );
 
 =head1 SYNOPSIS
 
@@ -258,7 +258,8 @@ The name of this variable.
 =item action
 
 The action to perform on this variable. May be either a code reference (a
-reference to a named or anonymous subroutine) or a class name.
+reference to a named or anonymous subroutine), a class name, or a hash
+reference. (See L<Actions> under L<IMPLEMENTATION NOTES> for more details.)
 
 =back
 
@@ -294,7 +295,7 @@ sub add_var
 {
 	my $self = shift;
 	my %params = validate( @_, {
-			action => 1,
+			action => { type => CODEREF | HASHREF | SCALAR },
 			name   => 1,
 			pdl    => 0,
 		} );
@@ -412,6 +413,25 @@ sub _require_dynamic
 	die $@ if $@;
 }
 
+sub _make_instance_hashref
+{
+	my %params = validate_with(
+		params => \@_,
+		spec   => {
+			N       => 1,
+			class   => 1,
+			coderef => 0,
+		},
+		allow_extra => 1,
+	);
+	my $short_class = delete $params{class};
+	my $full_class = substr( $short_class, 0, 1 ) eq '+'
+		? substr( $short_class, 1 )
+		: "PDL::NDBin::Action::$short_class";
+	_require_dynamic( $full_class );
+	return $full_class->new( %params );
+}
+
 sub _make_instance
 {
 	my %params = validate( @_, {
@@ -419,16 +439,23 @@ sub _make_instance
 			N      => 1,
 		} );
 	if( ref $params{action} eq 'CODE' ) {
-		my $class = "PDL::NDBin::Action::CodeRef";
-		_require_dynamic( $class );
-		return $class->new( N => $params{N}, coderef => $params{action} );
+		return _make_instance_hashref(
+			class   => '+PDL::NDBin::Action::CodeRef',
+			N       => $params{N},
+			coderef => $params{action},
+		);
+	}
+	elsif( ref $params{action} eq 'HASH' ) {
+		return _make_instance_hashref(
+			%{ $params{action} },
+			N => $params{N},
+		);
 	}
 	else {
-		my $class = substr( $params{action}, 0, 1 ) eq '+'
-			? substr( $params{action}, 1 )
-			: "PDL::NDBin::Action::$params{action}";
-		_require_dynamic( $class );
-		return $class->new( N => $params{N} );
+		return _make_instance_hashref(
+			class => $params{action},
+			N     => $params{N},
+		);
 	}
 }
 
@@ -1293,10 +1320,10 @@ Here are some examples of flattening multidimensional bins into one dimension:
 
 =head2 Actions
 
-You are required to supply an action with every variable. An action can be
-either a code reference (i.e., a reference to a subroutine, or an anonymous
-subroutine), or the name of a class that implements the methods new(),
-process() and result().
+You are required to supply an action with every variable. An action can be a
+code reference (i.e., a reference to a subroutine, or an anonymous subroutine),
+the name of a class that implements the methods new(), process() and result(),
+or a hash reference.
 
 The actions will be called in the order they are given for each bin, before
 proceeding to the next bin. You can depend on this behaviour, for instance,
@@ -1341,6 +1368,23 @@ When supplying a class instead of an action reference, it is possible to
 compute multiple bins at once in one call to process(). This can be much more
 efficient than calling the action for every bin, especially if the loop can be
 coded in XS.
+
+=head3 Hash reference
+
+Specifying a hash reference is the same as specifying a class name, except that
+it allows you to pass additional parameters to the action class constructor.
+For instance, the specification
+
+	variable => { class => 'Avg', type => \&PDL::float }
+
+is almost the same as
+
+	variable => 'Avg',
+
+but with the type of the output piddle set to I<float>. This specification will
+be translated to the following constructor call:
+
+	PDL::NDBin::Action::Avg->new( N => $N, type => \&PDL::float )
 
 =head3 Exceptions in actions
 

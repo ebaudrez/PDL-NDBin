@@ -11,15 +11,20 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate SCALAR );
+use Params::Validate qw( validate CODEREF SCALAR UNDEF );
 
 =head1 METHODS
 
 =head2 new()
 
-	my $instance = PDL::NDBin::Action::Sum->new( N => $N );
+	my $instance = PDL::NDBin::Action::Sum->new(
+		N    => $N,
+		type => \&PDL::double,   # optional
+	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
+Optionally allows the type of the output piddle to be set (defaults to the type
+of the variable this instance is associated with, or at least I<long>).
 
 =cut
 
@@ -27,7 +32,8 @@ sub new
 {
 	my $class = shift;
 	my $self = validate( @_, {
-			N => { type => SCALAR, regex => qr/^\d+$/ },
+			N    => { type => SCALAR, regex => qr/^\d+$/ },
+			type => { type => CODEREF | UNDEF, optional => 1 }
 		} );
 	return bless $self, $class;
 }
@@ -45,8 +51,11 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	my $type = $iter->data->type < PDL::long() ? PDL::long : $iter->data->type;
-	$self->{out} = PDL->zeroes( $type, $self->{N} ) unless defined $self->{out};
+	if( ! defined $self->{out} ) {
+		my $type = $self->{type} ? $self->{type}->() : undef;
+		$type ||= $iter->data->type < PDL::long() ? PDL::long : $iter->data->type;
+		$self->{out} = PDL->zeroes( $type, $self->{N} );
+	}
 	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};
 	PDL::NDBin::Actions_PP::_isum_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{N} );
 	# as the plugin processes all bins at once, every variable

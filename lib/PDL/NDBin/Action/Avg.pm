@@ -11,15 +11,20 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate SCALAR );
+use Params::Validate qw( validate CODEREF SCALAR );
 
 =head1 METHODS
 
 =head2 new()
 
-	my $instance = PDL::NDBin::Action::Avg->new( N => $N );
+	my $instance = PDL::NDBin::Action::Avg->new(
+		N    => $N,
+		type => \&PDL::double,   # default
+	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
+Optionally allows the type of the output variable to be specified (defaults to
+I<double>).
 
 =cut
 
@@ -27,7 +32,8 @@ sub new
 {
 	my $class = shift;
 	my $self = validate( @_, {
-			N => { type => SCALAR, regex => qr/^\d+$/ },
+			N    => { type => SCALAR, regex => qr/^\d+$/ },
+			type => { type => CODEREF, default => \&PDL::double }
 		} );
 	return bless $self, $class;
 }
@@ -45,7 +51,7 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( PDL::double, $self->{N} ) unless defined $self->{out};
+	$self->{out} = PDL->zeroes( $self->{type}->(), $self->{N} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};
 	PDL::NDBin::Actions_PP::_iavg_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{N} );
 	# as the plugin processes all bins at once, every variable

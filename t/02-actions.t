@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 119;
+use Test::More tests => 159;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -160,6 +160,23 @@ for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
 	my $ref = "PDL::$type";
 	no strict 'refs';
 	cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for input type $type";
+}
+
+#
+note '   type set by user';
+for my $class ( __PACKAGE__->actions ) {
+	for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+		my $ref = do {
+			no strict 'refs';
+			my $s = "PDL::$type";
+			\&$s;
+		};
+		my @args = ( N => $N );
+		push @args, coderef => sub {} if $class eq 'PDL::NDBin::Action::CodeRef';
+		$obj = $class->new( @args, type => $ref );
+		$obj->process( iter $x->$type, $y, $N );
+		cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for class $class with type => $type";
+	}
 }
 
 #
