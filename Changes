@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.010     2013-03-07 11:09:22 Europe/Brussels
+
  - release on master branch instead of development branch; no changes
 
 0.009     2013-03-07 11:01:19 Europe/Brussels
