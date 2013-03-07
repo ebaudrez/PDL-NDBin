@@ -16,6 +16,7 @@ use UUID::Tiny qw( :std );
 use POSIX qw( ceil );
 use Params::Validate qw( validate validate_pos validate_with ARRAYREF CODEREF HASHREF SCALAR );
 use Carp;
+use Class::Load qw( load_class );
 
 =head1 SYNOPSIS
 
@@ -401,19 +402,6 @@ in scalar context.
 sub axes { wantarray ? @{ $_[0]->{axes} } : $_[0]->{axes} }
 sub vars { wantarray ? @{ $_[0]->{vars} } : $_[0]->{vars} }
 
-# stolen from Log::Dispatch
-sub _require_dynamic
-{
-	my $class = shift;
-	if( $class->VERSION ) {
-		$log->info( "$class already loaded" );
-		return;
-	}
-	local $@;
-	eval "require $class";
-	die $@ if $@;
-}
-
 sub _make_instance_hashref
 {
 	my %params = validate_with(
@@ -429,7 +417,7 @@ sub _make_instance_hashref
 	my $full_class = substr( $short_class, 0, 1 ) eq '+'
 		? substr( $short_class, 1 )
 		: "PDL::NDBin::Action::$short_class";
-	_require_dynamic( $full_class );
+	load_class( $full_class );
 	return $full_class->new( %params );
 }
 
