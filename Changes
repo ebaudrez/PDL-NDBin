@@ -2,6 +2,20 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.009     2013-03-07 11:01:19 Europe/Brussels
+
+ - it is now possible to pass additional arguments to action class constructors
+   when specifying actions; the only additional argument so far is the type of
+   the output piddle, allowing you to write, e.g.,
+      my $binner = PDL::NDBin->new(
+         axes => ...,
+         vars => [ [ var => { class => 'StdDev', type => \&PDL::float } ] ],
+      );
+   to get the standard deviation in type 'float' instead of the default type
+   'double' (Edward Baudrez)
+ - try to make the tests run under Perl 5.8 (Edward Baudrez)
+ - other minor fixes (Edward Baudrez)
+
 0.008     2013-02-12 17:29:45 Europe/Brussels
 
  - implemented the advance() method of PDL::NDBin::Iterator in XS. This
