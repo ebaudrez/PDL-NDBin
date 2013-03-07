@@ -15,6 +15,7 @@ use Data::Dumper;
 use UUID::Tiny qw( :std );
 use POSIX qw( ceil );
 use Params::Validate qw( validate validate_pos validate_with ARRAYREF CODEREF HASHREF SCALAR );
+use Carp;
 
 =head1 SYNOPSIS
 
@@ -517,7 +518,7 @@ sub _check_pdl_length
 		# pdls, but until I have a better one, this will have to do
 		next if $v->{action} && ( ! defined $v->{pdl} || $v->{pdl}->isempty );
 		if( $v->{pdl}->nelem != $length ) {
-			PDL::Core::barf( join '', 'number of elements (',
+			croak( join '', 'number of elements (',
 				$v->{pdl}->nelem, ") of '$v->{name}'",
 				" is different from previous ($length)" );
 		}
@@ -548,7 +549,7 @@ sub autoscale_axis
 		return;
 	}
 	# first get & sanify the arguments
-	PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
+	croak( 'need coordinates' ) unless defined $axis->{pdl};
 	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
 
 =for comment
@@ -580,9 +581,9 @@ sub autoscale_axis
 		$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
 		$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
 	}
-	PDL::Core::barf( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
+	croak( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
 	if( $axis->{pdl}->type >= PDL::float ) {
-		PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
+		croak( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
 	}
 	# calculate the range
 	# for floating-point data, we need to augment the range by 1 unit - see
@@ -593,15 +594,15 @@ sub autoscale_axis
 	}
 	# if step size has been supplied by user, check it
 	if( defined $axis->{step} ) {
-		PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
+		croak( 'step size must be > 0' ) unless $axis->{step} > 0;
 		if( $axis->{pdl}->type < PDL::float && $axis->{step} < 1 ) {
-			PDL::Core::barf( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
+			croak( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
 		}
 	}
 	# number of bins I<n>
 	if( defined $axis->{n} ) {
-		PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
-		PDL::Core::barf( 'number of bins must be integral' ) if ceil( $axis->{n} ) - $axis->{n} > 0;
+		croak( 'number of bins must be > 0' ) unless $axis->{n} > 0;
+		croak( 'number of bins must be integral' ) if ceil( $axis->{n} ) - $axis->{n} > 0;
 	}
 	else {
 		if( defined $axis->{step} ) {
@@ -627,7 +628,7 @@ sub autoscale_axis
 		# result of this calculation is guaranteed to be > 0
 		$axis->{step} = $range / $axis->{n};
 		if( $axis->{pdl}->type < PDL::float ) {
-			PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
+			croak( 'there are more bins than distinct values' ) if $axis->{step} < 1;
 		}
 	}
 }
@@ -707,7 +708,7 @@ sub process
 	my $self = shift;
 
 	# sanity check
-	PDL::Core::barf( 'no axes supplied' ) unless @{ $self->axes };
+	croak( 'no axes supplied' ) unless @{ $self->axes };
 	# default action, when no variables are given, is to produce a histogram
 	$self->add_var( name => 'histogram', action => 'Count' ) unless @{ $self->vars };
 
@@ -730,7 +731,7 @@ sub process
 	$self->{n} = \@n;
 
 	my $N = reduce { $a * $b } @n; # total number of bins
-	PDL::Core::barf( 'I need at least one bin' ) unless $N;
+	croak( 'I need at least one bin' ) unless $N;
 	my @vars = map $_->{pdl}, $self->vars;
 	$self->{instances} ||= [ map { _make_instance( N => $N, action => $_->{action} ) } $self->vars ];
 
@@ -828,8 +829,8 @@ sub _expand_axes
 			undef $hash; # do not collapse consecutive hashes into one, too confusing
 		}
 		elsif( @num = _consume { /^[-+]?(\d+(\.\d*)?|\.\d+)([Ee][-+]?\d+)?$/ } @_ ) {
-			PDL::Core::barf( 'no axis given' ) unless $hash;
-			PDL::Core::barf( "too many arguments to axis in `@num'" ) if @num > 3;
+			croak( 'no axis given' ) unless $hash;
+			croak( "too many arguments to axis in `@num'" ) if @num > 3;
 			# a series of floating-point numbers
 			$hash->{min}  = $num[0] if @num > 0;
 			$hash->{max}  = $num[1] if @num > 1;
@@ -838,15 +839,15 @@ sub _expand_axes
 		#elsif( @num = ( $_[0] =~ m{^((?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?/)+$}g ) and shift ) {
 		#	DOES NOT WORK YET - TODO
 		#	print "GMT-style axis spec found! (@num)\n";
-		#	PDL::Core::barf( 'no axis given' ) unless $hash;
-		#	PDL::Core::barf( "too many arguments to axis in `@num'" ) if @num > 3;
+		#	croak( 'no axis given' ) unless $hash;
+		#	croak( "too many arguments to axis in `@num'" ) if @num > 3;
 		#	# a string specification of the form 'min/max/step', a la GMT
 		#	$hash->{min}  = $num[0] if @num > 0;
 		#	$hash->{max}  = $num[1] if @num > 1;
 		#	$hash->{step} = $num[2] if @num > 2;
 		#}
 		else {
-			PDL::Core::barf( "while expanding axes: invalid argument at `@_'" );
+			croak( "while expanding axes: invalid argument at `@_'" );
 		}
 	}
 	push @out, $hash if $hash;
@@ -930,12 +931,12 @@ sub ndbinning
 		my( $pdl, $step, $min, $n ) = splice @leading, 0, 4;
 		$binner->add_axis( name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n );
 	}
-	if( @leading ) { PDL::Core::barf( "error parsing arguments in `@leading'" ) }
+	if( @leading ) { croak( "error parsing arguments in `@leading'" ) }
 
 	# remaining arguments are key => value pairs
 	my $args = { @_ };
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
-	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
+	croak( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
 	$args->{axes} ||= [];
@@ -952,7 +953,7 @@ sub ndbinning
 			my( $pdl, $action ) = @$var;
 			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
 		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+		else { croak( "wrong number of arguments for var: @$var" ) }
 	}
 
 	#
@@ -1017,7 +1018,7 @@ sub ndbin
 	# remaining arguments are key => value pairs
 	my $args = { @_ };
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
-	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
+	croak( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
 	$args->{axes} ||= [];
@@ -1034,7 +1035,7 @@ sub ndbin
 			my( $pdl, $action ) = @$var;
 			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
 		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+		else { croak( "wrong number of arguments for var: @$var" ) }
 	}
 
 	$binner->process;

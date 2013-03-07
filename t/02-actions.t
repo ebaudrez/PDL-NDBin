@@ -6,7 +6,7 @@ use Test::More tests => 159;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
-use Carp;
+use Carp qw( confess );
 use PDL;
 use PDL::NDBin::Iterator;
 use Module::Pluggable sub_name    => 'actions',
