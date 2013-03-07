@@ -607,8 +607,8 @@ note 'CONCATENATION';
 	my $u4 = pdl( 8.28086562230297, 46.8340738920247, -37.15661354396 ); # 3 random values [-50:50]
 	my $N = 42;
 	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
-	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
-	ok( $u->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	cmp_ok( $N, '>', 0, 'there are values to test' );
+	ok( $u->nelem == $N, 'number of values is consistent' );
 	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate results
 		next if $class eq 'PDL::NDBin::Action::CodeRef';

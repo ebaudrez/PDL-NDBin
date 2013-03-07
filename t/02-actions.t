@@ -465,8 +465,8 @@ note 'CONCATENATION';
 	my $N = 35;
 	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
 	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
-	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
-	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	cmp_ok( $N, '>', 0, 'there are values to test' );
+	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' );
 	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate
 		next if $class eq 'PDL::NDBin::Action::CodeRef';
@@ -510,8 +510,8 @@ note 'CONCATENATION';
 	my $N = 51;
 	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
 	my $v = $v0->append( $v1 )->append( $v2 )->append( $v3 )->append( $v4 );
-	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
-	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	cmp_ok( $N, '>', 0, 'there are values to test' );
+	ok( $u->nelem == $N && $v->nelem == $N, 'number of values is consistent' );
 	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate
 		next if $class eq 'PDL::NDBin::Action::CodeRef';
