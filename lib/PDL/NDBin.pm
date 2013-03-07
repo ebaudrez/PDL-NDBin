@@ -261,7 +261,7 @@ The name of this variable.
 
 The action to perform on this variable. May be either a code reference (a
 reference to a named or anonymous subroutine), a class name, or a hash
-reference. (See L<Actions> under L<IMPLEMENTATION NOTES> for more details.)
+reference. (See I<Actions> under L<IMPLEMENTATION NOTES> for more details.)
 
 =back
 
