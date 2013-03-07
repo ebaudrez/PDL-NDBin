@@ -1,4 +1,4 @@
-\b(MY)?META\b
+\bMYMETA\b
 \bActions_PP\b
 \bMakefile(\.old)?$
 \bnosync\b
