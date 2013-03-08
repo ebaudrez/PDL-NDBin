@@ -2,6 +2,10 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - implemented the action class PDL::NDBin::Action::Min and ::Max (Edward
+   Baudrez)
+ - various minor fixes (Edward Baudrez)
+
 0.010     2013-03-07 11:09:22 Europe/Brussels
 
  - release on master branch instead of development branch; no changes

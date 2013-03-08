@@ -265,7 +265,7 @@ reference. (See I<Actions> under L<IMPLEMENTATION NOTES> for more details.)
 
 =back
 
-The action classes that are available as of PDL::NDBin v0.008 are:
+The action classes that are available as of PDL::NDBin v0.011 are:
 
 =over 4
 
@@ -276,6 +276,14 @@ L<PDL::NDBin::Action::Avg>
 =item *
 
 L<PDL::NDBin::Action::Count>
+
+=item *
+
+L<PDL::NDBin::Action::Max>
+
+=item *
+
+L<PDL::NDBin::Action::Min>
 
 =item *
 
@@ -2084,10 +2092,6 @@ The documentation can be expanded and improved in a few places.
 
 The axes should be refactored into objects instead of bare hashrefs, with
 methods such as labels(), n(), step(), etc.
-
-=item *
-
-The action classes I<Min> and I<Max> would be useful and easy to add.
 
 =back
 
