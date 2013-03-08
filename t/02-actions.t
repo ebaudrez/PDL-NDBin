@@ -2,12 +2,13 @@
 
 use strict;
 use warnings;
-use Test::More tests => 215;
+use Test::More tests => 216;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use Carp qw( confess );
-use PDL;
+use PDL 2.004; # at least 2.4.0 for 'types' in PDL::Types
+use PDL::Types;
 use PDL::NDBin::Iterator;
 use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
@@ -30,6 +31,11 @@ sub iter
 	my( $var, $idx, $N ) = @_;
 	PDL::NDBin::Iterator->new( bins => [ $N ], array => [ $var ], idx => $idx );
 }
+
+# systematically list all types used by PDL (should be 7 types in total)
+my @all_types = PDL::Types::types;
+# mostly here as a reminder to fix the (number of) tests should PDL include more types
+cmp_ok @all_types, '==', 7, 'there are seven basic PDL data types';
 
 # variable declarations
 my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
@@ -117,13 +123,9 @@ $y = long( @v );
 
 #
 note '   function = icount';
-cmp_ok( icount( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
-cmp_ok( icount( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
-cmp_ok( icount( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
-cmp_ok( icount( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
-cmp_ok( icount( iter $x->longlong, $y, $N )->type, '==', long, 'return type is long for input type longlong' );
-cmp_ok( icount( iter $x->float, $y, $N )->type, '==', long, 'return type is long for input type float' );
-cmp_ok( icount( iter $x->double, $y, $N )->type, '==', long, 'return type is long for input type double' );
+for my $type ( @all_types ) {
+	cmp_ok( icount( iter $x->convert($type), $y, $N )->type, '==', long, "return type is long for input type $type" );
+}
 
 #
 note '   function = isum';
@@ -136,64 +138,40 @@ cmp_ok( isum( iter $x->float, $y, $N )->type, '==', float, 'return type is float
 cmp_ok( isum( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
-note '   function = iavg';
-cmp_ok( iavg( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
-cmp_ok( iavg( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
-cmp_ok( iavg( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
-cmp_ok( iavg( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
-cmp_ok( iavg( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
-cmp_ok( iavg( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
-cmp_ok( iavg( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
-
-#
-note '   function = istddev';
-cmp_ok( istddev( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
-cmp_ok( istddev( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
-cmp_ok( istddev( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
-cmp_ok( istddev( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
-cmp_ok( istddev( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
-cmp_ok( istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
-cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+for my $what ( ['iavg', \&iavg], ['istddev', \&istddev] ) {
+	note '   function = ' . $what->[0];
+	for my $type ( @all_types ) {
+		cmp_ok( $what->[1]->( iter $x->convert($type), $y, $N )->type, '==', double, "return type is double for input type $type" );
+	}
+}
 
 #
 for my $class ( qw( PDL::NDBin::Action::Max PDL::NDBin::Action::Min ) ) {
 	note "   class = $class";
-	for my $type ( qw( byte short ushort long longlong float double ) ) {
+	for my $type ( @all_types ) {
 		$obj = $class->new( N => $N );
-		$obj->process( iter $x->$type, $y, $N );
-		my $ref = do {
-			my $s = "PDL::$type";
-			no strict 'refs';
-			\&$s
-		};
-		cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for input type $type";
+		$obj->process( iter $x->convert($type), $y, $N );
+		cmp_ok $obj->result->type, '==', $type, "return type is $type for input type $type";
 	}
 }
 
 #
 note '   class = PDL::NDBin::Action::CodeRef';
-for my $type ( qw( byte short ushort long longlong float double ) ) {
+for my $type ( @all_types ) {
 	$obj = PDL::NDBin::Action::CodeRef->new( N => $N, coderef => sub {} );
-	$obj->process( iter $x->$type, $y, $N );
-	my $ref = "PDL::$type";
-	no strict 'refs';
-	cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for input type $type";
+	$obj->process( iter $x->convert($type), $y, $N );
+	cmp_ok $obj->result->type, '==', $type, "return type is $type for input type $type";
 }
 
 #
 note '   type set by user';
 for my $class ( __PACKAGE__->actions ) {
-	for my $type ( qw( byte short ushort long longlong float double ) ) {
-		my $ref = do {
-			no strict 'refs';
-			my $s = "PDL::$type";
-			\&$s;
-		};
+	for my $type ( @all_types ) {
 		my @args = ( N => $N );
 		push @args, coderef => sub {} if $class eq 'PDL::NDBin::Action::CodeRef';
-		$obj = $class->new( @args, type => $ref->() );
-		$obj->process( iter $x->$type, $y, $N );
-		cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for class $class with type => $type";
+		$obj = $class->new( @args, type => $type );
+		$obj->process( iter $x->convert($type), $y, $N );
+		cmp_ok $obj->result->type, '==', $type, "return type is $type for class $class with type => $type";
 	}
 }
 
