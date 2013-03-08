@@ -107,6 +107,32 @@ This function always returns a piddle of type I<int>.',
 	',
 );
 
+# _imax_loop
+#
+pp_def( '_imax_loop',
+	Pars => 'in(n); int idx(n); [o] out(m)',
+	OtherPars => 'int msize => m',
+	HandleBad => 1,
+	Doc => 'Find the maximum in each bin.',
+	Code => '
+		loop(n) %{
+			register int j = $idx();
+			if( ($ISBAD(out(m => j))) || ($in() > $out(m => j)) ) {
+				$out(m => j) = $in();
+			}
+		%}
+	',
+	BadCode => '
+		loop(n) %{
+			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
+			register int j = $idx();
+			if( ($ISBAD(out(m => j))) || ($in() > $out(m => j)) ) {
+				$out(m => j) = $in();
+			}
+		%}
+	',
+);
+
 # _imin_loop
 #
 pp_def( '_imin_loop',
@@ -304,11 +330,6 @@ pp_def( '_istddev_post',
 		if( flag ) { $PDLSTATESETBAD(out); }
 	',
 );
-
-# TODO
-# complete with the other functions that xyz2grd provides
-# indirect maximum
-# indirect minimum
 
 pp_addpm( <<'EOD' );
 

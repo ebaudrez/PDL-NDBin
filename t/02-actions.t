@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 192;
+use Test::More tests => 225;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -42,7 +42,7 @@ note 'SETUP';
 	my %plugins = map { $_ => 1 } __PACKAGE__->actions;
 	note 'registered plugins: ', join ', ' => keys %plugins;
 	for my $p ( qw(	PDL::NDBin::Action::Count  PDL::NDBin::Action::Sum
-			PDL::NDBin::Action::Min
+			PDL::NDBin::Action::Max    PDL::NDBin::Action::Min
 			PDL::NDBin::Action::Avg    PDL::NDBin::Action::StdDev ) )
 	{
 		ok $plugins{ $p }, "$p is there";
@@ -88,6 +88,7 @@ my %test_args = (
 	'PDL::NDBin::Action::CodeRef' => [ N => $N, coderef => sub {} ],
 	'PDL::NDBin::Action::Avg'     => [ N => $N ],
 	'PDL::NDBin::Action::Count'   => [ N => $N ],
+	'PDL::NDBin::Action::Max'     => [ N => $N ],
 	'PDL::NDBin::Action::Min'     => [ N => $N ],
 	'PDL::NDBin::Action::StdDev'  => [ N => $N ],
 	'PDL::NDBin::Action::Sum'     => [ N => $N ],
@@ -155,7 +156,7 @@ cmp_ok( istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is d
 cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
-for my $class ( qw( PDL::NDBin::Action::Min ) ) {
+for my $class ( qw( PDL::NDBin::Action::Max PDL::NDBin::Action::Min ) ) {
 	note "   class = $class";
 	for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
 		$obj = $class->new( N => $N );
@@ -230,6 +231,15 @@ is_pdl $got, $expected, "isum, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum, input type float";
 
+# imax
+$expected = long( 9,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imax( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imax, input type short";
+$got = imax( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imax, input type float";
+$got = imax( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imax, input type double";
+
 # imin
 $expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = imin( iter $x->short, $y, $N );
@@ -303,6 +313,15 @@ is_pdl $got, $expected, "isum with bad values, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum with bad values, input type float";
 
+# imax
+$expected = long( 9,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imax( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imax with bad values, input type short";
+$got = imax( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imax with bad values, input type float";
+$got = imax( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imax with bad values, input type double";
+
 # imin
 $expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = imin( iter $x->short, $y, $N );
@@ -370,6 +389,15 @@ $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "isum with bad bin numbers, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum with bad bin numbers, input type float";
+
+# imax
+$expected = long( 9,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imax( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imax with bad bin numbers, input type short";
+$got = imax( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imax with bad bin numbers, input type float";
+$got = imax( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imax with bad bin numbers, input type double";
 
 # imin
 $expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -473,6 +501,9 @@ is_pdl $got, $expected, "cross-check icount() with ngood()";
 $expected = apply( $x, $y, $N, \&sum );
 $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check isum() with sum()";
+$expected = apply( $x, $y, $N, \&max );
+$got = imax( iter $x, $y, $N );
+is_pdl $got, $expected, "cross-check imax() with max()";
 $expected = apply( $x, $y, $N, \&min );
 $got = imin( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check imin() with min()";

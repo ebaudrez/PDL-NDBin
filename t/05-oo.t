@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 155;
+use Test::More tests => 167;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -638,6 +638,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(4,2),
 			Count  => long(3,1),
+			Max    => float(5,2),
 			Min    => float(3,2),
 			StdDev => double(sqrt(2/3),0),
 			Sum    => float(12,2),
@@ -647,6 +648,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(-1,-1),
 			Count  => long(0,0),
+			Max    => float(-1,-1),
 			Min    => float(-1,-1),
 			StdDev => double(-1,-1),
 			Sum    => float(-1,-1),
@@ -656,6 +658,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(3,-1),
 			Count  => long(3,0),
+			Max    => float(4,-1),
 			Min    => float(2,-1),
 			StdDev => double(sqrt(2/3),-1),
 			Sum    => float(9,-1),
@@ -665,6 +668,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(-1,3),
 			Count  => long(0,3),
+			Max    => float(-1,4),
 			Min    => float(-1,2),
 			StdDev => double(-1,sqrt(2/3)),
 			Sum    => float(-1,9),
@@ -674,6 +678,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(10/3,-1),
 			Count  => long(3,0),
+			Max    => float(5,-1),
 			Min    => float(2,-1),
 			StdDev => double(sqrt((5-10/3)*(5-10/3) + (3-10/3)*(3-10/3) + (2-10/3)*(2-10/3))/sqrt(3),-1),
 			Sum    => float(10,-1),
@@ -683,6 +688,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(3.5,-1),
 			Count  => long(2,0),
+			Max    => float(5,-1),
 			Min    => float(2,-1),
 			StdDev => double(sqrt((5-3.5)*(5-3.5) + (2-3.5)*(2-3.5))/sqrt(2),-1),
 			Sum    => float(7,-1),
@@ -692,6 +698,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(5,2),
 			Count  => long(1,1),
+			Max    => float(5,2),
 			Min    => float(5,2),
 			StdDev => double(0,0),
 			Sum    => float(5,2),
@@ -701,6 +708,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,2),
 			Avg    => double(4,4),
 			Count  => long(1,2),
+			Max    => float(4,5),
 			Min    => float(4,3),
 			StdDev => double(0,1),
 			Sum    => float(4,8),
@@ -710,6 +718,7 @@ note 'BAD VALUES';
 			var    => float(-1,-1,-1,-1),
 			Avg    => double(-1,-1),
 			Count  => long(0,0),
+			Max    => float(-1,-1),
 			Min    => float(-1,-1),
 			StdDev => double(-1,-1),
 			Sum    => float(-1,-1),
@@ -719,6 +728,7 @@ note 'BAD VALUES';
 			var    => float(5,4,3,-1),
 			Avg    => double(-1,4),
 			Count  => long(0,3),
+			Max    => float(-1,5),
 			Min    => float(-1,3),
 			StdDev => double(-1,sqrt(2/3)),
 			Sum    => float(-1,12),
