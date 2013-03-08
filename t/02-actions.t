@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 225;
+use Test::More tests => 215;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -158,7 +158,7 @@ cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is 
 #
 for my $class ( qw( PDL::NDBin::Action::Max PDL::NDBin::Action::Min ) ) {
 	note "   class = $class";
-	for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+	for my $type ( qw( byte short ushort long longlong float double ) ) {
 		$obj = $class->new( N => $N );
 		$obj->process( iter $x->$type, $y, $N );
 		my $ref = do {
@@ -172,7 +172,7 @@ for my $class ( qw( PDL::NDBin::Action::Max PDL::NDBin::Action::Min ) ) {
 
 #
 note '   class = PDL::NDBin::Action::CodeRef';
-for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+for my $type ( qw( byte short ushort long longlong float double ) ) {
 	$obj = PDL::NDBin::Action::CodeRef->new( N => $N, coderef => sub {} );
 	$obj->process( iter $x->$type, $y, $N );
 	my $ref = "PDL::$type";
@@ -183,7 +183,7 @@ for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
 #
 note '   type set by user';
 for my $class ( __PACKAGE__->actions ) {
-	for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+	for my $type ( qw( byte short ushort long longlong float double ) ) {
 		my $ref = do {
 			no strict 'refs';
 			my $s = "PDL::$type";
