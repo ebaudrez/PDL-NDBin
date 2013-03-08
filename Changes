@@ -2,8 +2,14 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
- - implemented the action class PDL::NDBin::Action::Min and ::Max (Edward
-   Baudrez)
+ - changed the syntax to specify the type of the output piddle in the action
+   class constructors. Previously, this was achieved by passing a coderef:
+      PDL::NDBin::Action::Avg->new( ..., type => \&PDL::double );
+   This has now changed to
+      type => double         # or 'type => PDL::double'
+   The new syntax is simpler and arguably clearer. (Edward Baudrez)
+ - implemented the action classes PDL::NDBin::Action::Min and
+   PDL::NDBin::Action::Max (Edward Baudrez)
  - various minor fixes (Edward Baudrez)
 
 0.010     2013-03-07 11:09:22 Europe/Brussels
