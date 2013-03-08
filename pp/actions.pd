@@ -22,6 +22,8 @@ called by the user.
 
 EOD
 
+# note that version numbers with trailing zeroes (e.g, 0.010) created problems
+# in some of the tests
 pp_setversion( '0.011' );
 
 # _flatten_into
