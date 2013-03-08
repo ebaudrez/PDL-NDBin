@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 159;
+use Test::More tests => 192;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -42,11 +42,12 @@ note 'SETUP';
 	my %plugins = map { $_ => 1 } __PACKAGE__->actions;
 	note 'registered plugins: ', join ', ' => keys %plugins;
 	for my $p ( qw(	PDL::NDBin::Action::Count  PDL::NDBin::Action::Sum
+			PDL::NDBin::Action::Min
 			PDL::NDBin::Action::Avg    PDL::NDBin::Action::StdDev ) )
 	{
 		ok $plugins{ $p }, "$p is there";
 		delete $plugins{ $p };
-		# create wrapper function around the class
+		# create wrapper function 'ifunc' around the class '::Func'
 		my $function = do { $p =~ /::(\w+)$/; 'i' . lc $1 };
 		no strict 'refs';
 		*$function = sub {
@@ -87,6 +88,7 @@ my %test_args = (
 	'PDL::NDBin::Action::CodeRef' => [ N => $N, coderef => sub {} ],
 	'PDL::NDBin::Action::Avg'     => [ N => $N ],
 	'PDL::NDBin::Action::Count'   => [ N => $N ],
+	'PDL::NDBin::Action::Min'     => [ N => $N ],
 	'PDL::NDBin::Action::StdDev'  => [ N => $N ],
 	'PDL::NDBin::Action::Sum'     => [ N => $N ],
 );
@@ -153,6 +155,21 @@ cmp_ok( istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is d
 cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
+for my $class ( qw( PDL::NDBin::Action::Min ) ) {
+	note "   class = $class";
+	for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+		$obj = $class->new( N => $N );
+		$obj->process( iter $x->$type, $y, $N );
+		my $ref = do {
+			my $s = "PDL::$type";
+			no strict 'refs';
+			\&$s
+		};
+		cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for input type $type";
+	}
+}
+
+#
 note '   class = PDL::NDBin::Action::CodeRef';
 for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
 	$obj = PDL::NDBin::Action::CodeRef->new( N => $N, coderef => sub {} );
@@ -212,6 +229,15 @@ $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "isum, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum, input type float";
+
+# imin
+$expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imin( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imin, input type short";
+$got = imin( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imin, input type float";
+$got = imin( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imin, input type double";
 
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -277,6 +303,15 @@ is_pdl $got, $expected, "isum with bad values, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum with bad values, input type float";
 
+# imin
+$expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imin( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imin with bad values, input type short";
+$got = imin( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imin with bad values, input type float";
+$got = imin( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imin with bad values, input type double";
+
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = iavg( iter $x, $y, $N );
@@ -335,6 +370,15 @@ $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "isum with bad bin numbers, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum with bad bin numbers, input type float";
+
+# imin
+$expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imin( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imin with bad bin numbers, input type short";
+$got = imin( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imin with bad bin numbers, input type float";
+$got = imin( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imin with bad bin numbers, input type double";
 
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -429,6 +473,9 @@ is_pdl $got, $expected, "cross-check icount() with ngood()";
 $expected = apply( $x, $y, $N, \&sum );
 $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check isum() with sum()";
+$expected = apply( $x, $y, $N, \&min );
+$got = imin( iter $x, $y, $N );
+is_pdl $got, $expected, "cross-check imin() with min()";
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[0] } );
 $got = iavg( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check iavg() with stats()";

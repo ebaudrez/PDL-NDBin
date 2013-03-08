@@ -107,6 +107,32 @@ This function always returns a piddle of type I<int>.',
 	',
 );
 
+# _imin_loop
+#
+pp_def( '_imin_loop',
+	Pars => 'in(n); int idx(n); [o] out(m)',
+	OtherPars => 'int msize => m',
+	HandleBad => 1,
+	Doc => 'Find the minimum in each bin.',
+	Code => '
+		loop(n) %{
+			register int j = $idx();
+			if( ($ISBAD(out(m => j))) || ($in() < $out(m => j)) ) {
+				$out(m => j) = $in();
+			}
+		%}
+	',
+	BadCode => '
+		loop(n) %{
+			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
+			register int j = $idx();
+			if( ($ISBAD(out(m => j))) || ($in() < $out(m => j)) ) {
+				$out(m => j) = $in();
+			}
+		%}
+	',
+);
+
 # _isum_loop
 #
 pp_def( '_isum_loop',
