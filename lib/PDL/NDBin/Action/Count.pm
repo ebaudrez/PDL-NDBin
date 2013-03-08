@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate CODEREF SCALAR );
+use Params::Validate qw( validate OBJECT SCALAR );
 
 =head1 METHODS
 
@@ -19,7 +19,7 @@ use Params::Validate qw( validate CODEREF SCALAR );
 
 	my $instance = PDL::NDBin::Action::Count->new(
 		N    => $N,
-		type => \&PDL::long,   # default
+		type => long,   # default
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
@@ -33,7 +33,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => CODEREF, default => \&PDL::long }
+			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::long }
 		} );
 	return bless $self, $class;
 }
@@ -51,7 +51,7 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $self->{type}->(), $self->{N} ) unless defined $self->{out};
+	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
 	PDL::NDBin::Actions_PP::_icount_loop( $iter->data, $iter->idx, $self->{out}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once

@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate CODEREF SCALAR UNDEF );
+use Params::Validate qw( validate OBJECT SCALAR UNDEF );
 
 =head1 METHODS
 
@@ -19,7 +19,7 @@ use Params::Validate qw( validate CODEREF SCALAR UNDEF );
 
 	my $instance = PDL::NDBin::Action::Sum->new(
 		N    => $N,
-		type => \&PDL::double,   # optional
+		type => double,   # optional
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
@@ -33,7 +33,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => CODEREF | UNDEF, optional => 1 }
+			type => { type => OBJECT | UNDEF, isa => 'PDL::Type', optional => 1 }
 		} );
 	return bless $self, $class;
 }
@@ -52,8 +52,10 @@ sub process
 	my $self = shift;
 	my $iter = shift;
 	if( ! defined $self->{out} ) {
-		my $type = $self->{type} ? $self->{type}->() : undef;
-		$type ||= $iter->data->type < PDL::long() ? PDL::long : $iter->data->type;
+		my $type = $self->{type};
+		if( ! defined $type ) {
+			$type = $iter->data->type < PDL::long() ? PDL::long : $iter->data->type;
+		}
 		$self->{out} = PDL->zeroes( $type, $self->{N} );
 	}
 	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};

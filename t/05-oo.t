@@ -338,7 +338,7 @@ note 'MORE TESTS WITH ACTIONS';
 			expected => { u => test_float( [$avg] ) },
 		},
 		'action coderef, specified as hashref with type' => {
-			vars     => [ [ 'u', { class => 'CodeRef', coderef => $coderef, type => \&PDL::double } ] ],
+			vars     => [ [ 'u', { class => 'CodeRef', coderef => $coderef, type => PDL::double } ] ],
 			expected => { u => test_double( [$avg] ) },
 		},
 		'action class' => {
@@ -351,7 +351,7 @@ note 'MORE TESTS WITH ACTIONS';
 			expected => { u => test_double( [$avg] ) },
 		},
 		'action class with hashref and parameters' => {
-			vars     => [ [ 'u', { class => 'Avg', type => \&PDL::float } ] ],
+			vars     => [ [ 'u', { class => 'Avg', type => float } ] ],
 			expected => { u => test_float( [$avg] ) },
 		},
 	);

@@ -1372,7 +1372,7 @@ Specifying a hash reference is the same as specifying a class name, except that
 it allows you to pass additional parameters to the action class constructor.
 For instance, the specification
 
-	variable => { class => 'Avg', type => \&PDL::float }
+	variable => { class => 'Avg', type => float }
 
 is almost the same as
 
@@ -1381,7 +1381,7 @@ is almost the same as
 but with the type of the output piddle set to I<float>. This specification will
 be translated to the following constructor call:
 
-	PDL::NDBin::Action::Avg->new( N => $N, type => \&PDL::float )
+	PDL::NDBin::Action::Avg->new( N => $N, type => float )
 
 =head3 Exceptions in actions
 

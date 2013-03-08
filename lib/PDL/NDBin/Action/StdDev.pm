@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate CODEREF SCALAR );
+use Params::Validate qw( validate OBJECT SCALAR );
 
 =head1 METHODS
 
@@ -19,7 +19,7 @@ use Params::Validate qw( validate CODEREF SCALAR );
 
 	my $instance = PDL::NDBin::Action::StdDev->new(
 		N    => $N,
-		type => \&PDL::double,   # default
+		type => double,   # default
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
@@ -33,7 +33,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => CODEREF, default => \&PDL::double }
+			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::double }
 		} );
 	return bless $self, $class;
 }
@@ -51,7 +51,7 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $self->{type}->(), $self->{N} ) unless defined $self->{out};
+	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};
 	# as the internal computations happen in double, the type of 'avg' sticks to double
 	$self->{avg} = PDL->zeroes( PDL::double, $self->{N} ) unless defined $self->{avg};

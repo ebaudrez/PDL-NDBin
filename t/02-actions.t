@@ -191,7 +191,7 @@ for my $class ( __PACKAGE__->actions ) {
 		};
 		my @args = ( N => $N );
 		push @args, coderef => sub {} if $class eq 'PDL::NDBin::Action::CodeRef';
-		$obj = $class->new( @args, type => $ref );
+		$obj = $class->new( @args, type => $ref->() );
 		$obj->process( iter $x->$type, $y, $N );
 		cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for class $class with type => $type";
 	}
