@@ -7,7 +7,7 @@ use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use Carp qw( confess );
-use PDL 2.004; # at least 2.4.0 for 'types' in PDL::Types
+use PDL;
 use PDL::Types;
 use PDL::NDBin::Iterator;
 use Module::Pluggable sub_name    => 'actions',
