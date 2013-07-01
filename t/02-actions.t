@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 216;
+use Test::More;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
@@ -32,10 +32,9 @@ sub iter
 	PDL::NDBin::Iterator->new( bins => [ $N ], array => [ $var ], idx => $idx );
 }
 
-# systematically list all types used by PDL (should be 7 types in total)
+# systematically list all types used by PDL
 my @all_types = PDL::Types::types;
-# mostly here as a reminder to fix the (number of) tests should PDL include more types
-cmp_ok @all_types, '==', 7, 'there are seven basic PDL data types';
+plan tests => 117 + (7 + __PACKAGE__->actions) * @all_types;
 
 # variable declarations
 my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
