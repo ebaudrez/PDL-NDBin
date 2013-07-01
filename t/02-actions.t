@@ -129,13 +129,10 @@ for my $type ( @all_types ) {
 
 #
 note '   function = isum';
-cmp_ok( isum( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
-cmp_ok( isum( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
-cmp_ok( isum( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
-cmp_ok( isum( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
-cmp_ok( isum( iter $x->longlong, $y, $N )->type, '==', longlong, 'return type is longlong for input type longlong' );
-cmp_ok( isum( iter $x->float, $y, $N )->type, '==', float, 'return type is float for input type float' );
-cmp_ok( isum( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+for my $type ( @all_types ) {
+	my $expected_type = ($type < long) ? long : $type;
+	cmp_ok( isum( iter $x->convert($type), $y, $N )->type, '==', $expected_type, "return type is $expected_type for input type $type" );
+}
 
 #
 for my $what ( ['iavg', \&iavg], ['istddev', \&istddev] ) {
