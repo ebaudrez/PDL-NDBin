@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.012     2013-07-02 11:13:46 Europe/Brussels
+
  - fixed the tests to work with the latest development release of PDL
    (2.006_03) (Edward Baudrez)
 
