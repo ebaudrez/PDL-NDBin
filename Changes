@@ -2,6 +2,9 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - fixed the tests to work with the latest development release of PDL
+   (2.006_03) (Edward Baudrez)
+
 0.011     2013-03-15 09:55:16 Europe/Brussels
 
  - try to avoid test failures with old versions of Module::Pluggable (Edward
