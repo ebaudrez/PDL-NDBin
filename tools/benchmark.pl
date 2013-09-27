@@ -54,7 +54,7 @@ if( $opt->old_flattening ) {
 	no warnings 'redefine';
 	*PDL::_flatten_into = sub (;@) {
 		my( $pdl, $idx, $step, $min, $n ) = @_;
-		my $binned = PDL::long( ($pdl - $min)/$step );
+		my $binned = PDL::indx( ($pdl - $min)/$step );
 		$binned->inplace->clip( 0, $n-1 );
 		$idx * $n + $binned
 	} 

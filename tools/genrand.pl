@@ -40,7 +40,7 @@ for( my $i = 0; $i < @howmany; $i++ ) {
 		scalar @$v;
 	if( ! $nobins) {
 		my $b = $bins[ $i ];
-		printf "my \$v$i = long( %s ); # %d random bins [0:@{ [ $maxbin - 1 ] }]\n",
+		printf "my \$v$i = indx( %s ); # %d random bins [0:@{ [ $maxbin - 1 ] }]\n",
 			join( ", ", @$b ), scalar @$b;
 	}
 }

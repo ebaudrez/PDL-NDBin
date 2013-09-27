@@ -91,7 +91,7 @@ on the values in the bins? It is actually not that difficult to perform the
 binning by hand. The key is to associate a bin number with every data value.
 With fixed-size bins of 0.1 mm wide, that is accomplished with
 
-	my $bin_numbers = PDL::long( $particles/0.1 );
+	my $bin_numbers = PDL::indx( $particles/0.1 );
 
 (Note that the formulation above does not take care of data beyond 10 mm, but
 PDL::NDBin does.) We now have two arrays of data: the actual particle sizes in
@@ -133,7 +133,7 @@ along both latitude and longitude:
 	my( $latitude, $longitude ); # somehow get these data as 1-D vars
 	my $flattened = 0;
 	for my $var ( $latitude, $longitude ) {
-		my $bin_numbers = long( ($var - $min)/$step );
+		my $bin_numbers = indx( ($var - $min)/$step );
 		$bin_numbers->inplace->clip( 0, $n-1 );
 		$flattened = $flattened * $n + $bin_numbers;
 	}
@@ -1455,9 +1455,9 @@ The calculation of the number of bins is based on the formula
 
 but needs to be modified. First, I<n> calculated in this way may well be
 fractional. When I<n> is ultimately used in the binning, it is converted to
-I<int> by truncating. To have sufficient bins, I<n> must be rounded up to the
-next integer. Second, the computation of I<n> is and should be different for
-floating-point data and integral data.
+integral type by truncating. To have sufficient bins, I<n> must be rounded up
+to the next integer. Second, the computation of I<n> is and should be different
+for floating-point data and integral data.
 
 For floating-point data, I<n> is calculated as follows:
 

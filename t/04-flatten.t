@@ -19,30 +19,30 @@ use PDL::NDBin::Actions_PP;
 	$y->inplace->setvaltobad( 5 );
 
 	$a = $x->_flatten_into( 0, 2,1,4 );
-	is_pdl $a, long( 0,0,0,1,1,2,2,3,3,3 ), 'start with pdl=0, clip to 4 bins';
+	is_pdl $a, indx( 0,0,0,1,1,2,2,3,3,3 ), 'start with pdl=0, clip to 4 bins';
 
 	$a = $x->_flatten_into( zeroes($x), 2,1,4 );
-	is_pdl $a, long( 0,0,0,1,1,2,2,3,3,3 ), 'start with pdl=zeroes, clip to 4 bins';
+	is_pdl $a, indx( 0,0,0,1,1,2,2,3,3,3 ), 'start with pdl=zeroes, clip to 4 bins';
 
 	$a = $x->_flatten_into( zeroes($x), 2,1,5 );
-	is_pdl $a, long( 0,0,0,1,1,2,2,3,3,4 ), 'clip to 5 bins';
+	is_pdl $a, indx( 0,0,0,1,1,2,2,3,3,4 ), 'clip to 5 bins';
 
 	$a = $x->_flatten_into( zeroes($x), 2,1,4 );
 	$b = $y->_flatten_into( $a, 2,1,4 );
-	is_pdl $b, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'flatten into existing list';
+	is_pdl $b, indx( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'flatten into existing list';
 
 	$idx = 0;
 	$idx = $x->_flatten_into( $idx, 2,1,4 );
-	is_pdl $idx, long( 0,0,0,1,1,2,2,3,3,3 ), 'chained flattening';
+	is_pdl $idx, indx( 0,0,0,1,1,2,2,3,3,3 ), 'chained flattening';
 	$idx = $y->_flatten_into( $idx, 2,1,4 );
-	is_pdl $idx, long( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'chained flattening';
+	is_pdl $idx, indx( 0,0,0,5,5,-1,10,15,15,15 )->setvaltobad( -1 ), 'chained flattening';
 }
 
 ###
 {
 	my $x = pdl( -5.1,-4.1,-3.1,-2.1,-1.1,-0.1,0.9,1.9,2.9,3.9,4.9 );
 	my $a = $x->_flatten_into( 0, 1,-2,5 );
-	is_pdl $a, long( 0,0,0,0,0,1,2,3,4,4,4 ), 'clips at lowest and highest bin';
+	is_pdl $a, indx( 0,0,0,0,0,1,2,3,4,4,4 ), 'clips at lowest and highest bin';
 }
 
 ###
@@ -83,7 +83,7 @@ use PDL::NDBin::Actions_PP;
 		0.810342266540719, 0.708226626801519, 0.261316913965867,
 		0.536299754533793 ); # 100 random numbers
 	my( $step, $min, $n ) = ( .1, 0, 10 );
-	my $expected = PDL::long( ($x - $min)/$step );
+	my $expected = PDL::indx( ($x - $min)/$step );
 	$expected->inplace->clip( 0, $n-1 );
 	my $got = $x->_flatten_into( 0, $step, $min, $n );
 	is_pdl $got, $expected, 'cross-check with PDL implementation (old implementation)';
@@ -163,7 +163,7 @@ use PDL::NDBin::Actions_PP;
 	my( $step, $min, $n ) = ( .1, 0, 10 );
 	my $expected = 0;
 	for my $axis ( $x, $y ) {
-		my $binned = PDL::long( ($axis - $min)/$step );
+		my $binned = PDL::indx( ($axis - $min)/$step );
 		$binned->inplace->clip( 0, $n-1 );
 		$expected = $expected * $n + $binned;
 	}
