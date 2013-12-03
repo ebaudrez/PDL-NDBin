@@ -30,7 +30,7 @@ pp_setversion( '0.013' );
 #
 pp_def( '_flatten_into',
 	Pars => 'in(m); indx b(m); indx [o] idx(m)',
-	OtherPars => 'double step; double min; int n',
+	OtherPars => 'double step; double min; PDL_Indx n',
 	HandleBad => 1,
 	Doc => 'Bin a series of values and flatten into an existing list of indices.',
 	Code => '
@@ -89,7 +89,7 @@ pp_def( '_setnulltobad',
 #
 pp_def( '_icount_loop',
 	Pars => 'in(n); indx idx(n); int [o] out(m)',
-	OtherPars => 'int msize => m',
+	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => 'Count the number of elements in each bin.
 
@@ -113,7 +113,7 @@ This function always returns a piddle of type I<int>.',
 #
 pp_def( '_imax_loop',
 	Pars => 'in(n); indx idx(n); [o] out(m)',
-	OtherPars => 'int msize => m',
+	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => 'Find the maximum in each bin.',
 	Code => '
@@ -139,7 +139,7 @@ pp_def( '_imax_loop',
 #
 pp_def( '_imin_loop',
 	Pars => 'in(n); indx idx(n); [o] out(m)',
-	OtherPars => 'int msize => m',
+	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => 'Find the minimum in each bin.',
 	Code => '
@@ -165,7 +165,7 @@ pp_def( '_imin_loop',
 #
 pp_def( '_isum_loop',
 	Pars => 'in(n); indx idx(n); int+ [o] out(m); int [t] count(m)',
-	OtherPars => 'int msize => m',
+	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => 'Sum the elements in each bin.
 
@@ -192,7 +192,7 @@ overflow when collecting sums.',
 #
 pp_def( '_iavg_loop',
 	Pars => 'in(n); indx idx(n); double [o] out(m); int [t] count(m)',
-	OtherPars => 'int msize => m',
+	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => q[Compute the average of the elements in each bin.
 
@@ -250,7 +250,7 @@ also makes the implementation easier.],
 #
 pp_def ( '_istddev_loop',
 	Pars => 'in(n); indx idx(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
-	OtherPars => 'int msize => m',
+	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => q[Compute the standard deviation of the elements in each bin.
 
