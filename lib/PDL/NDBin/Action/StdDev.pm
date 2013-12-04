@@ -73,7 +73,7 @@ Return the result of the computation.
 sub result
 {
 	my $self = shift;
-	PDL::NDBin::Actions_PP::_istddev_post( $self->{count}, $self->{out} );
+	$self->{out}->inplace->_istddev_post( $self->{count} );
 	return $self->{out};
 }
 

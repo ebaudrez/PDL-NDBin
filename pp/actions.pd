@@ -310,24 +310,19 @@ floating-point type in C, it also makes the implementation easier.],
 # _istddev_post
 #
 pp_def( '_istddev_post',
-	Pars => 'count(n); [o] out(n)',
+	Pars => 'in(); indx count(); [o] out()',
 	HandleBad => 1,
+	Inplace => [ 'in' ],
 	Doc => 'Finalization for _istddev_loop().',
-	Code => '
-		int flag = 0;
-		loop(n) %{
-			if( ! $count() ) { $SETBAD(out()); flag = 1; }
-			else { $out() = sqrt( $out() / $count() ); }
-		%}
-		if( flag ) { $PDLSTATESETBAD(out); }
+	CopyBadStatusCode => '
+		if( in == out && $ISPDLSTATEGOOD(in) ) {
+			PDL->propogate_badflag( out, 1 );
+		}
+		$SETPDLSTATEBAD(out);
 	',
-	BadCode => '
-		int flag = 0;
-		loop(n) %{
-			if( ! $count() ) { $SETBAD(out()); flag = 1; }
-			else { $out() = sqrt( $out() / $count() ); }
-		%}
-		if( flag ) { $PDLSTATESETBAD(out); }
+	Code => '
+		if( ! $count() ) { $SETBAD(out()); }
+		else { $out() = sqrt( $in() / $count() ); }
 	',
 );
 
