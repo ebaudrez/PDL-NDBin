@@ -64,24 +64,22 @@ pp_def( '_flatten_into',
 );
 
 # _setnulltobad
+# modelled after setvaltobad()
 #
 pp_def( '_setnulltobad',
-	Pars => 'count(n); [o] out(n)',
+	Pars => 'in(); indx count(); [o] out()',
 	HandleBad => 1,
+	Inplace => [ 'in' ],
 	Doc => 'Set empty bins to the bad value.',
-	Code => '
-		int flag = 0;
-		loop(n) %{
-			if( ! $count() ) { $SETBAD(out()); flag = 1; }
-		%}
-		if( flag ) { $PDLSTATESETBAD(out); }
+	CopyBadStatusCode => '
+		if( in == out && $ISPDLSTATEGOOD(in) ) {
+			PDL->propogate_badflag( out, 1 );
+		}
+		$SETPDLSTATEBAD(out);
 	',
-	BadCode => '
-		int flag = 0;
-		loop(n) %{
-			if( ! $count() ) { $SETBAD(out()); flag = 1; }
-		%}
-		if( flag ) { $PDLSTATESETBAD(out); }
+	Code => '
+		if( ! $count() ) { $SETBAD(out()); }
+		else { $out() = $in(); }
 	',
 );
 

@@ -71,7 +71,7 @@ Return the result of the computation.
 sub result
 {
 	my $self = shift;
-	PDL::NDBin::Actions_PP::_setnulltobad( $self->{count}, $self->{out} );
+	$self->{out}->inplace->_setnulltobad( $self->{count} );
 	return $self->{out};
 }
 

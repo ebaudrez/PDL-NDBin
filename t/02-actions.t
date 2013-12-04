@@ -34,7 +34,7 @@ sub iter
 
 # systematically list all types used by PDL
 my @all_types = PDL::Types::types;
-plan tests => 117 + (7 + __PACKAGE__->actions) * @all_types;
+plan tests => 117 + (8 + __PACKAGE__->actions) * @all_types;
 
 # variable declarations
 my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
@@ -80,6 +80,21 @@ note 'SETUP';
 		};
 	}
 	ok( ! %plugins, 'no more unknown plugins left' ) or diag 'remaining plugins: ', join ', ' => keys %plugins;
+}
+
+#
+# _SETNULLTOBAD()
+#
+note '_SETNULLTOBAD()';
+{
+	my $count = indx(  4, 1, 0, 1 );
+	my $sum   = long( 24, 7, 0, 8 );
+	for my $type ( @all_types ) {
+		my $s1 = $sum->convert( $type );
+		$s1->inplace->_setnulltobad( $count );
+		my $expected = long( 24, 7,-1, 8 )->inplace->setvaltobad( -1 )->convert( $type );
+		is_pdl $s1, $expected, "_setnulltobad() on type $type";
+	}
 }
 
 #
