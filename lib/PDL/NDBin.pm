@@ -57,7 +57,7 @@ use Class::Load qw( load_class );
 	# in 3 bins with a width of 1, starting at 0:
 	my $histogram = ndbinning( pdl( 1,1,2 ), 1, 0, 3 );
 	# returns the one-dimensional histogram
-	#    long( 0,2,1 )
+	#    indx( 0,2,1 )
 
 	# bin the values
 	$x = pdl( 1,1,1,2,2 );
@@ -66,7 +66,7 @@ use Class::Load qw( load_class );
 	my $histogram = ndbinning( $x => (1,0,3),
 	                           $y => (1,0,3) );
 	# returns the two-dimensional histogram
-	#    long( [0,0,0],
+	#    indx( [0,0,0],
 	#          [0,2,2],
 	#          [0,1,0] )
 
@@ -99,7 +99,7 @@ $particles, and the bin numbers associated with every data value in
 $bin_numbers. The histogram could now be produced with the following loop, $N
 being 100:
 
-	my $histogram = zeroes( long, $N );
+	my $histogram = zeroes( indx, $N );
 	for my $bin ( 0 .. $N-1 ) {
 		my $want = which( $bin_numbers == $bin );
 		$histogram->set( $bin, $want->nelem );
@@ -109,7 +109,7 @@ But, once we have the indices of the data values corresponding to any bin, it
 is a small matter to extend the loop to actually extract the data values in the
 bin. A user-supplied subroutine can then be invoked on the values in every bin:
 
-	my $output = zeroes( long, $N )->setbadif( 1 );
+	my $output = zeroes( indx, $N )->setbadif( 1 );
 	for my $bin ( 0 .. $N-1 ) {
 		my $want = which( $bin_numbers == $bin );
 		my $selection = $particles->index( $want );
@@ -896,7 +896,7 @@ emulated, i.e., an I<n>-dimensional histogram is produced. This function,
 although more flexible than the former two, is likely slower. If all you need
 is a one- or two-dimensional histogram, use histogram() and histogram2d()
 instead. Note that, when no variables are supplied, the returned histogram is
-of type I<long>, in contrast with histogram() and histogram2d(). The
+of type I<indx>, in contrast with histogram() and histogram2d(). The
 histogramming is achieved by passing an action which simply counts the number
 of elements in the bin.
 
@@ -983,7 +983,7 @@ If no variables are supplied, the behaviour of hist() is emulated, i.e., an
 I<n>-dimensional histogram is produced. This function, although more flexible
 than the other, is likely slower. If all you need is a one-dimensional
 histogram, use hist() instead. Note that, when no variables are supplied, the
-returned histogram is of type I<long>, in contrast with hist(). The
+returned histogram is of type I<indx>, in contrast with hist(). The
 histogramming is achieved by passing an action which simply counts the number
 of elements in the bin.
 

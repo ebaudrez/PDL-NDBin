@@ -123,7 +123,7 @@ $y = indx( @v );
 #
 note '   function = icount';
 for my $type ( @all_types ) {
-	cmp_ok( icount( iter $x->convert($type), $y, $N )->type, '==', long, "return type is long for input type $type" );
+	cmp_ok( icount( iter $x->convert($type), $y, $N )->type, '==', indx, "return type is indx for input type $type" );
 }
 
 #
@@ -184,7 +184,7 @@ $x = short( @u );
 $y = indx( @v );
 
 # icount
-$expected = long( 4,1,0,1 );
+$expected = indx( 4,1,0,1 );
 $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "icount, input type short";
 $got = icount( iter $x->float, $y, $N );
@@ -274,7 +274,7 @@ $y = indx( @v );
 # icount
 # note that in the next test, the count in the very first bin is one lower than
 # before due to the bad value (-1) in the third position
-$expected = long( 3,1,0,1 );
+$expected = indx( 3,1,0,1 );
 $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "icount with bad values, input type short";
 $got = icount( iter $x->float, $y, $N );
@@ -351,7 +351,7 @@ $y = indx( @v )->inplace->setvaltobad( -1 );
 # icount
 # note that in the next test, the count in the very first bin is one lower than
 # before due to the bad value (-1) in the third position
-$expected = long( 3,1,0,1 );
+$expected = indx( 3,1,0,1 );
 $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "icount with bad bin numbers, input type short";
 $got = icount( iter $x->float, $y, $N );
@@ -469,7 +469,7 @@ $x = $x->setbadif( $x < .5 );
 $y = indx( @v );
 
 #
-$expected = apply( $x, $y, $N, \&ngood )->long;
+$expected = apply( $x, $y, $N, \&ngood )->indx;
 $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check icount() with ngood()";
 $expected = apply( $x, $y, $N, \&sum );

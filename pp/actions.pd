@@ -88,12 +88,12 @@ pp_def( '_setnulltobad',
 # _icount_loop
 #
 pp_def( '_icount_loop',
-	Pars => 'in(n); indx idx(n); int [o] out(m)',
+	Pars => 'in(n); indx idx(n); indx [o] out(m)',
 	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => 'Count the number of elements in each bin.
 
-This function always returns a piddle of type I<int>.',
+This function always returns a piddle of type I<indx>.',
 	Code => '
 		loop(n) %{
 			register PDL_Indx j = $idx();
@@ -164,7 +164,7 @@ pp_def( '_imin_loop',
 # _isum_loop
 #
 pp_def( '_isum_loop',
-	Pars => 'in(n); indx idx(n); int+ [o] out(m); int [t] count(m)',
+	Pars => 'in(n); indx idx(n); int+ [o] out(m); indx [t] count(m)',
 	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => 'Sum the elements in each bin.
@@ -191,7 +191,7 @@ overflow when collecting sums.',
 # _iavg_loop
 #
 pp_def( '_iavg_loop',
-	Pars => 'in(n); indx idx(n); double [o] out(m); int [t] count(m)',
+	Pars => 'in(n); indx idx(n); double [o] out(m); indx [t] count(m)',
 	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => q[Compute the average of the elements in each bin.
@@ -249,7 +249,7 @@ also makes the implementation easier.],
 # _istddev_loop
 #
 pp_def ( '_istddev_loop',
-	Pars => 'in(n); indx idx(n); double [o] out(m); int [t] count(m); double [t] avg(m)',
+	Pars => 'in(n); indx idx(n); double [o] out(m); indx [t] count(m); double [t] avg(m)',
 	OtherPars => 'PDL_Indx msize => m',
 	HandleBad => 1,
 	Doc => q[Compute the standard deviation of the elements in each bin.

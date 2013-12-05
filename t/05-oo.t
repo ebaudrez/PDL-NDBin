@@ -144,8 +144,8 @@ note 'BASIC FUNCTIONALITY';
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );
 # by default histogram() returns a piddle of the same type as the axis,
-# but output() returns a piddle of type I<long> when histogramming
-$expected = { histogram => test_long( 0,2,1 ) };
+# but output() returns a piddle of type I<indx> when histogramming
+$expected = { histogram => test_indx( 0,2,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>1, min=>0, n=>3 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -163,7 +163,7 @@ $binner = PDL::NDBin->new( axes => [ [ x => ( step=>1, min=>0, n=>3 ) ] ],
 $binner->process( x => $x );
 $got = $binner->output;
 cmp_deeply $got, $expected, 'different syntax';
-$expected = { x => test_long( 0,2,1 ) };
+$expected = { x => test_indx( 0,2,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => ( step=>1, min=>0, n=>3 ) ] ],
 			   vars => [ [ x => 'Count' ] ] );
 $binner->process( x => $x );
@@ -172,14 +172,14 @@ cmp_deeply $got, $expected, 'different syntax, using action class name';
 
 # this idiom with only chained calls should work
 $x = pdl( 1,1,2 );
-$expected = { histogram => test_long( 0,2,1 ) };
+$expected = { histogram => test_indx( 0,2,1 ) };
 $got = PDL::NDBin->new( axes => [ [ v => (step=>1,min=>0,n=>3) ] ] )->process( v => $x )->output;
 cmp_deeply $got, $expected, 'all calls chained';
 
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );
 $y = pdl( 2,1,1,1,1 );
-$expected = { histogram => test_long( [0,0,0],
+$expected = { histogram => test_indx( [0,0,0],
 				      [0,2,2],
 				      [0,1,0] ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>0,n=>3) ],
@@ -191,7 +191,7 @@ cmp_deeply $got, $expected, 'example from PDL::histogram2d';
 #
 $x = pdl( 1,1,1,2,2,1,1 );
 $y = pdl( 2,1,3,4,1,4,4 );
-$expected = { histogram => test_long( [1,1],
+$expected = { histogram => test_indx( [1,1],
 				      [1,0],
 				      [1,0],
 				      [2,1] ) };
@@ -203,7 +203,7 @@ cmp_deeply $got, $expected, 'nonsquare two-dimensional histogram';
 
 # binning integer data
 $x = byte(1,2,3,4);
-$expected = { histogram => test_long( 1,1,1,1 ) };
+$expected = { histogram => test_indx( 1,1,1,1 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>1,n=>4) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -215,7 +215,7 @@ $binner = PDL::NDBin->new( axes => [ [ x => (step=>1,min=>2,n=>5) ] ],
 $binner->process( x => $x );
 $got = $binner->output;
 cmp_deeply $got, $expected, 'binning integer data: step = 1';
-$expected = { histogram => test_long( 18,1,1,1,2 ) };
+$expected = { histogram => test_indx( 18,1,1,1,2 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => (step=>2,min=>3,n=>5) ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -249,12 +249,12 @@ $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
 $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 	0.1480, 0.4297, 0.5000, 0.9637, 0.1148, 0.2922, 0.0846, 0.0954, 0.1379,
 	0.3187, 0.1655, 0.5777, 0.3047 );
-$expected = { histogram => test_pdl( histogram( $x, .1, 0, 10 )->long ) };
+$expected = { histogram => test_pdl( histogram( $x, .1, 0, 10 )->indx ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 cmp_deeply $got, $expected, 'cross-check with histogram';
-$expected = { histogram => test_pdl( histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long ) };
+$expected = { histogram => test_pdl( histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->indx ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ],
 				     [ 'y', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x, y => $y );
@@ -263,7 +263,7 @@ cmp_deeply $got, $expected, 'cross-check with histogram2d';
 
 # the example from PDL::hist
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
-$expected = { histogram => test_long( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 ) };
+$expected = { histogram => test_indx( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 ) };
 $binner = PDL::NDBin->new( axes => [ [ x => min=>0, max=>20, step=>1 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
@@ -451,73 +451,73 @@ is $got, 10, 'number of bins';
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>1) ] ] );
 	$binner->process( data => short( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 1,1,1,1 ), '(short) 1..4 step=1';
+	is_pdl $binner->output->{histogram}, indx( 1,1,1,1 ), '(short) 1..4 step=1';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>1) ] ] );
 	$binner->process( data => pdl( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 1,1,2 ), '(pdl  ) 1..4 step=1';
+	is_pdl $binner->output->{histogram}, indx( 1,1,2 ), '(pdl  ) 1..4 step=1';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>2) ] ] );
 	$binner->process( data => short( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 2,2 ), '(short) 1..4 step=2';
+	is_pdl $binner->output->{histogram}, indx( 2,2 ), '(short) 1..4 step=2';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>2) ] ] );
 	$binner->process( data => pdl( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 2,2 ), '(pdl  ) 1..4 step=2';
+	is_pdl $binner->output->{histogram}, indx( 2,2 ), '(pdl  ) 1..4 step=2';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>3) ] ] );
 	$binner->process( data => short( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 3,1 ), '(short) 1..4 step=3';
+	is_pdl $binner->output->{histogram}, indx( 3,1 ), '(short) 1..4 step=3';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, step=>3) ] ] );
 	$binner->process( data => pdl( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( [4] ), '(pdl  ) 1..4 step=3';
+	is_pdl $binner->output->{histogram}, indx( [4] ), '(pdl  ) 1..4 step=3';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>1) ] ] );
 	$binner->process( data => short( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( [4] ), '(short) 1..4 n=1';
+	is_pdl $binner->output->{histogram}, indx( [4] ), '(short) 1..4 n=1';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>1) ] ] );
 	$binner->process( data => pdl( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( [4] ), '(pdl  ) 1..4 n=1';
+	is_pdl $binner->output->{histogram}, indx( [4] ), '(pdl  ) 1..4 n=1';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>2) ] ] );
 	$binner->process( data => short( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 2,2 ), '(short) 1..4 n=2';
+	is_pdl $binner->output->{histogram}, indx( 2,2 ), '(short) 1..4 n=2';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>2) ] ] );
 	$binner->process( data => pdl( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 2,2 ), '(pdl  ) 1..4 n=2';
+	is_pdl $binner->output->{histogram}, indx( 2,2 ), '(pdl  ) 1..4 n=2';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>4) ] ] );
 	$binner->process( data => short( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 1,1,1,1 ), '(short) 1..4 n=4';
+	is_pdl $binner->output->{histogram}, indx( 1,1,1,1 ), '(short) 1..4 n=4';
 }
 
 {
 	my $binner = PDL::NDBin->new( axes => [ [ data => (min=>1, max=>4, n=>4) ] ] );
 	$binner->process( data => pdl( 1,2,3,4 ) );
-	is_pdl $binner->output->{histogram}, long( 1,1,1,1 ), '(pdl  ) 1..4 n=4';
+	is_pdl $binner->output->{histogram}, indx( 1,1,1,1 ), '(pdl  ) 1..4 n=4';
 }
 
 #
@@ -637,7 +637,7 @@ note 'BAD VALUES';
 			axis   => short(0,0,0,1),
 			var    => float(5,4,3,2),
 			Avg    => double(4,2),
-			Count  => long(3,1),
+			Count  => indx(3,1),
 			Max    => float(5,2),
 			Min    => float(3,2),
 			StdDev => double(sqrt(2/3),0),
@@ -647,7 +647,7 @@ note 'BAD VALUES';
 			axis   => short(-1,-1,-1,-1),
 			var    => float(5,4,3,2),
 			Avg    => double(-1,-1),
-			Count  => long(0,0),
+			Count  => indx(0,0),
 			Max    => float(-1,-1),
 			Min    => float(-1,-1),
 			StdDev => double(-1,-1),
@@ -657,7 +657,7 @@ note 'BAD VALUES';
 			axis   => short(-1,0,0,0),
 			var    => float(5,4,3,2),
 			Avg    => double(3,-1),
-			Count  => long(3,0),
+			Count  => indx(3,0),
 			Max    => float(4,-1),
 			Min    => float(2,-1),
 			StdDev => double(sqrt(2/3),-1),
@@ -667,7 +667,7 @@ note 'BAD VALUES';
 			axis   => short(-1,1,1,1),
 			var    => float(5,4,3,2),
 			Avg    => double(-1,3),
-			Count  => long(0,3),
+			Count  => indx(0,3),
 			Max    => float(-1,4),
 			Min    => float(-1,2),
 			StdDev => double(-1,sqrt(2/3)),
@@ -677,7 +677,7 @@ note 'BAD VALUES';
 			axis   => short(0,-1,0,0),
 			var    => float(5,4,3,2),
 			Avg    => double(10/3,-1),
-			Count  => long(3,0),
+			Count  => indx(3,0),
 			Max    => float(5,-1),
 			Min    => float(2,-1),
 			StdDev => double(sqrt((5-10/3)*(5-10/3) + (3-10/3)*(3-10/3) + (2-10/3)*(2-10/3))/sqrt(3),-1),
@@ -687,7 +687,7 @@ note 'BAD VALUES';
 			axis   => short(0,-1,-1,0),
 			var    => float(5,4,3,2),
 			Avg    => double(3.5,-1),
-			Count  => long(2,0),
+			Count  => indx(2,0),
 			Max    => float(5,-1),
 			Min    => float(2,-1),
 			StdDev => double(sqrt((5-3.5)*(5-3.5) + (2-3.5)*(2-3.5))/sqrt(2),-1),
@@ -697,7 +697,7 @@ note 'BAD VALUES';
 			axis   => short(0,-1,-1,1),
 			var    => float(5,4,3,2),
 			Avg    => double(5,2),
-			Count  => long(1,1),
+			Count  => indx(1,1),
 			Max    => float(5,2),
 			Min    => float(5,2),
 			StdDev => double(0,0),
@@ -707,7 +707,7 @@ note 'BAD VALUES';
 			axis   => short(1,0,1,-1),
 			var    => float(5,4,3,2),
 			Avg    => double(4,4),
-			Count  => long(1,2),
+			Count  => indx(1,2),
 			Max    => float(4,5),
 			Min    => float(4,3),
 			StdDev => double(0,1),
@@ -717,7 +717,7 @@ note 'BAD VALUES';
 			axis   => short(0,1,0,1),
 			var    => float(-1,-1,-1,-1),
 			Avg    => double(-1,-1),
-			Count  => long(0,0),
+			Count  => indx(0,0),
 			Max    => float(-1,-1),
 			Min    => float(-1,-1),
 			StdDev => double(-1,-1),
@@ -727,7 +727,7 @@ note 'BAD VALUES';
 			axis   => short(1,1,1,1),
 			var    => float(5,4,3,-1),
 			Avg    => double(-1,4),
-			Count  => long(0,3),
+			Count  => indx(0,3),
 			Max    => float(-1,5),
 			Min    => float(-1,3),
 			StdDev => double(-1,sqrt(2/3)),

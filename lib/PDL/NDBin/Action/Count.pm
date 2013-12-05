@@ -19,12 +19,12 @@ use Params::Validate qw( validate OBJECT SCALAR );
 
 	my $instance = PDL::NDBin::Action::Count->new(
 		N    => $N,
-		type => long,   # default
+		type => indx,   # default
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
 Optionally allows the type of the output piddle to be set (defaults to
-I<long>).
+I<indx>).
 
 =cut
 
@@ -33,7 +33,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::long }
+			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::indx }
 		} );
 	return bless $self, $class;
 }

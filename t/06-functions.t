@@ -70,19 +70,19 @@ dies_ok { ndbinning( null, 1, 0, 1, null, 1 ) } 'wrong arguments: null, 1, 0, 1,
 # the example from PDL::histogram
 $x = pdl( 1,1,2 );
 # by default histogram() returns a piddle of the same type as the axis,
-# but ndbinning() returns a piddle of type I<long> when histogramming
-$expected = long( 0,2,1 );
+# but ndbinning() returns a piddle of type I<indx> when histogramming
+$expected = indx( 0,2,1 );
 $got = ndbinning( $x, 1, 0, 3 );
 is_pdl $got, $expected, 'example from PDL::histogram';
 $got = ndbinning( $x, 1, 0, 3,
-		  vars => [[ zeroes( long, $x->nelem ), sub { shift->want->nelem } ]] );
+		  vars => [[ zeroes( indx, $x->nelem ), sub { shift->want->nelem } ]] );
 is_pdl $got, $expected, 'variable and action specified explicitly';
 $expected = pdl( 0,2,1 );	# this is an exception, because the type is
 				# locked to double by `$x => sub { ... }'
 $got = ndbinning( $x => ( 1, 0, 3 ),
 		  vars => [[ $x => sub { shift->want->nelem } ]] );
 is_pdl $got, $expected, 'different syntax';
-$expected = long( 0,2,1 );
+$expected = indx( 0,2,1 );
 $got = ndbinning( $x => ( 1, 0, 3 ),
 		  vars => [[ $x => 'Count' ]] );
 is_pdl $got, $expected, 'different syntax, using action class name';
@@ -90,7 +90,7 @@ is_pdl $got, $expected, 'different syntax, using action class name';
 # the example from PDL::histogram2d
 $x = pdl( 1,1,1,2,2 );
 $y = pdl( 2,1,1,1,1 );
-$expected = long( [0,0,0],
+$expected = indx( [0,0,0],
 		  [0,2,2],
 		  [0,1,0] );
 $got = ndbinning( $x => (1,0,3),
@@ -100,7 +100,7 @@ is_pdl $got, $expected, 'example from PDL::histogram2d';
 #
 $x = pdl( 1,1,1,2,2,1,1 );
 $y = pdl( 2,1,3,4,1,4,4 );
-$expected = long( [1,1],
+$expected = indx( [1,1],
 		  [1,0],
 		  [1,0],
 		  [2,1] );
@@ -110,14 +110,14 @@ is_pdl $got, $expected, 'nonsquare two-dimensional histogram';
 
 # binning integer data
 $x = byte(1,2,3,4);
-$expected = long(1,1,1,1);
+$expected = indx(1,1,1,1);
 $got = ndbinning( $x => (1,1,4) );
 is_pdl $got, $expected, 'binning integer data: base case';
 $x = short( 0,-1,3,9,6,3,1,0,1,3,7,14,3,4,2,-6,99,3,2,3,3,3,3 ); # contains out-of-range data
 $expected = short( 8,9,1,0,5 );
 $got = ndbinning( $x => (1,2,5), vars => [[ $x => sub { shift->want->nelem } ]] );
 is_pdl $got, $expected, 'binning integer data: step = 1';
-$expected = long( 18,1,1,1,2 );
+$expected = indx( 18,1,1,1,2 );
 $got = ndbinning( $x => (2,3,5) );
 is_pdl $got, $expected, 'binning integer data: step = 2';
 
@@ -160,7 +160,7 @@ dies_ok  { ndbin( pdl( 1,2 ), INVALID_KEY => 3 ) } 'invalid keys are detected an
 
 # the example from PDL::hist
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
-$expected = long( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
+$expected = indx( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
 $got = ndbin( $x, 0, 20, 1 );
 is_pdl $got, $expected, 'example from PDL::hist';
 
@@ -168,7 +168,7 @@ is_pdl $got, $expected, 'example from PDL::hist';
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
 $got = ndbin( $x, 0,20,1, vars => [ [ $x, 'Count' ] ] );
-is_pdl $got, $expected->long, 'variable with action Count';
+is_pdl $got, $expected->indx, 'variable with action Count';
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
 $got = ndbin( $x, 0,20,1,
 	      vars => [ [ $x => sub { my $iter = shift;
@@ -194,53 +194,53 @@ is_pdl $got, $expected, 'variable with action = debug_action, null PDL, and full
 
 # binning integer data
 $x = short( 1,2,3,4 );
-$expected = long( 1,1,1,1 ); # by default ndbin chooses n(bins)=n(data el.) if n(data el.) < 100
+$expected = indx( 1,1,1,1 ); # by default ndbin chooses n(bins)=n(data el.) if n(data el.) < 100
 $got = ndbin( $x );
 is_pdl $got, $expected, 'binning integer data: range = 1..4, auto parameters';
 $x = short( 1,2,3,4,5,6,7,8 );
-$expected = long( 2,2,2,2 );
+$expected = indx( 2,2,2,2 );
 $got = ndbin( $x, { step => 2 } );
 is_pdl $got, $expected, 'binning integer data: range = 1..4, step = 2';
 $got = ndbin( $x, { n => 4 } );
 is_pdl $got, $expected, 'binning integer data: range = 1..4, n = 4';
 $x = short( -3,-2,-1,0,1,2 );
-$expected = long( 2,2,2 );
+$expected = indx( 2,2,2 );
 $got = ndbin( $x => { n => 3 } );
 is_pdl $got, $expected, 'binning integer data: range = -3..2, n = 3';
 $x = short( -3,-2,-1,0,1,2,3 );
-$expected = long( 4,3 );
+$expected = indx( 4,3 );
 $got = ndbin( $x => { n => 2 } );
 is_pdl $got, $expected, 'binning integer data: range = -3..3, n = 2';
 $x = short( -3,-2,-1,0,1,2,3 );
-$expected = long( 3,2,2 );
+$expected = indx( 3,2,2 );
 $got = ndbin( $x => { n => 3 } );
 is_pdl $got, $expected, 'binning integer data: range = -3..3, n = 3';
 $x = short( 3,4,5,6,7,8,9,10,11 );
-$expected = long( [9] );
+$expected = indx( [9] );
 $got = ndbin( $x, { step => 10 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..11, step = 10';
 $got = ndbin( $x, { n => 1 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..11, n = 1';
 $x = short( 3,4,5,6,7,8,9,10,11,12 );
-$expected = long( [10] );
+$expected = indx( [10] );
 $got = ndbin( $x, { step => 10 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..12, step = 10';
 $got = ndbin( $x, { n => 1 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..12, n = 1';
-$expected = long( 5,5 );
+$expected = indx( 5,5 );
 $got = ndbin( $x, { n => 2 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..12, n = 2';
 $x = short( 3,4,5,6,7,8,9,10,11,12,13 );
-$expected = long( 10,1 );
+$expected = indx( 10,1 );
 $got = ndbin( $x, { step => 10 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..13, step = 10';
-$expected = long( 6,5 );
+$expected = indx( 6,5 );
 $got = ndbin( $x, { n => 2 } );
 is_pdl $got, $expected, 'binning integer data: range = 3..13, n = 2';
 
 # test with weird data
 dies_ok { ndbin( pdl( 3,3,3 ) ) } 'data range = 0';
-$expected = long( [3] );
+$expected = indx( [3] );
 $got = ndbin( short( 1,1,1 ), { n => 1 } );
 is_pdl $got, $expected, 'data range = 0 BUT integral data and n = 1 (corner case)';
 dies_ok { ndbin( short( 1,2 ), { n => 4 } ) } 'invalid data: step size < 1 for integral data';
@@ -283,16 +283,16 @@ $got = ndbin( $x => { n => 2 },
 is_pdl $got, $expected, 'bin numbers returned from iterator';
 
 # simulate the functionality formerly known as SKIP_EMPTY
-# note that we have to supply a fake variable of type `long' to simulate the
+# note that we have to supply a fake variable of type `indx' to simulate the
 # behaviour of PDL::NDBin::Action::Count
 $x = pdl( 1,3,3 );		# 3 bins, but middle bin will be empty
-$expected = long( 1,0,2 );
+$expected = indx( 1,0,2 );
 $got = ndbin( $x, vars => [ [ $x => 'Count' ] ] );
 is_pdl $got, $expected, 'do not skip empty bins, action class';
-$got = ndbin( $x, vars => [ [ null->long => sub { shift->want->nelem } ] ] );
+$got = ndbin( $x, vars => [ [ null->indx => sub { shift->want->nelem } ] ] );
 is_pdl $got, $expected, 'do not skip empty bins, action coderef';
 $expected->inplace->setvaltobad( 0 );
-$got = ndbin( $x, vars => [ [ null->long => sub { my $n = shift->want->nelem; return unless $n; $n } ] ] );
+$got = ndbin( $x, vars => [ [ null->indx => sub { my $n = shift->want->nelem; return unless $n; $n } ] ] );
 is_pdl $got, $expected, 'skip empty bins (cannot be achieved with action class)';
 
 # this is an attempt to catch a strange test failure ...
@@ -315,25 +315,25 @@ $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 # number of bins in hist() has changed between 2.4.11 and 2.4.12. Anyway, it
 # was not even documented, so we shouldn't have relied on it in the first
 # place.
-#$expected = hist( $x )->long;		# reference values computed by PDL's built-in `hist'
+#$expected = hist( $x )->indx;		# reference values computed by PDL's built-in `hist'
 #$got = ndbin( $x );
 #is_pdl $got, $expected, 'cross-check $x with hist';
-#$expected = hist( $y )->long;
+#$expected = hist( $y )->indx;
 #$got = ndbin( $y );
 #is_pdl $got, $expected, 'cross-check $y with hist';
-$expected = hist( $x, 0, 1, 0.1 )->long;
+$expected = hist( $x, 0, 1, 0.1 )->indx;
 $got = ndbin( $x, 0, 1, 0.1 );
 is_pdl $got, $expected, 'cross-check $x with hist, with (min,max,step) supplied';
-$expected = hist( $y, 0, 1, 0.1 )->long;
+$expected = hist( $y, 0, 1, 0.1 )->indx;
 $got = ndbin( $y, 0, 1, 0.1 );
 is_pdl $got, $expected, 'cross-check $y with hist, with (min,max,step) supplied';
-$expected = histogram( $x, .1, 0, 10 )->long;
+$expected = histogram( $x, .1, 0, 10 )->indx;
 $got = ndbin( $x, { step => .1, min => 0, n => 10 } );
 is_pdl $got, $expected, 'cross-check $x with histogram';
-$expected = histogram( $y, .1, 0, 10 )->long;
+$expected = histogram( $y, .1, 0, 10 )->indx;
 $got = ndbin( $y, { step => .1, min => 0, n => 10 } );
 is_pdl $got, $expected, 'cross-check $y with histogram';
-$expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->long;
+$expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->indx;
 $got = ndbin( $x, { step => .1, min => 0, n => 10 },
 	      $y, { step => .1, min => 0, n => 10 } );
 is_pdl $got, $expected, 'cross-check with histogram2d';
