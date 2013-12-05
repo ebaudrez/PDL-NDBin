@@ -26,18 +26,23 @@ EOD
 # in some of the tests
 pp_setversion( '0.013' );
 
+# check for indx/PDL_Indx support
+use PDL::Lite; # load PDL to check definedness of &PDL::indx
+my $indx_type = defined( &PDL::indx ) ? 'indx' : 'int';
+my $PDL_Indx_type = defined( &PDL::indx ) ? 'PDL_Indx' : 'int';
+
 # _flatten_into
 #
 pp_def( '_flatten_into',
-	Pars => 'in(m); indx b(m); indx [o] idx(m)',
-	OtherPars => 'double step; double min; PDL_Indx n',
+	Pars => "in(m); $indx_type b(m); $indx_type [o] idx(m)",
+	OtherPars => "double step; double min; $PDL_Indx_type n",
 	HandleBad => 1,
 	Doc => 'Bin a series of values and flatten into an existing list of indices.',
 	Code => '
 		register double min = $COMP( min );
 		register double step = $COMP( step );
-		register PDL_Indx j;
-		register PDL_Indx maxj = $COMP( n ) - 1;
+		register '.$PDL_Indx_type.' j;
+		register '.$PDL_Indx_type.' maxj = $COMP( n ) - 1;
 		loop(m) %{
 			j = (( $in() - min )/step);
 			if( j < 0 ) j = 0;
@@ -48,8 +53,8 @@ pp_def( '_flatten_into',
 	BadCode => '
 		register double min = $COMP( min );
 		register double step = $COMP( step );
-		register PDL_Indx j;
-		register PDL_Indx maxj = $COMP( n ) - 1;
+		register '.$PDL_Indx_type.' j;
+		register '.$PDL_Indx_type.' maxj = $COMP( n ) - 1;
 		loop(m) %{
 			if( ($ISBAD(in())) || ($ISBAD(b())) ) {
 				$SETBAD( idx() );
@@ -67,7 +72,7 @@ pp_def( '_flatten_into',
 # modelled after setvaltobad()
 #
 pp_def( '_setnulltobad',
-	Pars => 'in(); indx count(); [o] out()',
+	Pars => "in(); $indx_type count(); [o] out()",
 	HandleBad => 1,
 	Inplace => [ 'in' ],
 	Doc => 'Set empty bins to the bad value.',
@@ -86,22 +91,23 @@ pp_def( '_setnulltobad',
 # _icount_loop
 #
 pp_def( '_icount_loop',
-	Pars => 'in(n); indx idx(n); indx [o] out(m)',
-	OtherPars => 'PDL_Indx msize => m',
+	Pars => "in(n); $indx_type idx(n); $indx_type [o] out(m)",
+	OtherPars => "$PDL_Indx_type msize => m",
 	HandleBad => 1,
 	Doc => 'Count the number of elements in each bin.
 
-This function always returns a piddle of type I<indx>.',
+This function returns a piddle of type I<indx> if you have a 64-bit-capable
+PDL, otherwise it returns a piddle of type I<long>.',
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			++( $out(m => j) );
 		%}
 	',
 	BadCode => '
 		loop(n) %{
 			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			++( $out(m => j) );
 		%}
 	',
@@ -110,13 +116,13 @@ This function always returns a piddle of type I<indx>.',
 # _imax_loop
 #
 pp_def( '_imax_loop',
-	Pars => 'in(n); indx idx(n); [o] out(m)',
-	OtherPars => 'PDL_Indx msize => m',
+	Pars => "in(n); $indx_type idx(n); [o] out(m)",
+	OtherPars => "$PDL_Indx_type msize => m",
 	HandleBad => 1,
 	Doc => 'Find the maximum in each bin.',
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			if( ($ISBAD(out(m => j))) || ($in() > $out(m => j)) ) {
 				$out(m => j) = $in();
 			}
@@ -125,7 +131,7 @@ pp_def( '_imax_loop',
 	BadCode => '
 		loop(n) %{
 			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			if( ($ISBAD(out(m => j))) || ($in() > $out(m => j)) ) {
 				$out(m => j) = $in();
 			}
@@ -136,13 +142,13 @@ pp_def( '_imax_loop',
 # _imin_loop
 #
 pp_def( '_imin_loop',
-	Pars => 'in(n); indx idx(n); [o] out(m)',
-	OtherPars => 'PDL_Indx msize => m',
+	Pars => "in(n); $indx_type idx(n); [o] out(m)",
+	OtherPars => "$PDL_Indx_type msize => m",
 	HandleBad => 1,
 	Doc => 'Find the minimum in each bin.',
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			if( ($ISBAD(out(m => j))) || ($in() < $out(m => j)) ) {
 				$out(m => j) = $in();
 			}
@@ -151,7 +157,7 @@ pp_def( '_imin_loop',
 	BadCode => '
 		loop(n) %{
 			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			if( ($ISBAD(out(m => j))) || ($in() < $out(m => j)) ) {
 				$out(m => j) = $in();
 			}
@@ -162,8 +168,8 @@ pp_def( '_imin_loop',
 # _isum_loop
 #
 pp_def( '_isum_loop',
-	Pars => 'in(n); indx idx(n); int+ [o] out(m); indx [t] count(m)',
-	OtherPars => 'PDL_Indx msize => m',
+	Pars => "in(n); $indx_type idx(n); int+ [o] out(m); $indx_type [t] count(m)",
+	OtherPars => "$PDL_Indx_type msize => m",
 	HandleBad => 1,
 	Doc => 'Sum the elements in each bin.
 
@@ -171,7 +177,7 @@ This function returns a piddle of type I<int> or higher, to reduce the risk of
 overflow when collecting sums.',
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			$out(m => j) += $in();
 			++( $count(m => j) );
 		%}
@@ -179,7 +185,7 @@ overflow when collecting sums.',
 	BadCode => '
 		loop(n) %{
 			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			$out(m => j) += $in();
 			++( $count(m => j) );
 		%}
@@ -189,8 +195,8 @@ overflow when collecting sums.',
 # _iavg_loop
 #
 pp_def( '_iavg_loop',
-	Pars => 'in(n); indx idx(n); double [o] out(m); indx [t] count(m)',
-	OtherPars => 'PDL_Indx msize => m',
+	Pars => "in(n); $indx_type idx(n); double [o] out(m); $indx_type [t] count(m)",
+	OtherPars => "$PDL_Indx_type msize => m",
 	HandleBad => 1,
 	Doc => q[Compute the average of the elements in each bin.
 
@@ -231,14 +237,14 @@ being the default type in PDL and the 'natural' floating-point type in C, it
 also makes the implementation easier.],
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
 		%}
 	',
 	BadCode => '
 		loop(n) %{
 			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
 		%}
 	',
@@ -247,8 +253,8 @@ also makes the implementation easier.],
 # _istddev_loop
 #
 pp_def ( '_istddev_loop',
-	Pars => 'in(n); indx idx(n); double [o] out(m); indx [t] count(m); double [t] avg(m)',
-	OtherPars => 'PDL_Indx msize => m',
+	Pars => "in(n); $indx_type idx(n); double [o] out(m); $indx_type [t] count(m); double [t] avg(m)",
+	OtherPars => "$PDL_Indx_type msize => m",
 	HandleBad => 1,
 	Doc => q[Compute the standard deviation of the elements in each bin.
 
@@ -290,7 +296,7 @@ I<double>. Besides being the default type in PDL and the 'natural'
 floating-point type in C, it also makes the implementation easier.],
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			double delta = $in() - $avg(m => j);
 			$avg(m => j) += delta / ++( $count(m => j) );
 			$out(m => j) += delta * ( $in() - $avg(m => j) );
@@ -299,7 +305,7 @@ floating-point type in C, it also makes the implementation easier.],
 	BadCode => '
 		loop(n) %{
 			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
+			register '.$PDL_Indx_type.' j = $idx();
 			double delta = $in() - $avg(m => j);
 			$avg(m => j) += delta / ++( $count(m => j) );
 			$out(m => j) += delta * ( $in() - $avg(m => j) );
@@ -310,7 +316,7 @@ floating-point type in C, it also makes the implementation easier.],
 # _istddev_post
 #
 pp_def( '_istddev_post',
-	Pars => 'in(); indx count(); [o] out()',
+	Pars => "in(); $indx_type count(); [o] out()",
 	HandleBad => 1,
 	Inplace => [ 'in' ],
 	Doc => 'Finalization for _istddev_loop().',

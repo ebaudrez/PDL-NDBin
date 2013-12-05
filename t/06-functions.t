@@ -9,6 +9,9 @@ use Test::NoWarnings;
 use PDL;
 use PDL::NDBin qw( ndbinning ndbin );
 
+# compatibility with non-64-bit PDL versions
+BEGIN { if( ! defined &PDL::indx ) { *indx = \&PDL::long } }
+
 sub _defined_or { defined $_[0] ? $_[0] : $_[1] }
 
 sub debug_action
@@ -168,7 +171,7 @@ is_pdl $got, $expected, 'example from PDL::hist';
 $x = pdl( 13,10,13,10,9,13,9,12,11,10,10,13,7,6,8,10,11,7,12,9,11,11,12,6,12,7 );
 $expected = double( 0,0,0,0,0,0,2,3,1,3,5,4,4,4,0,0,0,0,0,0 );
 $got = ndbin( $x, 0,20,1, vars => [ [ $x, 'Count' ] ] );
-is_pdl $got, $expected->indx, 'variable with action Count';
+is_pdl $got, $expected->convert( indx ), 'variable with action Count';
 $expected = pdl( 0,0,0,0,0,0,6,7,8,9,10,11,12,13,0,0,0,0,0,0 )->inplace->setvaltobad( 0 );
 $got = ndbin( $x, 0,20,1,
 	      vars => [ [ $x => sub { my $iter = shift;
@@ -289,10 +292,10 @@ $x = pdl( 1,3,3 );		# 3 bins, but middle bin will be empty
 $expected = indx( 1,0,2 );
 $got = ndbin( $x, vars => [ [ $x => 'Count' ] ] );
 is_pdl $got, $expected, 'do not skip empty bins, action class';
-$got = ndbin( $x, vars => [ [ null->indx => sub { shift->want->nelem } ] ] );
+$got = ndbin( $x, vars => [ [ null->convert( indx ) => sub { shift->want->nelem } ] ] );
 is_pdl $got, $expected, 'do not skip empty bins, action coderef';
 $expected->inplace->setvaltobad( 0 );
-$got = ndbin( $x, vars => [ [ null->indx => sub { my $n = shift->want->nelem; return unless $n; $n } ] ] );
+$got = ndbin( $x, vars => [ [ null->convert( indx ) => sub { my $n = shift->want->nelem; return unless $n; $n } ] ] );
 is_pdl $got, $expected, 'skip empty bins (cannot be achieved with action class)';
 
 # this is an attempt to catch a strange test failure ...
@@ -315,25 +318,25 @@ $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 # number of bins in hist() has changed between 2.4.11 and 2.4.12. Anyway, it
 # was not even documented, so we shouldn't have relied on it in the first
 # place.
-#$expected = hist( $x )->indx;		# reference values computed by PDL's built-in `hist'
+#$expected = hist( $x )->convert( indx );		# reference values computed by PDL's built-in `hist'
 #$got = ndbin( $x );
 #is_pdl $got, $expected, 'cross-check $x with hist';
-#$expected = hist( $y )->indx;
+#$expected = hist( $y )->convert( indx );
 #$got = ndbin( $y );
 #is_pdl $got, $expected, 'cross-check $y with hist';
-$expected = hist( $x, 0, 1, 0.1 )->indx;
+$expected = hist( $x, 0, 1, 0.1 )->convert( indx );
 $got = ndbin( $x, 0, 1, 0.1 );
 is_pdl $got, $expected, 'cross-check $x with hist, with (min,max,step) supplied';
-$expected = hist( $y, 0, 1, 0.1 )->indx;
+$expected = hist( $y, 0, 1, 0.1 )->convert( indx );
 $got = ndbin( $y, 0, 1, 0.1 );
 is_pdl $got, $expected, 'cross-check $y with hist, with (min,max,step) supplied';
-$expected = histogram( $x, .1, 0, 10 )->indx;
+$expected = histogram( $x, .1, 0, 10 )->convert( indx );
 $got = ndbin( $x, { step => .1, min => 0, n => 10 } );
 is_pdl $got, $expected, 'cross-check $x with histogram';
-$expected = histogram( $y, .1, 0, 10 )->indx;
+$expected = histogram( $y, .1, 0, 10 )->convert( indx );
 $got = ndbin( $y, { step => .1, min => 0, n => 10 } );
 is_pdl $got, $expected, 'cross-check $y with histogram';
-$expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->indx;
+$expected = histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->convert( indx );
 $got = ndbin( $x, { step => .1, min => 0, n => 10 },
 	      $y, { step => .1, min => 0, n => 10 } );
 is_pdl $got, $expected, 'cross-check with histogram2d';

@@ -14,6 +14,12 @@ use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
 		      search_path => [ 'PDL::NDBin::Action' ];
 
+# compatibility with non-64-bit PDL versions
+BEGIN {
+	if( ! defined &PDL::indx ) { *indx = \&PDL::long }
+	if( ! defined &Test::PDL::test_indx ) { *test_indx = \&Test::PDL::test_long }
+}
+
 # variable declarations
 my ( $expected, $got, $binner, $x, $y );
 our ( $a, $b );
@@ -249,12 +255,12 @@ $x = pdl( 0.7143, 0.6786, 0.9214, 0.5065, 0.9963, 0.9703, 0.1574, 0.4718,
 $y = pdl( 0.7422, 0.0299, 0.6629, 0.9118, 0.1224, 0.6173, 0.9203, 0.9999,
 	0.1480, 0.4297, 0.5000, 0.9637, 0.1148, 0.2922, 0.0846, 0.0954, 0.1379,
 	0.3187, 0.1655, 0.5777, 0.3047 );
-$expected = { histogram => test_pdl( histogram( $x, .1, 0, 10 )->indx ) };
+$expected = { histogram => test_pdl( histogram( $x, .1, 0, 10 )->convert( indx ) ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x );
 $got = $binner->output;
 cmp_deeply $got, $expected, 'cross-check with histogram';
-$expected = { histogram => test_pdl( histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->indx ) };
+$expected = { histogram => test_pdl( histogram2d( $x, $y, .1, 0, 10, .1, 0, 10 )->convert( indx ) ) };
 $binner = PDL::NDBin->new( axes => [ [ 'x', step=>.1, min=>0, n=>10 ],
 				     [ 'y', step=>.1, min=>0, n=>10 ] ] );
 $binner->process( x => $x, y => $y );

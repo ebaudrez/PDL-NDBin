@@ -8,6 +8,9 @@ use Test::NoWarnings;
 use PDL;
 use PDL::NDBin::Actions_PP;
 
+# compatibility with non-64-bit PDL versions
+BEGIN { if( ! defined &PDL::indx ) { *indx = \&PDL::long } }
+
 ###
 {
 	# variable declarations
@@ -83,7 +86,7 @@ use PDL::NDBin::Actions_PP;
 		0.810342266540719, 0.708226626801519, 0.261316913965867,
 		0.536299754533793 ); # 100 random numbers
 	my( $step, $min, $n ) = ( .1, 0, 10 );
-	my $expected = PDL::indx( ($x - $min)/$step );
+	my $expected = indx( ($x - $min)/$step );
 	$expected->inplace->clip( 0, $n-1 );
 	my $got = $x->_flatten_into( 0, $step, $min, $n );
 	is_pdl $got, $expected, 'cross-check with PDL implementation (old implementation)';
@@ -163,7 +166,7 @@ use PDL::NDBin::Actions_PP;
 	my( $step, $min, $n ) = ( .1, 0, 10 );
 	my $expected = 0;
 	for my $axis ( $x, $y ) {
-		my $binned = PDL::indx( ($axis - $min)/$step );
+		my $binned = indx( ($axis - $min)/$step );
 		$binned->inplace->clip( 0, $n-1 );
 		$expected = $expected * $n + $binned;
 	}

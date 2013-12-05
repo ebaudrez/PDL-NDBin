@@ -896,9 +896,9 @@ emulated, i.e., an I<n>-dimensional histogram is produced. This function,
 although more flexible than the former two, is likely slower. If all you need
 is a one- or two-dimensional histogram, use histogram() and histogram2d()
 instead. Note that, when no variables are supplied, the returned histogram is
-of type I<indx>, in contrast with histogram() and histogram2d(). The
-histogramming is achieved by passing an action which simply counts the number
-of elements in the bin.
+of type I<indx> (or I<long> if your PDL doesn't have 64-bit support), in
+contrast with histogram() and histogram2d(). The histogramming is achieved by
+passing an action which simply counts the number of elements in the bin.
 
 Unlike the output of output(), the resulting piddles are output as an array
 reference, in the same order as the variables passed in. There are as many
@@ -983,9 +983,9 @@ If no variables are supplied, the behaviour of hist() is emulated, i.e., an
 I<n>-dimensional histogram is produced. This function, although more flexible
 than the other, is likely slower. If all you need is a one-dimensional
 histogram, use hist() instead. Note that, when no variables are supplied, the
-returned histogram is of type I<indx>, in contrast with hist(). The
-histogramming is achieved by passing an action which simply counts the number
-of elements in the bin.
+returned histogram is of type I<indx> (or I<long> if your PDL doesn't have
+64-bit support), in contrast with hist(). The histogramming is achieved by
+passing an action which simply counts the number of elements in the bin.
 
 Unlike the output of output(), the resulting piddles are output as an array
 reference, in the same order as the variables passed in. There are as many

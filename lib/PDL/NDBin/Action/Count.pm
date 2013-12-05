@@ -33,7 +33,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::indx }
+			type => { type => OBJECT, isa => 'PDL::Type', default => defined(&PDL::indx) ? PDL::indx() : PDL::long }
 		} );
 	return bless $self, $class;
 }

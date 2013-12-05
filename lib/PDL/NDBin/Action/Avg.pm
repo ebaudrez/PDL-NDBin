@@ -52,7 +52,7 @@ sub process
 	my $self = shift;
 	my $iter = shift;
 	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
-	$self->{count} = PDL->zeroes( PDL::indx, $self->{N} ) unless defined $self->{count};
+	$self->{count} = PDL->zeroes( defined(&PDL::indx) ? PDL::indx() : PDL::long, $self->{N} ) unless defined $self->{count};
 	PDL::NDBin::Actions_PP::_iavg_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once

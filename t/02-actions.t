@@ -14,6 +14,9 @@ use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
 		      search_path => [ 'PDL::NDBin::Action' ];
 
+# compatibility with non-64-bit PDL versions
+BEGIN { if( ! defined &PDL::indx ) { *indx = \&PDL::long; } }
+
 sub apply
 {
 	my ( $x, $y, $N, $f ) = @_;
@@ -484,7 +487,7 @@ $x = $x->setbadif( $x < .5 );
 $y = indx( @v );
 
 #
-$expected = apply( $x, $y, $N, \&ngood )->indx;
+$expected = apply( $x, $y, $N, \&ngood )->convert( indx );
 $got = icount( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check icount() with ngood()";
 $expected = apply( $x, $y, $N, \&sum );
