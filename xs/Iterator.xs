@@ -15,17 +15,17 @@ advance( HV *self )
 	   **selection   = NULL,
 	   **unflattened = NULL,
 	   **want        = NULL;
-	int  nbins       = -1,
+	IV   nbins       = -1,
 	     nvars       = -1;
-	int *active      = NULL;
-	int  b, v, i;
+	IV  *active      = NULL;
+	IV   b, v, i;
   CODE:
 	RETVAL = &PL_sv_undef;
 	if( (svp = hv_fetch(self, "bin", 3, FALSE)) ) bin = *svp;
 	else croak( "advance: need bin" );
 	if( (svp = hv_fetch(self, "nbins", 5, FALSE)) ) nbins = SvIV( *svp );
 	else croak( "advance: need nbins" );
-	if( (int) SvIV(bin) >= nbins ) goto done;
+	if( SvIV(bin) >= nbins ) goto done;
 	if( (svp = hv_fetch(self, "var", 3, FALSE)) ) var = *svp;
 	else croak( "advance: need var" );
 	if( (svp = hv_fetch(self, "nvars", 5, FALSE)) ) nvars = SvIV( *svp );
@@ -43,7 +43,7 @@ advance( HV *self )
 	/* copy SVs to native data types */
 	b = SvIV( bin );
 	v = SvIV( var );
-	Newx( active, nvars, int );
+	Newx( active, nvars, IV );
 	for( i = 0; i < nvars; i++ ) {
 		if( (svp = av_fetch(av_active, (I32) i, FALSE)) ) {
 			active[i] = SvIV( *svp );
