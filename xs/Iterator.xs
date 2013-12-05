@@ -18,7 +18,7 @@ advance( HV *self )
 	IV   nbins       = -1,
 	     nvars       = -1;
 	IV  *active      = NULL;
-	IV   b, v, i;
+	IV   b = -1, v, i;
   CODE:
 	RETVAL = &PL_sv_undef;
 	if( (svp = hv_fetch(self, "bin", 3, FALSE)) ) bin = *svp;
@@ -77,7 +77,7 @@ advance( HV *self )
 	RETVAL = &PL_sv_yes;
     done:
 	/* copy native data types back to SVs */
-	sv_setiv( bin, b );
+	if( b >= 0 ) sv_setiv( bin, b );
 	if( var ) sv_setiv( var, v );
 	if( active ) Safefree( active );
   OUTPUT:

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 48;
+use Test::More tests => 49;
 use Test::Deep;
 use Test::PDL qw( is_pdl test_pdl );
 use Test::Exception;
@@ -33,6 +33,7 @@ while( $iter->advance ) { last if $k-- == 0 }
 is $k, 0, 'advance() in boolean context';
 ok $iter->done, 'iteration complete';
 ok !$iter->advance, "doesn't reset";
+ok !$iter->advance, "doesn't reset, second try";
 
 #
 @bins = ( 4 );
