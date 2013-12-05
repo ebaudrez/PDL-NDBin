@@ -38,8 +38,7 @@ my %WriteMakefileArgs = (
     "warnings" => 0
   },
   "TEST_REQUIRES" => {
-    "File::Find" => 0,
-    "File::Temp" => 0,
+    "Capture::Tiny" => 0,
     "Module::Pluggable" => "3.1",
     "PDL" => "2.004",
     "PDL::Types" => 0,
@@ -47,7 +46,8 @@ my %WriteMakefileArgs = (
     "Test::Exception" => 0,
     "Test::More" => "0.88",
     "Test::NoWarnings" => 0,
-    "Test::PDL" => "0.04"
+    "Test::PDL" => "0.10",
+    "blib" => 0
   },
   "VERSION" => "0.013",
   "test" => {
