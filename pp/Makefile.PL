@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 my $package = [ "actions.pd", 'Actions_PP', 'PDL::NDBin::Actions_PP' ];
 my %args = (
 	pdlpp_stdargs( $package ),
-	VERSION => '0.013',
+	VERSION => '0.014',
 );
 WriteMakefile( %args );
 sub MY::postamble { pdlpp_postamble( $package ) }
