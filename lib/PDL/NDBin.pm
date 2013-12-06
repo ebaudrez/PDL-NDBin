@@ -173,6 +173,15 @@ our %EXPORT_TAGS = ( all => [ qw( ndbinning ndbin ) ] );
 # the list of valid keys
 my %valid_key = map { $_ => 1 } qw( axes vars );
 
+=head1 64-BIT SUPPORT
+
+PDL::NDBin will now install fine on recent PDL versions (2.007 or later) with
+64-bit support. However, 64-bit support has not been tested very well (yet).
+
+Note that PDL::NDBin should continue to work with earlier versions of PDL. In
+that case, the I<indx> type does not exist, and you should mentally replace it
+with I<long> in the documentation.
+
 =head1 METHODS
 
 =head2 add_axis()
