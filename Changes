@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.013     2013-12-06 09:01:39 Europe/Brussels
+
  - added 64-bit support. PDL::NDBin will take advantage of 64-bit support with
    recent versions of PDL (2.007 or later), but should work with earlier
    versions, as well. Note that 64-bit support has not been tested very well
