@@ -29,8 +29,8 @@ sub debug_action
 	# assign C<<$iter->selection>> to a temporary variable before, the data
 	# is really evaluated, and the exception is raised, when we call min().
 	my $n = $iter->want->nelem;
-	my $min = _defined_or( eval { sprintf '%10.4f', $iter->selection->min }, '-' x 10 );
-	my $max = _defined_or( eval { sprintf '%10.4f', $iter->selection->max }, '-' x 10 );
+	my $min = _defined_or( eval { use warnings FATAL => 'all'; sprintf '%10.4f', $iter->selection->min }, '-' x 10 );
+	my $max = _defined_or( eval { use warnings FATAL => 'all'; sprintf '%10.4f', $iter->selection->max }, '-' x 10 );
 	note "bin (",
 	     join( ',', map { sprintf "%3d", $_ } @_ ),
 	     sprintf( "): #elements = %6s, ", _defined_or($n, '<UNDEF>') ),
