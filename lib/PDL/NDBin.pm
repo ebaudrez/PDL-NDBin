@@ -555,6 +555,11 @@ sub autoscale_axis
 	}
 	# first get & sanify the arguments
 	croak( 'need coordinates' ) unless defined $axis->{pdl};
+	# return if axis is empty
+	if( $axis->{pdl}->isempty ) {
+		$axis->{n} = 0;
+		return;
+	}
 	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
 
 =for comment
@@ -729,6 +734,7 @@ sub process
 		$log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} ) if $log->is_debug;
 		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
 			if $log->is_debug;
+		croak( 'I cannot bin unless n > 0' ) unless $axis->{n} > 0;
 		unshift @n, $axis->{n};			# remember that we are working backwards!
 		$idx = $axis->{pdl}->_flatten_into( $idx, $axis->{step}, $axis->{min}, $axis->{n} );
 	}

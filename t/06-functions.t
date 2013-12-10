@@ -145,7 +145,7 @@ note 'HIGH-LEVEL INTERFACE';
 dies_ok { ndbin() } 'no arguments';
 dies_ok { ndbin( null ) } 'wrong arguments: null';
 lives_ok { ndbin( pdl( 1,2 ) ) } 'correct arguments: one axis without parameters';
-lives_ok { ndbin( null, '9.', 11, 1 ) } 'correct arguments: one axis with parameters';
+lives_ok { ndbin( pdl( 1,2 ), '9.', 11, 1 ) } 'correct arguments: one axis with parameters';
 dies_ok { ndbin( null, '9.', 11, 1, 3 ) } 'wrong arguments: one axis + extra parameter';
 TODO: {
 	local $TODO = 'yet to implement slash syntax';
