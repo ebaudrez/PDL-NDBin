@@ -2,6 +2,9 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - tests started failing with recent development versions of PDL (2.007_01 or
+   2.007_02, not sure). Fixed now. (Edward Baudrez)
+
 0.013     2013-12-06 09:01:39 Europe/Brussels
 
  - added 64-bit support. PDL::NDBin will take advantage of 64-bit support with
