@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - added PDL::Core::Dev to configure_requires (RT #91304) (Edward Baudrez)
+
 0.014     2013-12-10 14:24:54 Europe/Brussels
 
  - tests started failing with recent development versions of PDL (2.007_01 or
