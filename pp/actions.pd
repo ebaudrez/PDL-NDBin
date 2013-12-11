@@ -24,7 +24,7 @@ EOD
 
 # note that version numbers with trailing zeroes (e.g, 0.010) created problems
 # in some of the tests
-pp_setversion( '0.015' );
+pp_setversion( '0.016' );
 
 # check for indx/PDL_Indx support
 use PDL::Lite; # load PDL to check definedness of &PDL::indx
@@ -340,7 +340,7 @@ Edward Baudrez <ebaudrez@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Edward Baudrez.
+This software is copyright (c) 2014 by Edward Baudrez.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
