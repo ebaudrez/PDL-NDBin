@@ -390,7 +390,9 @@ sub new
 	$params{axes} ||= [];		# be sure we can dereference
 	my @axes = @{ $params{axes} };
 	for my $axis ( @axes ) {
-		my( $name ) = validate_pos( @$axis, 1, (0) x (@$axis - 1) );
+		my @pat = ( 1 );					# one mandatory argument
+		if( @$axis > 1 ) { push @pat, (0) x (@$axis - 1) }	# followed by n-1 optional arguments
+		my( $name ) = validate_pos( @$axis, @pat );
 		shift @$axis; # remove name
 		$self->add_axis( name => $name, @$axis );
 	}
