@@ -2,6 +2,12 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.016     2014-11-17 11:13:39CET+0100 Europe/Brussels
+
+ - worked around a warning message emitted by the latest Perl development
+   releases (RT #100228). Reported by Slaven Rezić (thank you!). (Edward
+   Baudrez)
+
 0.015     2013-12-11 11:56:13 Europe/Brussels
 
  - added PDL::Core::Dev to configure_requires (RT #91304) (Edward Baudrez)
