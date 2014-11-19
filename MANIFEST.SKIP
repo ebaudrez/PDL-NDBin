@@ -4,6 +4,5 @@
 \bnosync\b
 \bpm_to_blib\b
 \bresults\b
-^Makefile\.PL$
 ^cover_db$
 ^nytprof
