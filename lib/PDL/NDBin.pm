@@ -235,6 +235,31 @@ may conflict.
 
 =cut
 
+my @axis_params = qw( max min n round step );
+my ( %axis_params, %axis_flags );
+@axis_params{@axis_params} = (1) x @axis_params;
+@axis_flags{@axis_params} = map { 1<<$_ } 0..@axis_params-1;
+
+my %axis_allowed =
+    map { reduce( sub { $a | $b }, 0, @axis_flags{@$_} ) => 1 }
+        [ ],
+	[ qw( n ) ],
+	[ qw( min ) ],
+	[ qw( max ) ],
+        [ qw( step ) ],
+	[ qw( min step ) ],
+	[ qw( max step ) ],
+	[ qw( min n ) ],
+	[ qw( max n ) ],
+	[ qw( round n ) ],
+	[ qw( round step ) ],
+	[ qw( n step ) ],
+	[ qw( n step round ) ],
+	[ qw( min n step ) ],
+	[ qw( max n step ) ],
+	[ qw( min max n ) ],
+	[ qw( min max step ) ];
+
 sub add_axis
 {
 	my $self = shift;
@@ -248,6 +273,11 @@ sub add_axis
 			step  => 0,
 		} );
 	$log->tracef( 'adding axis with specs %s', \%params );
+
+	my $pmask = reduce { $a | ($b||0) } 0, @axis_flags{ keys %params };
+	croak( "inconsistent or incomplete parameters: ", keys %params )
+	    unless $axis_allowed{ $pmask };
+
 	push @{ $self->{axes} }, \%params;
 }
 
