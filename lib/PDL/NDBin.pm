@@ -10,6 +10,7 @@ use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Iterator;
 use PDL::NDBin::Actions_PP;
+use PDL::NDBin::Utils_PP;
 use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
@@ -192,6 +193,21 @@ mandatory.
 
 	$self->add_axis( name => 'longitude', min => -70, max => 70, n => 14 );
 
+Axes may be binned either on a uniformly spaced grid or on a user-provided grid.
+If no specifications are given, data will be binned on a uniformly spaced grid
+automatically derived from the data.
+
+Uniformly spaced grids are specified via a subset of the C<min>,
+C<max>, C<step>, C<n>, and C<round> parameters, while the user
+provided grid is specified via the C<grid> parameter. Only specify the
+subset of parameters which exactly determines the grid.  For example:
+
+  min max n
+  min step n
+  max step n
+  step n round
+  grid
+
 The following axis specifications are available:
 
 =over 4
@@ -228,14 +244,30 @@ to the number of data values, or to 100, whichever is smaller.
 
 Round I<min> and I<max> to the nearest multiple of this value.
 
+=item grid
+
+Either a piddle or a reference to an array containing the values of the
+bin I<boundaries>.  The first and lest elements specify the minimum
+and maximum bin values, while the intermediate elements specify the common
+boundaries.  A bin is I<inclusive> of its lower bound
+and I<exclusive> of its upper bound. For example, the following set of
+bins
+
+  0 <= v < 1
+  1 <= v < 3
+  3 <= v < 9
+
+is represented via
+
+  grid => [ 0, 1, 3, 9 ]
+
+
 =back
 
-Note that you cannot specify all specifications at the same time, because some
-may conflict.
 
 =cut
 
-my @axis_params = qw( max min n round step );
+my @axis_params = qw( max min n round step grid );
 my ( %axis_params, %axis_flags );
 @axis_params{@axis_params} = (1) x @axis_params;
 @axis_flags{@axis_params} = map { 1<<$_ } 0..@axis_params-1;
@@ -258,7 +290,8 @@ my %axis_allowed =
 	[ qw( min n step ) ],
 	[ qw( max n step ) ],
 	[ qw( min max n ) ],
-	[ qw( min max step ) ];
+	[ qw( min max step ) ],
+        [ qw( grid ) ];
 
 sub add_axis
 {
@@ -271,6 +304,7 @@ sub add_axis
 			pdl   => 0,
 			round => 0,
 			step  => 0,
+			grid  => 0,
 		} );
 	$log->tracef( 'adding axis with specs %s', \%params );
 
@@ -592,6 +626,21 @@ sub autoscale_axis
 		$axis->{n} = 0;
 		return;
 	}
+
+	# return early if a grid has been supplied
+	if( defined $axis->{grid} ) {
+
+	        $axis->{grid} = PDL::Core::topdl( $axis->{grid} );
+	        croak( "grid supplied for %s must be one-dimensional with at least two elements", $axis )
+		  if $axis->{grid}->nelem < 2 || $axis->{grid}->ndims > 1;
+		_validate_grid( $axis->{grid} );
+		# number of bins is one less than number of bin edges
+		$axis->{n} = $axis->{grid}->nelem - 1;
+		$log->tracef( 'grid supplied for %s; no need to autoscale', $axis );
+		return;
+	}
+
+
 	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
 
 =for comment
@@ -717,17 +766,33 @@ sub labels
 	$self->autoscale( @_ );
 	my @list = map {
 		my $axis = $_;
-		my ( $pdl, $min, $step ) = @{ $axis }{ qw( pdl min step ) };
-		[ map {
-			{ # anonymous hash
-				range => $pdl->type() >= PDL::float()
-					? [ $min + $step*$_, $min + $step*($_+1) ]
-					: $step > 1
-						? [ nhimult( 1, $min + $step*$_ ), nhimult( 1, $min + $step*($_+1) - 1 ) ]
-						: $min + $step*$_
-			}
-		} 0 .. $axis->{n}-1 ];
+
+		if ( defined $axis->{grid} ) {
+
+		     [ map {
+			      { range => [ $axis->{grid}->at($_), $axis->{grid}->at($_+1) ] }
+		           } 0..$axis->{grid}->nelem -2
+		     ]
+
+		}
+
+		else {
+
+			my ( $pdl, $min, $step ) = @{ $axis }{ qw( pdl min step ) };
+			[ map {
+				{ # anonymous hash
+					range => $pdl->type() >= PDL::float()
+						? [ $min + $step*$_, $min + $step*($_+1) ]
+						: $step > 1
+							? [ nhimult( 1, $min + $step*$_ ), nhimult( 1, $min + $step*($_+1) - 1 ) ]
+							: $min + $step*$_
+				}
+			} 0 .. $axis->{n}-1 ];
+
+	    }
+
 	} $self->axes;
+
 	return wantarray ? @list : \@list;
 }
 
@@ -763,12 +828,23 @@ sub process
 	# find the last axis and flatten all axes into one dimension, working
 	# our way backwards from the last to the first axis
 	for my $axis ( reverse $self->axes ) {
-		$log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} ) if $log->is_debug;
-		$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" )
-			if $log->is_debug;
+	        if ( $log->is_debug ) {
+		    $log->debug( 'input (' . $axis->{pdl}->info . ') = ' . $axis->{pdl} );
+		    if ( ! defined $axis->{grid} ) {
+			$log->debug( "bin with parameters step=$axis->{step}, min=$axis->{min}, n=$axis->{n}" );
+		    }
+		    else {
+			$log->debug( "bin with parameters grid=$axis->{grid}" );
+		    }
+		}
 		croak( 'I cannot bin unless n > 0' ) unless $axis->{n} > 0;
 		unshift @n, $axis->{n};			# remember that we are working backwards!
-		$idx = $axis->{pdl}->_flatten_into( $idx, $axis->{step}, $axis->{min}, $axis->{n} );
+		if ( defined $axis->{grid} ) {
+		    $idx = $axis->{pdl}->_flatten_into_grid( $idx, $axis->{grid} );
+		}
+		else {
+		    $idx = $axis->{pdl}->_flatten_into( $idx, $axis->{step}, $axis->{min}, $axis->{n} );
+		}
 	}
 	$log->debug( 'idx (' . $idx->info . ') = ' . $idx ) if $log->is_debug;
 	$self->{n} = \@n;
@@ -1479,6 +1555,9 @@ Note that the evaluation of C<< $iter->want >> entails a performance penalty,
 even if the bin is empty and not processed further.
 
 =head2 Automatic axis parameter calculation
+
+(Note that if the user defines a binning scheme via the C<grid>
+parameter, no axis parameter calculations are performed.)
 
 =head3 Range
 
