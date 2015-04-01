@@ -1751,14 +1751,14 @@ PDL::NDBin and related distributions on CPAN:
 	| Performance                                       | Low     | Medium | High   | Very high | High     |
 	| Support for weighted histograms                   | X       | X      | X      | X         | -        |
 	| Uses PDL threading                                | -       | -      | -      | X         | -        |
-	| Variable-width bins                               | X       | X      | X      | -         | -        |
+	| Variable-width bins                               | X       | X      | X      | -         | X        |
 	+---------------------------------------------------+---------+--------+--------+-----------+----------+
 
 	  MGH   = Math::GSL 0.26 (Math::GSL::Histogram and Math::GSL::Histogram2D)
 	  MH    = Math::Histogram 1.03
 	  MSHXS = Math::SimpleHisto::XS 1.28
 	  PDL   = PDL 2.4.11
-	  PND   = PDL::NDBin 0.008
+	  PND   = PDL::NDBin 0.017
 
 An explanation and discussion of each of the features is provided below.
 
@@ -1957,8 +1957,11 @@ does not (yet) support threading.
 In a histogram with variable-width bins, the width of the bins needn't be
 equal. This feature can be useful, for example, to construct bins on a
 logarithmic scale. Math::GSL, Math::Histogram, and Math::SimpleHisto::XS
-support variable-width bins; PDL and PDL::NDBin do not and are limited to
-fixed-width bins.
+support variable-width bins; PDL does not, and is limited to fixed-width bins.
+
+Since version 0.017, PDL::NDBin supports variable-width bins if a piddle or
+Perl array containing the bin boundaries is passed in via the I<grid> parameter
+to axis specifications.
 
 =back
 
@@ -2207,8 +2210,7 @@ bin as a list or piddle; this would be very useful for plotting or output.
 
 =item *
 
-PDL::NDBin does not currently support variable-width bins and weighted
-histograms.
+PDL::NDBin does not currently support weighted histograms.
 
 =item *
 
@@ -2218,6 +2220,18 @@ The documentation can be expanded and improved in a few places.
 
 The axes should be refactored into objects instead of bare hashrefs, with
 methods such as labels(), n(), step(), etc.
+
+=back
+
+=head1 ACKNOWLEDGEMENTS
+
+=over 4
+
+=item *
+
+Diab Jerius <djerius@cfa.harvard.edu> implemented support for passing in a
+user-defined piddle or array containing bin boundaries, effectively allowing
+variable-width bins. Thanks Diab!
 
 =back
 

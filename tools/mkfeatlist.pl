@@ -131,7 +131,7 @@ __[config]__
 </module>
 
 <module PND>
-	name           PDL::NDBin 0.004
+	name           PDL::NDBin 0.017
 
 	auto           X
 	bad            X
@@ -147,6 +147,6 @@ __[config]__
 	resampling     -
 	serialization  -
 	threading      -
-	variable       -
+	variable       X
 	weight         -
 </module>
