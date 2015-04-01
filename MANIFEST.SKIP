@@ -1,8 +1,9 @@
-\bMYMETA\b
 \bActions_PP\b
+\bMYMETA\b
 \bMakefile(\.old)?$
 \bnosync\b
 \bpm_to_blib\b
 \bresults\b
+^_private$
 ^cover_db$
 ^nytprof
