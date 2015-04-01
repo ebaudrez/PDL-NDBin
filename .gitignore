@@ -4,7 +4,6 @@ MYMETA.yml
 Makefile
 Makefile.old
 PDL-NDBin-*.*
-_private
 blib
 cover_db
 nytprof*
