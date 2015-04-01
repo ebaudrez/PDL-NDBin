@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 167;
+use Test::More tests => 169;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -121,14 +121,43 @@ $got = $binner->axes;
 cmp_deeply $got, $expected, 'autoscale() with two axes and rounding';
 
 # labels
-$expected = [ [ { range => [0,4] }, { range => [4,8] }, { range => [8,12] } ] ];
-$got = PDL::NDBin->new( axes => [[ x => (min=>0, max=>12, step=>4) ]] )->labels( x => pdl );
-is_deeply $got, $expected, 'labels() with one axis, range 0..12, step = 4';
-$expected = [ [ { range => [0,7]  },  { range => [7,14] } ],
-	      [ { range => [0,11]  }, { range => [11,22] }, { range => [22,33] } ] ];
-$got = PDL::NDBin->new( axes => [[ x => ( n => 2 ) ],
-				 [ y => ( n => 3 ) ]] )->labels( x => pdl( 0,14 ), y => pdl( 0,33 ) );
-is_deeply $got, $expected, 'labels() with two axes, range 0..14 x 0..33, n = 2 x 3';
+{
+    my $expected = [ [ { range => [0,4] }, { range => [4,8] }, { range => [8,12] } ] ];
+
+    {
+	my $got = PDL::NDBin->new( axes => [[ x => (min=>0, max=>12, step=>4) ]] )->labels( x => pdl );
+	is_deeply $got, $expected, 'labels() with one axis, range 0..12, step = 4';
+    }
+
+    {
+	my $got = PDL::NDBin->new( axes => [[ x => grid => sequence( 4 ) * 4 ]] )->labels( x => pdl );
+	is_deeply $got, $expected, 'labels() with one axis, grid';
+    }
+}
+
+{
+    my $expected = [ [ { range => [0,7]  },  { range => [7,14] } ],
+		     [ { range => [0,11]  }, { range => [11,22] }, { range => [22,33] } ] ];
+
+    {
+	my $got = PDL::NDBin->new( axes => [[ x => ( n => 2 ) ],
+					    [ y => ( n => 3 ) ]] )->labels( x => pdl( 0,14 ), y => pdl( 0,33 ) );
+	is_deeply $got, $expected, 'labels() with two axes, range 0..14 x 0..33, n = 2 x 3';
+    }
+
+    {
+	# set up same binning as above test, but since grid doesn't autoscale, create
+	# appropriate bin by hand
+	my $got
+	  = PDL::NDBin->new( axes => [ [ x => ( grid => sequence( 3 ) * 7 )  ],
+				       [ y => ( grid => sequence( 4 ) * 11 ) ],
+				     ],
+			   ) ->labels( x => pdl( 0, 14 ), y => pdl( 0, 33 ) );
+	is_deeply $got, $expected,
+	  'labels() with two axes, grid, range 0..14 x 0..33, n = 2 x 3';
+    }
+}
+
 $expected = [ [ { range => [-3,-2] }, { range => [-1,0] }, { range => [1,2] } ] ];
 $got = PDL::NDBin->new( axes => [[ x => ( n => 3 ) ]] )->labels( x => short( -3,2 ) );
 is_deeply $got, $expected, 'labels() with one axis, integral data, range -3..2, n = 3';
@@ -141,6 +170,8 @@ is_deeply $got, $expected, 'labels() with one axis, integral data, range -3..3, 
 $expected = [ [ { range => 1 }, { range => 2 }, { range => 3 }, { range => 4 } ] ];
 $got = PDL::NDBin->new( axes => [[ x => ( step => 1 ) ]] )->labels( x => short( 1,2,3,4 ) );
 is_deeply $got, $expected, 'labels() with one axis, integral data, range 1..4, step = 1';
+
+
 
 #
 # BASIC FUNCTIONALITY

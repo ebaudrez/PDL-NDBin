@@ -174,6 +174,21 @@ mandatory.
 
 	$self->add_axis( name => 'longitude', min => -70, max => 70, n => 14 );
 
+Axes may be binned either on a uniformly spaced grid or on a user-provided grid.
+If no specifications are given, data will be binned on a uniformly spaced grid
+automatically derived from the data.
+
+Uniformly spaced grids are specified via a subset of the C<min>,
+C<max>, C<step>, C<n>, and C<round> parameters, while the user
+provided grid is specified via the C<grid> parameter. Only specify the
+subset of parameters which exactly determines the grid.  For example:
+
+  min max n
+  min step n
+  max step n
+  step n round
+  grid
+
 The following axis specifications are available:
 
 =over 4
@@ -210,10 +225,24 @@ to the number of data values, or to 100, whichever is smaller.
 
 Round I<min> and I<max> to the nearest multiple of this value.
 
-=back
+=item grid
 
-Note that you cannot specify all specifications at the same time, because some
-may conflict.
+Either a piddle or a reference to an array containing the values of the
+bin I<boundaries>.  The first and lest elements specify the minimum
+and maximum bin values, while the intermediate elements specify the common
+boundaries.  A bin is I<inclusive> of its lower bound
+and I<exclusive> of its upper bound. For example, the following set of
+bins
+
+  0 <= v < 1
+  1 <= v < 3
+  3 <= v < 9
+
+is represented via
+
+  grid => [ 0, 1, 3, 9 ]
+
+=back
 
 =head2 add_var()
 
@@ -926,6 +955,9 @@ Note that the evaluation of C<< $iter->want >> entails a performance penalty,
 even if the bin is empty and not processed further.
 
 =head2 Automatic axis parameter calculation
+
+(Note that if the user defines a binning scheme via the C<grid>
+parameter, no axis parameter calculations are performed.)
 
 =head3 Range
 
