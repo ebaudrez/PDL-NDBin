@@ -31,6 +31,11 @@ use PDL::Lite; # load PDL to check definedness of &PDL::indx
 my $indx_type = defined( &PDL::indx ) ? 'indx' : 'int';
 my $PDL_Indx_type = defined( &PDL::indx ) ? 'PDL_Indx' : 'int';
 
+# the name of this method changed some time between PDL 2.007 and 2.008
+use version;
+my $pdl_version = version->parse( $PDL::Version::VERSION );
+my $propagate_badflag = $pdl_version >= '2.008' ? 'propagate_badflag' : 'propogate_badflag';
+
 # _flatten_into
 #
 pp_def( '_flatten_into',
@@ -140,7 +145,7 @@ pp_def( '_setnulltobad',
 	Doc => 'Set empty bins to the bad value.',
 	CopyBadStatusCode => '
 		if( in == out && $ISPDLSTATEGOOD(in) ) {
-			PDL->propogate_badflag( out, 1 );
+			PDL->'.$propagate_badflag.'( out, 1 );
 		}
 		$SETPDLSTATEBAD(out);
 	',
@@ -384,7 +389,7 @@ pp_def( '_istddev_post',
 	Doc => 'Finalization for _istddev_loop().',
 	CopyBadStatusCode => '
 		if( in == out && $ISPDLSTATEGOOD(in) ) {
-			PDL->propogate_badflag( out, 1 );
+			PDL->'.$propagate_badflag.'( out, 1 );
 		}
 		$SETPDLSTATEBAD(out);
 	',
