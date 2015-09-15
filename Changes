@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.018     2015-09-15 15:50:41+02:00 Europe/Brussels
+
  - the PDL function propogate_badflag() has been renamed to propagate_badflag()
    somewhere between 2.007 and 2.008, and PDL::NDBin has been adapted to work
    with both pre-2.008 and post-2.008 PDLs. Reported by Slaven Rezić, practical
