@@ -36,6 +36,15 @@ use version;
 my $pdl_version = version->parse( $PDL::Version::VERSION );
 my $propagate_badflag = $pdl_version >= '2.008' ? 'propagate_badflag' : 'propogate_badflag';
 
+our @_REAL_TYPES =
+	map { $_->{ppsym} }
+	# Older PDLs:
+	# - no native complex types, did not have real key
+	# Newer PDLs:
+	# - native complex types, have real key
+	grep { ! exists $_->{real} || $_->{real} }
+	@PDL::Types::typehash{PDL::Types::typesrtkeys()};
+
 # _flatten_into
 #
 pp_def( '_flatten_into',
@@ -77,6 +86,7 @@ pp_def( '_flatten_into',
 #
 pp_def( '_flatten_into_grid',
 	Pars => "in(); $indx_type b(); double edge(n); $indx_type [o] idx()",
+	GenericTypes => \@_REAL_TYPES,
 	HandleBad => 1,
 	Doc => 'Bin a series of values on a specified grid and flatten into an existing list of indices.',
 	# don't repeat code; PDL_BAD_CODE is available in PDL > 2.007 to
@@ -185,6 +195,7 @@ PDL, otherwise it returns a piddle of type I<long>.',
 pp_def( '_imax_loop',
 	Pars => "in(n); $indx_type idx(n); [o] out(m)",
 	OtherPars => "$PDL_Indx_type msize => m",
+	GenericTypes => \@_REAL_TYPES,
 	HandleBad => 1,
 	Doc => 'Find the maximum in each bin.',
 	Code => '
@@ -211,6 +222,7 @@ pp_def( '_imax_loop',
 pp_def( '_imin_loop',
 	Pars => "in(n); $indx_type idx(n); [o] out(m)",
 	OtherPars => "$PDL_Indx_type msize => m",
+	GenericTypes => \@_REAL_TYPES,
 	HandleBad => 1,
 	Doc => 'Find the minimum in each bin.',
 	Code => '

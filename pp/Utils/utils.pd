@@ -30,12 +30,22 @@ use PDL::Lite; # load PDL to check definedness of &PDL::indx
 my $indx_type = defined( &PDL::indx ) ? 'indx' : 'int';
 my $PDL_Indx_type = defined( &PDL::indx ) ? 'PDL_Indx' : 'int';
 
+our @_REAL_TYPES =
+	map { $_->{ppsym} }
+	# Older PDLs:
+	# - no native complex types, did not have real key
+	# Newer PDLs:
+	# - native complex types, have real key
+	grep { ! exists $_->{real} || $_->{real} }
+	@PDL::Types::typehash{PDL::Types::typesrtkeys()};
+
 # ensure that a grid is monotonically increasing or decreasing
 
 my %MAP = ( PDL_Indx_type => $PDL_Indx_type );
 
 pp_def( '_validate_grid',
 	Pars => "grid(n)",
+	GenericTypes => \@_REAL_TYPES,
 	Doc => 'Validate a grid.
 
 This function throws an exception if a grid is not monotonically increasing or decreasing.',
