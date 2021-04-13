@@ -4,5 +4,5 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME    => 'PDL::NDBin::Iterator',
-	VERSION => '0.020',
+	VERSION_FROM => '../lib/PDL/NDBin.pm',
 );
