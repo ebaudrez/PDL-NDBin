@@ -37,14 +37,7 @@ use version;
 my $pdl_version = version->parse( $PDL::Version::VERSION );
 my $propagate_badflag = $pdl_version >= '2.008' ? 'propagate_badflag' : 'propogate_badflag';
 
-our @_REAL_TYPES =
-	map { $_->{ppsym} }
-	# Older PDLs:
-	# - no native complex types, did not have real key
-	# Newer PDLs:
-	# - native complex types, have real key
-	grep { ! exists $_->{real} || $_->{real} }
-	@PDL::Types::typehash{PDL::Types::typesrtkeys()};
+our @_REAL_TYPES = map $_->ppsym, grep $_->real, PDL::Types::types();
 
 # _flatten_into
 #

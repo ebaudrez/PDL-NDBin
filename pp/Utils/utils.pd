@@ -31,14 +31,7 @@ use PDL::Lite; # load PDL to check definedness of &PDL::indx
 my $indx_type = defined( &PDL::indx ) ? 'indx' : 'int';
 my $PDL_Indx_type = defined( &PDL::indx ) ? 'PDL_Indx' : 'int';
 
-our @_REAL_TYPES =
-	map { $_->{ppsym} }
-	# Older PDLs:
-	# - no native complex types, did not have real key
-	# Newer PDLs:
-	# - native complex types, have real key
-	grep { ! exists $_->{real} || $_->{real} }
-	@PDL::Types::typehash{PDL::Types::typesrtkeys()};
+our @_REAL_TYPES = map $_->ppsym, grep $_->real, PDL::Types::types();
 
 # ensure that a grid is monotonically increasing or decreasing
 
