@@ -34,7 +34,7 @@ my $PDL_Indx_type = defined( &PDL::indx ) ? 'PDL_Indx' : 'int';
 
 # the name of this method changed some time between PDL 2.007 and 2.008
 use version;
-my $pdl_version = version->parse( $PDL::Version::VERSION );
+my $pdl_version = version->parse( $PDL::VERSION );
 my $propagate_badflag = $pdl_version >= '2.008' ? 'propagate_badflag' : 'propogate_badflag';
 
 # _flatten_into
