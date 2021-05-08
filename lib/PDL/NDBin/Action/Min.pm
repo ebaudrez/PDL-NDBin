@@ -23,7 +23,7 @@ use Params::Validate qw( validate OBJECT SCALAR UNDEF );
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
-Optionally allows the type of the output piddle to be set (defaults to the type
+Optionally allows the type of the output ndarray to be set (defaults to the type
 of the variable this instance is associated with).
 
 =cut

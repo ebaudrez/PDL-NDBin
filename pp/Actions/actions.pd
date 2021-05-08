@@ -154,8 +154,8 @@ pp_def( '_icount_loop',
 	HandleBad => 1,
 	Doc => 'Count the number of elements in each bin.
 
-This function returns a piddle of type I<indx> if you have a 64-bit-capable
-PDL, otherwise it returns a piddle of type I<long>.',
+This function returns an ndarray of type I<indx> if you have a 64-bit-capable
+PDL, otherwise it returns an ndarray of type I<long>.',
 	Code => '
 		loop(n) %{
 			register PDL_Indx j = $idx();
@@ -231,7 +231,7 @@ pp_def( '_isum_loop',
 	HandleBad => 1,
 	Doc => 'Sum the elements in each bin.
 
-This function returns a piddle of type I<int> or higher, to reduce the risk of
+This function returns an ndarray of type I<int> or higher, to reduce the risk of
 overflow when collecting sums.',
 	Code => '
 		loop(n) %{

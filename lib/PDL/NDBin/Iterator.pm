@@ -37,16 +37,16 @@ in the second dimension. There must be at least one bin in every dimension.
 
 =item I<array>
 
-A reference to an array of piddles to operate on. The data values inside the
-piddles don't really matter, as far as the iterator object is concerned. The
-data inside the piddles will be made available to the actions in the order they
+A reference to an array of ndarrays to operate on. The data values inside the
+ndarrays don't really matter, as far as the iterator object is concerned. The
+data inside the ndarrays will be made available to the actions in the order they
 appear, one by one. There must be at least one element in this array.
 
 =item I<idx>
 
-A piddle containing the flattened bin numbers corresponding to the data values
-in the piddles in \@array. The length of this piddle must match the length of
-the piddles in \@array.
+A ndarray containing the flattened bin numbers corresponding to the data values
+in the ndarrays in \@array. The length of this ndarray must match the length of
+the ndarrays in \@array.
 
 =back
 
@@ -119,11 +119,11 @@ Return the number of variables.
 
 =head2 data()
 
-Return the piddle corresponding to the current variable.
+Return the ndarray corresponding to the current variable.
 
 =head2 idx()
 
-Return the piddle $idx passed to the constructor.
+Return the ndarray $idx passed to the constructor.
 
 =cut
 
@@ -179,7 +179,7 @@ Another use is when empty bins needs to be skipped:
 
 	sub compute_maximum {
 		my $iter = shift;
-		# max() won't work with empty piddles
+		# max() won't work with empty ndarrays
 		return unless $iter->want->nelem;
 		my $values = $iter->selection;
 		return $values->max;
