@@ -106,7 +106,7 @@ $expected = [ { name => 'x', pdl => test_pdl($x), min => -65, max => 69, n => 4,
 $binner = PDL::NDBin->new( axes => [[ 'x' ]] );
 $binner->autoscale( x => $x );
 $got = $binner->axes;
-cmp_deeply $got, $expected, 'autoscale() with auto parameters';
+cmp_deeply $got, $expected, 'autoscale() with auto parameters' or diag "got: ", explain $got;
 $expected = [ { name => 'x', pdl => test_pdl($x), min => -70, max => 70, n => 7, step => 20 } ];
 $binner = PDL::NDBin->new( axes => [[ x => (min => -70, max => 70, step => 20) ]] );
 $binner->autoscale( x => $x );

@@ -2,6 +2,10 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - allow for PDL 2.056 aggregate functions returning ndarray not Perl value
+
+0.021 2021-04-17
+
  - updated to work with PDL 2.037
 
 0.020     2020-04-01 14:11:44+02:00 Europe/Brussels

@@ -641,7 +641,7 @@ sub autoscale_axis
 	}
 
 
-	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
+	$axis->{min} = $axis->{pdl}->min->sclr unless defined $axis->{min};
 
 =for comment
 	# allow options the way histogram() and histogram2d() do, but
@@ -667,7 +667,7 @@ sub autoscale_axis
 
 =cut
 
-	$axis->{max} = $axis->{pdl}->max unless defined $axis->{max};
+	$axis->{max} = $axis->{pdl}->max->sclr unless defined $axis->{max};
 	if( defined $axis->{round} and $axis->{round} > 0 ) {
 		$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
 		$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
