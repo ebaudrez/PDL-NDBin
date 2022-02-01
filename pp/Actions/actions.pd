@@ -70,16 +70,9 @@ pp_def( '_flatten_into_grid',
 	Pars => "in(); indx b(); double edge(n); indx [o] idx()",
 	HandleBad => 1,
 	Doc => 'Bin a series of values on a specified grid and flatten into an existing list of indices.',
-	# don't repeat code; PDL_BAD_CODE is available in PDL > 2.007 to
-	# demarcate bad code. make this work for older versions as well
 	( map {
 	        (Code => $_,
-	        BadCode => join( "\n",
-			       '#undef PDL_BAD_CODE',
-			       '#define PDL_BAD_CODE',
-			       $_,
-			       '#undef PDL_BAD_CODE',
-			     )
+	        BadCode => $_,
 		)
 	} '
 	    PDL_Indx n = $SIZE(n);
