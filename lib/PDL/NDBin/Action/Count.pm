@@ -51,8 +51,12 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
-	PDL::NDBin::Actions_PP::_icount_loop( $iter->data, $iter->idx, $self->{out}, $self->{N} );
+	my $out = $self->{out} //= PDL->zeroes( $self->{type}, $self->{N} );
+	my $idx = $iter->idx;
+	$_ = $out->zeroes for grep !defined || (ref && $_->isnull), $idx;
+	my $data = $iter->data;
+	$_ = $idx->zeroes for grep !defined || (ref && $_->isnull), $data;
+	PDL::NDBin::Actions_PP::_icount_loop( $data, $idx, $self->{out}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );

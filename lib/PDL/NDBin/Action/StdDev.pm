@@ -55,7 +55,10 @@ sub process
 	$self->{count} = PDL->zeroes( defined(&PDL::indx) ? PDL::indx() : PDL::long, $self->{N} ) unless defined $self->{count};
 	# as the internal computations happen in double, the type of 'avg' sticks to double
 	$self->{avg} = PDL->zeroes( PDL::double, $self->{N} ) unless defined $self->{avg};
-	PDL::NDBin::Actions_PP::_istddev_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{avg}, $self->{N} );
+	my $data = $iter->data;
+	my $idx = $iter->idx;
+	$_ = PDL->zeroes( 0 ) for grep $_->isnull, $data, $idx;
+	PDL::NDBin::Actions_PP::_istddev_loop( $data, $idx, $self->{out}, $self->{count}, $self->{avg}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );

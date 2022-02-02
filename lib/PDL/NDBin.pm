@@ -8,6 +8,7 @@ use List::Util qw( reduce );
 use List::MoreUtils qw( pairwise );
 use Math::Round qw( nlowmult nhimult );
 use PDL::Lite;		# do not import any functions into this namespace
+require PDL::Types;
 use PDL::NDBin::Iterator;
 use PDL::NDBin::Actions_PP;
 use PDL::NDBin::Utils_PP;
@@ -839,6 +840,7 @@ sub process
 		}
 		croak( 'I cannot bin unless n > 0' ) unless $axis->{n} > 0;
 		unshift @n, $axis->{n};			# remember that we are working backwards!
+		$axis->{pdl} .= PDL->zeroes(PDL::Type->new('byte'), 1) if $axis->{pdl}->isnull; # a quasi-null
 		if ( defined $axis->{grid} ) {
 		    $idx = $axis->{pdl}->_flatten_into_grid( $idx, $axis->{grid} );
 		}

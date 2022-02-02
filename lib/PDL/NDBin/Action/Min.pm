@@ -55,7 +55,10 @@ sub process
 		my $type = defined $self->{type} ? $self->{type} : $iter->data->type;
 		$self->{out} = PDL->zeroes( $type, $self->{N} )->setbadif( 1 );
 	}
-	PDL::NDBin::Actions_PP::_imin_loop( $iter->data, $iter->idx, $self->{out}, $self->{N} );
+	my $data = $iter->data;
+	my $idx = $iter->idx;
+	$_ = PDL->zeroes( 0 ) for grep $_->isnull, $data, $idx;
+	PDL::NDBin::Actions_PP::_imin_loop( $data, $idx, $self->{out}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );
