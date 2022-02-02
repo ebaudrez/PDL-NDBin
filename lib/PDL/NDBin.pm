@@ -582,7 +582,7 @@ sub _check_pdl_length
 	# only be done here (in a loop), and not in autoscale_axis()
 	my $length;
 	for my $v ( $self->axes, $self->vars ) {
-		$length = $v->{pdl}->nelem unless defined $length;
+		$length //= $v->{pdl}->nelem;
 		# variables don't always need a pdl, or may be happy with a
 		# null pdl; let the action figure it out.
 		# note that the test isempty() is not a good test for null
@@ -851,7 +851,7 @@ sub process
 
 	my $N = reduce { $a * $b } @n; # total number of bins
 	croak( 'I need at least one bin' ) unless $N;
-	my @vars = map $_->{pdl}, $self->vars;
+	my @vars = map $_->{pdl} // $PDL::undefval, $self->vars;
 	$self->{instances} ||= [ map { _make_instance( N => $N, action => $_->{action} ) } $self->vars ];
 
 	#

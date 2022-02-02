@@ -256,7 +256,7 @@ throws_ok { ndbin( $x, vars => [ [ null, sub { die } ] ] ) }
 lives_ok { ndbin( $x, vars => [ [ null() => sub { shift->want->min } ] ] ) }
 	'want->min on empty ndarray does not die';
 throws_ok { ndbin( $x, vars => [ [ null() => sub { shift->selection->min } ] ] ) }
-	qr/^PDL::index: invalid index 0 /, 'selection->min on empty ndarray';
+	qr/index:/, 'selection->min on empty ndarray';
 throws_ok { ndbin( $x, vars => [ [ null() => sub { shift->wrong_method } ] ] ) }
 	qr/^Can't locate object method "wrong_method"/, 'call nonexistent method';
 lives_ok { $got = ndbin( $x, vars => [ [ null->long, sub { eval { die } } ] ] ) }
