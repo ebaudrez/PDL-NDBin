@@ -48,7 +48,7 @@ jobs:
           - perl-version: '5.32'
             os: ubuntu-latest
             release-test: true
-            coverage: true
+            #coverage: true
     steps:
       - uses: actions/checkout@v2
       - name: Get dist artifact
