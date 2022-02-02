@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+0.023     2022-02-02 02:26:30+00:00 Europe/London
+
  - allow for PDL 2.056 aggregate functions returning ndarray not Perl value
  - opt in to PDL 2.058 multi-C for faster builds
 
