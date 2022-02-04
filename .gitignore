@@ -13,11 +13,13 @@ pp/Actions/Actions_PP.c
 pp/Actions/Actions_PP.o
 pp/Actions/Actions_PP.pm
 pp/Actions/Actions_PP.xs
+pp/Actions/pp-*
 pp/Utils/Utils_PP.bs
 pp/Utils/Utils_PP.c
 pp/Utils/Utils_PP.o
 pp/Utils/Utils_PP.pm
 pp/Utils/Utils_PP.xs
+pp/Utils/pp-*
 xs/Iterator.bs
 xs/Iterator.c
 xs/Iterator.o
