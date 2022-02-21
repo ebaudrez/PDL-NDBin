@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - stop calling null->long etc in tests as also invalid in PDL 2.073+
+
 0.025     2022-02-08 04:41:24+00:00 Europe/London
 
  - change [t] params to [o] as wanted results back - PDL 2.073 forbids passing
