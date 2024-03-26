@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-11, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         perl-version: ['5']
         include:
           - { os: 'ubuntu-latest', perl-version: "5.14" }
