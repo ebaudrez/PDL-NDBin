@@ -2,6 +2,8 @@ Revision history for PDL::NDBin
 
 {{$NEXT}}
 
+ - update requirement to Test::PDL 0.20 which handles badvals correctly
+
 0.027     2024-03-26 15:40:26+00:00 Europe/London
 
  - stop distributing pp-*.c
