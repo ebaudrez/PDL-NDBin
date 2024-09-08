@@ -40,22 +40,10 @@ pp_def( '_flatten_into',
 		register PDL_Indx j;
 		register PDL_Indx maxj = $COMP( n ) - 1;
 		loop(m) %{
-			j = (( $in() - min )/step);
-			if( j < 0 ) j = 0;
-			if( j > maxj ) j = maxj;
-			$idx() = j + $COMP( n ) * $b();
-		%}
-	',
-	BadCode => '
-		register double min = $COMP( min );
-		register double step = $COMP( step );
-		register PDL_Indx j;
-		register PDL_Indx maxj = $COMP( n ) - 1;
-		loop(m) %{
-			if( ($ISBAD(in())) || ($ISBAD(b())) ) {
+			PDL_IF_BAD(if( ($ISBAD(in())) || ($ISBAD(b())) ) {
 				$SETBAD( idx() );
 				continue;
-			}
+			},)
 			j = (( $in() - min )/step);
 			if( j < 0 ) j = 0;
 			if( j > maxj ) j = maxj;
@@ -70,11 +58,7 @@ pp_def( '_flatten_into_grid',
 	Pars => "in(); indx b(); double edge(n); indx [o] idx()",
 	HandleBad => 1,
 	Doc => 'Bin a series of values on a specified grid and flatten into an existing list of indices.',
-	( map {
-	        (Code => $_,
-	        BadCode => $_,
-		)
-	} '
+	Code => '
 	    PDL_Indx n = $SIZE(n);
 	    PDL_Indx n1 = n-1;
 	    PDL_Indx mid;
@@ -89,33 +73,23 @@ pp_def( '_flatten_into_grid',
 
 	    $GENERIC() value = $in();
 
-#ifdef PDL_BAD_CODE
-	    if( ($ISBAD(in())) || ($ISBAD(b())) ) {
-		    $SETBAD( idx() );
-		     /* cannot continue in a threadloop, must nest in an if (at least up to PDL 2.007)
-		     continue;
-		     */
+	    PDL_IF_BAD(if( ($ISBAD(in())) || ($ISBAD(b())) ) {
+		$SETBAD( idx() );
+		continue;
+	    },)
+	    while (low <= high) {
+		/* ensure we do not overflow (low+high)>>1 for large values of low + high */
+		mid = low + ((high - low) >> 1);
+
+		if (($edge(n => mid) <= value) == up) low = mid + 1;
+		else                                  high = mid - 1;
 	    }
-	    else
-#endif
-	    {
-		while (low <= high) {
-
-		    /* ensure we do not overflow (low+high)>>1 for large values of low + high */
-		    mid = low + ((high - low) >> 1);
-
-		    if (($edge(n => mid) <= value) == up) low = mid + 1;
-		    else                                  high = mid - 1;
-		}
-		$idx() = (up
-                          ? high < 0  ? 0 : high
-                          : low > n1 ? n1 : low
-                         ) + n * $b();
-	    }
-	 %}
-        '),
-
-
+	    $idx() = (up
+		      ? high < 0  ? 0 : high
+		      : low > n1 ? n1 : low
+		     ) + n * $b();
+	    %}
+        ',
 );
 
 
@@ -151,13 +125,7 @@ This function returns an ndarray of type I<indx> if you have a 64-bit-capable
 PDL, otherwise it returns an ndarray of type I<long>.',
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
-			++( $out(m => j) );
-		%}
-	',
-	BadCode => '
-		loop(n) %{
-			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
+			PDL_IF_BAD(if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;,)
 			register PDL_Indx j = $idx();
 			++( $out(m => j) );
 		%}
@@ -173,19 +141,10 @@ pp_def( '_imax_loop',
 	Doc => 'Find the maximum in each bin.',
 	Code => '
 		loop(n) %{
+			PDL_IF_BAD(if ($ISBAD(idx()) || $ISBAD(in())) continue;,)
 			register PDL_Indx j = $idx();
-			if( ($ISBAD(out(m => j))) || ($in() > $out(m => j)) ) {
+			if ($ISBAD(out(m => j)) || $in() > $out(m => j))
 				$out(m => j) = $in();
-			}
-		%}
-	',
-	BadCode => '
-		loop(n) %{
-			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
-			if( ($ISBAD(out(m => j))) || ($in() > $out(m => j)) ) {
-				$out(m => j) = $in();
-			}
 		%}
 	',
 );
@@ -199,19 +158,10 @@ pp_def( '_imin_loop',
 	Doc => 'Find the minimum in each bin.',
 	Code => '
 		loop(n) %{
+			if (PDL_IF_BAD($ISBAD(idx()) ||,) $ISBAD(in())) continue;
 			register PDL_Indx j = $idx();
-			if( ($ISBAD(out(m => j))) || ($in() < $out(m => j)) ) {
+			if ($ISBAD(out(m => j)) || $in() < $out(m => j))
 				$out(m => j) = $in();
-			}
-		%}
-	',
-	BadCode => '
-		loop(n) %{
-			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
-			register PDL_Indx j = $idx();
-			if( ($ISBAD(out(m => j))) || ($in() < $out(m => j)) ) {
-				$out(m => j) = $in();
-			}
 		%}
 	',
 );
@@ -228,14 +178,7 @@ This function returns an ndarray of type I<int> or higher, to reduce the risk of
 overflow when collecting sums.',
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
-			$out(m => j) += $in();
-			++( $count(m => j) );
-		%}
-	',
-	BadCode => '
-		loop(n) %{
-			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
+			PDL_IF_BAD(if ($ISBAD(idx()) || $ISBAD(in())) continue;,)
 			register PDL_Indx j = $idx();
 			$out(m => j) += $in();
 			++( $count(m => j) );
@@ -288,13 +231,7 @@ being the default type in PDL and the 'natural' floating-point type in C, it
 also makes the implementation easier.],
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
-			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
-		%}
-	',
-	BadCode => '
-		loop(n) %{
-			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
+			PDL_IF_BAD(if ($ISBAD(idx()) || $ISBAD(in())) continue;,)
 			register PDL_Indx j = $idx();
 			$out(m => j) += ( $in() - $out(m => j) ) / ++( $count(m => j) );
 		%}
@@ -347,15 +284,7 @@ I<double>. Besides being the default type in PDL and the 'natural'
 floating-point type in C, it also makes the implementation easier.],
 	Code => '
 		loop(n) %{
-			register PDL_Indx j = $idx();
-			double delta = $in() - $avg(m => j);
-			$avg(m => j) += delta / ++( $count(m => j) );
-			$out(m => j) += delta * ( $in() - $avg(m => j) );
-		%}
-	',
-	BadCode => '
-		loop(n) %{
-			if( ($ISBAD(idx())) || ($ISBAD(in())) ) continue;
+			PDL_IF_BAD(if ($ISBAD(idx()) || $ISBAD(in())) continue;,)
 			register PDL_Indx j = $idx();
 			double delta = $in() - $avg(m => j);
 			$avg(m => j) += delta / ++( $count(m => j) );
