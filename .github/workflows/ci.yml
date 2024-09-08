@@ -33,7 +33,7 @@ jobs:
   ci:
     runs-on: ${{ matrix.os }}
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
-    needs: [ notify, dist ]
+    needs: [ dist ]
     strategy:
       fail-fast: false
       matrix:
