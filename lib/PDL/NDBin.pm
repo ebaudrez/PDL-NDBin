@@ -1752,7 +1752,7 @@ PDL::NDBin and related distributions on CPAN:
 	| Native data type                                  | Scalars | Arrays | Arrays | Piddles   | Piddles  |
 	| Performance                                       | Low     | Medium | High   | Very high | High     |
 	| Support for weighted histograms                   | X       | X      | X      | X         | -        |
-	| Uses PDL threading                                | -       | -      | -      | X         | -        |
+	| Uses PDL broadcasting                             | -       | -      | -      | X         | -        |
 	| Variable-width bins                               | X       | X      | X      | -         | X        |
 	+---------------------------------------------------+---------+--------+--------+-----------+----------+
 
@@ -1941,18 +1941,18 @@ In a weighted histogram, data points contribute by a fractional amount (or
 weight) between 0 and 1. All libraries, except PDL::NDBin, support weighted
 histograms. In PDL::NDBin, the weight of all data points is fixed at 1.
 
-=item Uses PDL threading
+=item Uses PDL broadcasting
 
-In PDL, threading is a technique to automatically loop certain operations over
+In PDL, broadcasting is a technique to automatically loop certain operations over
 an arbitrary number of dimensions. An example is the sumover() operation, which
 calculates the row sum. It is defined over the first dimension only (i.e., the
 rows in PDL), but it will be looped automatically over all remaining
 dimensions. If the ndarray is three-dimensional, for instance, sumover() will
 calculate the sum in every row of every matrix.
 
-Threading is supported by the PDL functions histogram(), whistogram(), and
+Broadcasting is supported by the PDL functions histogram(), whistogram(), and
 their two-dimensional counterparts, but not by hist() or whist(). PDL::NDBin
-does not (yet) support threading.
+does not (yet) support broadcasting.
 
 =item Variable-width bins
 
