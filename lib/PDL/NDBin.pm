@@ -1749,7 +1749,7 @@ PDL::NDBin and related distributions on CPAN:
 	| Has overflow and underflow bins by default        | -       | X      | X      | -         | -        |
 	| Interface style                                   | Proc.   | OO     | OO     | Proc.     | OO+Proc. |
 	| Maximum number of dimensions                      | 2       | N      | 1      | 2         | N        |
-	| Native data type                                  | Scalars | Arrays | Arrays | Piddles   | Piddles  |
+	| Native data type                                  | Scalars | Arrays | Arrays | NDArrays  | NDArrays |
 	| Performance                                       | Low     | Medium | High   | Very high | High     |
 	| Support for weighted histograms                   | X       | X      | X      | X         | -        |
 	| Uses PDL broadcasting                             | -       | -      | -      | X         | -        |

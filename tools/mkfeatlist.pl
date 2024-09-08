@@ -115,7 +115,7 @@ __[config]__
 	auto           X
 	bad            X
 	callbacks      -
-	data           Piddles
+	data           NDArrays
 	dims           2
 	implementation C
 	interface      Proc.
@@ -136,7 +136,7 @@ __[config]__
 	auto           X
 	bad            X
 	callbacks      Perl+C
-	data           Piddles
+	data           NDArrays
 	dims           N
 	implementation C/Perl
 	interface      OO+Proc.
