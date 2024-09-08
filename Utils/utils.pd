@@ -34,22 +34,17 @@ pp_def( '_validate_grid',
 
 This function throws an exception if a grid is not monotonically increasing or decreasing.',
 	Code => '
-	        PDL_Indx n = $SIZE(n);
-	        PDL_Indx nm1 = n - 1;
-		PDL_Indx idx;
-	        if ( $grid(n => 0 ) < $grid(n => nm1) ) {
-		  for ( idx = 0 ; idx < n - 1; idx++ ) {
-		      PDL_Indx idx1 = idx + 1;
-		      if ( $grid(n => idx ) >= $grid( n => idx1 ) )
+	        if ( $grid(n => 0) < $grid(n => $SIZE(n)-1) ) {
+		  loop (n=:-1) %{
+		      if ( $grid() >= $grid( n => n+1 ) )
 		        $CROAK( "grid is not monotonically increasing\n" );
-		  }
+		  %}
 		}
-	        else if ( $grid(n => 0 ) > $grid(n => nm1) ) {
-		  for ( idx = 0 ; idx < n - 1; idx++ ) {
-		      PDL_Indx idx1 = idx + 1;
-		      if ( $grid(n => idx ) <= $grid( n => idx1 ) )
+	        else if ( $grid(n => 0) > $grid(n => $SIZE(n)-1) ) {
+		  loop (n=:-1) %{
+		      if ( $grid() <= $grid( n => n+1 ) )
 		        $CROAK( "grid is not monotonically decreasing\n" );
-		  }
+		  %}
 		}
 		else {
 	          $CROAK( "grid is not monotonically increasing or decreasing\n" );
