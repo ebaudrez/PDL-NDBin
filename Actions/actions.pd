@@ -101,15 +101,13 @@ pp_def( '_setnulltobad',
 	HandleBad => 1,
 	Inplace => [ 'in' ],
 	Doc => 'Set empty bins to the bad value.',
-	CopyBadStatusCode => '
-		if( in == out && $ISPDLSTATEGOOD(in) ) {
-			PDL->propagate_badflag( out, 1 );
-		}
-		$SETPDLSTATEBAD(out);
-	',
 	Code => '
-		if( ! $count() ) { $SETBAD(out()); }
-		else { $out() = $in(); }
+char anybad = 0;
+broadcastloop %{
+  if( ! $count() ) { anybad = 1; $SETBAD(out()); }
+  else { $out() = $in(); }
+%}
+if (anybad) $PDLSTATESETBAD(out);
 	',
 );
 
@@ -300,15 +298,13 @@ pp_def( '_istddev_post',
 	HandleBad => 1,
 	Inplace => [ 'in' ],
 	Doc => 'Finalization for _istddev_loop().',
-	CopyBadStatusCode => '
-		if( in == out && $ISPDLSTATEGOOD(in) ) {
-			PDL->propagate_badflag( out, 1 );
-		}
-		$SETPDLSTATEBAD(out);
-	',
 	Code => '
-		if( ! $count() ) { $SETBAD(out()); }
-		else { $out() = sqrt( $in() / $count() ); }
+char anybad = 0;
+broadcastloop %{
+  if( ! $count() ) { anybad = 1; $SETBAD(out()); }
+  else { $out() = sqrt( $in() / $count() ); }
+%}
+if (anybad) $PDLSTATESETBAD(out);
 	',
 );
 
